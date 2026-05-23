@@ -93,7 +93,7 @@ const AuthPage = () => {
       const { data, error } = await supabase.auth.verifyOtp({ email, token, type: isForgotPassword ? 'recovery' : 'signup' });
       if (error) throw error;
       if (isForgotPassword) { setIsVerifying(false); setForgotStep(3); setOtp(['', '', '', '', '', '', '', '']); return; }
-      const { data: userData, error: insertError } = await supabase.from('users').insert([{ id: data.user.id, name, email, password_hash: password, role }]).select().single();
+      const { data: userData, error: insertError } = await supabase.from('users').insert([{ id: data.user.id, name, email, role }]).select().single();
       localStorage.setItem('fitflow_user', JSON.stringify(userData || data.user));
       navigate('/dashboard');
     } catch (err) { setError(err.message); } finally { setLoading(false); }
