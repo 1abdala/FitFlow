@@ -1,0 +1,858 @@
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
+import OnboardingModal from './OnboardingModal';
+import InternshipDetailsModal from './InternshipDetailsModal';
+import SkillProfileTab from './SkillProfileTab';
+import LearningHubTab from './LearningHubTab';
+import * as Icons from './Icons';
+import { CVAnalyzerPage } from './CVAnalyzerPage';
+import ApplicationsTab from './ApplicationsTab';
+import { Toaster } from 'react-hot-toast';
+import { useApplications } from '../hooks/useApplications';
+import { useUpdateApplication } from '../hooks/useUpdateApplication';
+const DashLogo = () => (
+  <div className="ff-logo ff-logo-dash">
+    <span className="ff-logo-mark"><Icons.IconLogo size={16} /></span>
+    <span className="ff-logo-text">Fit<b>Flow</b></span>
+  </div>
+);
+
+const NavItem = ({ icon, label, active, badge, onClick }) => (
+  <button className={`nav-item ${active ? "nav-active" : ""}`} onClick={onClick}>
+    <span className="nav-icon">{icon}</span>
+    <span className="nav-label">{label}</span>
+    {badge && <span className="nav-badge">{badge}</span>}
+  </button>
+);
+
+const Sidebar = ({ active, setActive, user, onLogout }) => {
+  const items = [
+    { id: "overview", icon: <Icons.IconGrid size={18} />, label: "Overview" },
+    { id: "matches", icon: <Icons.IconTarget size={18} />, label: "My Matches", badge: null }, // Badge will be updated via props if needed
+    { id: "applications", icon: <Icons.IconBriefcase size={18} />, label: "Applications" },
+    { id: "cv", icon: <Icons.IconDoc size={18} />, label: "CV Analyzing" },
+    { id: "skills", icon: <Icons.IconCap size={18} />, label: "Skill Profile" },
+    { id: "learning", icon: <Icons.IconBook size={18} />, label: "Learning Hub" },
+  ];
+  return (
+    <aside className="sidebar">
+      <DashLogo />
+      <nav className="nav">
+        {items.map(it => (
+          <NavItem key={it.id} {...it} active={active === it.id} onClick={() => setActive(it.id)} />
+        ))}
+      </nav>
+      <div className="nav-spacer" />
+      <div className="sidebar-card">
+        <div className="sb-card-head">
+          <Icons.IconBolt size={14} />
+          <span>Pro tips</span>
+        </div>
+        <div className="sb-card-body">Add 2 React projects to bump 8 more matches.</div>
+        <button className="sb-card-cta" onClick={() => setActive('skills')}>Show me <Icons.IconArrowRight size={12} /></button>
+      </div>
+      <div className="sidebar-foot">
+        <NavItem icon={<Icons.IconGear size={18} />} label="Settings" onClick={() => setActive('settings')} active={active === 'settings'} />
+        <div className="user-row">
+          <div className="user-ava">{user?.name?.slice(0, 2).toUpperCase() || 'FF'}</div>
+          <div className="user-meta">
+            <div className="user-name truncate">{user?.name}</div>
+            <div className="user-role capitalize">{user?.role} · {user?.course || 'Student'}</div>
+          </div>
+          <button className="user-logout" title="Log out" onClick={onLogout}><Icons.IconLogout size={16} /></button>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+const Topbar = () => (
+  <div className="topbar">
+    <div className="topbar-left">
+      <div className="crumb">
+        <span className="crumb-mute">FitFlow</span>
+        <span className="crumb-sep">/</span>
+        <span>Dashboard</span>
+      </div>
+    </div>
+    <div className="topbar-right">
+      <div className="search">
+        <Icons.IconSearch size={16} />
+        <input placeholder="Search internships, skills, companies…" />
+        <span className="kbd">⌘K</span>
+      </div>
+      <button className="icon-btn" title="Notifications">
+        <Icons.IconBell size={16} />
+        <span className="icon-dot" />
+      </button>
+    </div>
+  </div>
+);
+
+const WelcomeCard = ({ user, skillGaps, onContinueSetup }) => (
+  <div className="welcome">
+    <div className="welcome-bg" aria-hidden="true">
+      <svg viewBox="0 0 600 200" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="wg" x1="0" x2="1">
+            <stop offset="0" stopColor="var(--accent)" stopOpacity="0.5" />
+            <stop offset="1" stopColor="var(--accent-2)" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <path d="M0,120 C150,60 300,170 600,80 L600,200 L0,200 Z" fill="url(#wg)" opacity="0.4" />
+        <path d="M0,140 C200,90 350,180 600,110 L600,200 L0,200 Z" fill="url(#wg)" opacity="0.6" />
+      </svg>
+    </div>
+    <div className="welcome-inner">
+      <div className="welcome-kicker"><Icons.IconWave size={14} /> {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+      <h2 className="welcome-title">
+        Welcome back, <span className="welcome-name">{user?.name?.split(' ')[0]}</span>.
+      </h2>
+      <p className="welcome-sub">
+        {(!user.profile_completed && Number(user.completion_percentage) !== 100) 
+          ? `Your profile is only ${user.completion_percentage || 33}% complete. Finish setup to unlock accurate AI matching.`
+          : `Your profile is missing ${skillGaps.length > 0 ? `about ${skillGaps.length} key skills` : 'no key skills'} for your top matches. Close the gap and unlock more roles.`}
+      </p>
+      <div className="welcome-cta">
+        {(!user.profile_completed && Number(user.completion_percentage) !== 100) ? (
+          <button className="btn btn-primary btn-sm" onClick={onContinueSetup}>Continue Setup <Icons.IconArrowRight size={14} /></button>
+        ) : (
+          <button className="btn btn-primary btn-sm">View recommendations <Icons.IconArrowRight size={14} /></button>
+        )}
+        <button className="btn btn-ghost btn-sm">Refresh matches</button>
+      </div>
+    </div>
+  </div>
+);
+
+const KpiCard = ({ icon, label, value, delta, deltaTone, sub, sparkline }) => (
+  <div className="kpi">
+    <div className="kpi-head">
+      <span className="kpi-icon">{icon}</span>
+      <span className="kpi-label">{label}</span>
+    </div>
+    <div className="kpi-value">{value}</div>
+    <div className="kpi-foot">
+      {delta && <span className={`kpi-delta kpi-delta-${deltaTone || "up"}`}>{delta}</span>}
+      <span className="kpi-sub">{sub}</span>
+    </div>
+    {sparkline && (
+      <svg className="kpi-spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <path d={sparkline} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={sparkline + " L100 30 L0 30 Z"} fill="currentColor" opacity="0.08" />
+      </svg>
+    )}
+  </div>
+);
+
+const MatchRow = ({ job, onSelect, animDelay = 0 }) => {
+  const score = Math.round(job.match_score);
+  const gaps = job.skill_gaps ?? [];
+  return (
+    <motion.div
+      className={`match-row ${score >= 85 ? "match-hi" : ""}`}
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: animDelay, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ x: 4 }}
+      onClick={() => onSelect(job)}
+    >
+      <div className="match-logo"><Icons.IconBriefcase size={16} /></div>
+      <div className="match-meta">
+        <div className="match-role">{job.internships?.title}</div>
+        <div className="match-co">{job.internships?.company_name}</div>
+      </div>
+      <div className="match-skills">
+        {gaps.slice(0, 2).map((sg, i) => <span key={i} className="skill-chip skill-miss">{sg.skills?.name}</span>)}
+        {gaps.length > 2 && <span className="skill-chip">+{gaps.length - 2}</span>}
+      </div>
+      <div className="match-pct">
+        <div className="pct-ring">
+          <svg viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" className="ring-track" />
+            <motion.circle
+              cx="18" cy="18" r="15"
+              className="ring-fill"
+              initial={{ strokeDasharray: '0, 94.25' }}
+              animate={{ strokeDasharray: `${(score / 100) * 94.25}, 94.25` }}
+              transition={{ delay: animDelay + 0.2, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </svg>
+          <span className="pct-label">{score}<i>%</i></span>
+        </div>
+      </div>
+      <button className="match-cta"><Icons.IconArrowUpRight size={14} /></button>
+    </motion.div>
+  );
+};
+
+const detectSource = (url) => {
+  if (!url) return 'manual';
+  if (url.includes('linkedin.com')) return 'linkedin';
+  if (url.includes('jobstreet.com')) return 'jobstreet';
+  return 'manual';
+};
+
+const detectCategory = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('frontend') || t.includes('front-end') || t.includes('react') || t.includes('ui/ux')) return 'frontend';
+  if (t.includes('backend') || t.includes('back-end') || t.includes('api')) return 'backend';
+  if (t.includes('fullstack') || t.includes('full-stack') || t.includes('full stack')) return 'fullstack';
+  if (t.includes('devops') || t.includes('cloud') || t.includes('infrastructure')) return 'devops';
+  if (t.includes('data') || t.includes('machine learning') || t.includes('analyst')) return 'data';
+  return 'other';
+};
+
+const TRACKER_STATUS_BADGE = {
+  saved:     { label: 'Saved',     bg: 'rgba(100,116,139,0.15)', text: '#94a3b8', border: 'rgba(100,116,139,0.3)' },
+  applied:   { label: 'Applied',   bg: 'rgba(79,124,255,0.12)',  text: '#4f7cff', border: 'rgba(79,124,255,0.3)' },
+  interview: { label: 'Interview', bg: 'rgba(139,92,246,0.12)',  text: '#8b5cf6', border: 'rgba(139,92,246,0.3)' },
+  offer:     { label: 'Offer',     bg: 'rgba(52,211,153,0.12)',  text: '#34d399', border: 'rgba(52,211,153,0.3)' },
+  rejected:  { label: 'Rejected',  bg: 'rgba(248,113,113,0.12)', text: '#f87171', border: 'rgba(248,113,113,0.3)' },
+};
+
+const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }) => {
+  const score  = Math.round(job.match_score);
+  const gaps   = job.skill_gaps ?? [];
+  const co     = job.internships?.company_name || "Company";
+  const loc    = job.internships?.location || "Kuala Lumpur";
+  const tier   = score >= 90 ? "tier1" : score >= 75 ? "tier2" : "tier3";
+  const isSaved = job.applications && job.applications.length > 0;
+
+  const cardRef = useRef(null);
+  const glowRef = useRef(null);
+
+  /* Glow intensity by tier */
+  const glowAlpha = tier === 'tier1' ? 0.13 : tier === 'tier2' ? 0.09 : 0.06;
+
+  const handleMouseMove = (e) => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect || !glowRef.current) return;
+    const x = ((e.clientX - rect.left) / rect.width)  * 100;
+    const y = ((e.clientY - rect.top)  / rect.height) * 100;
+    glowRef.current.style.background =
+      `radial-gradient(300px circle at ${x}% ${y}%, rgba(79,124,255,${glowAlpha}), transparent 68%)`;
+  };
+  const showGlow = () => { if (glowRef.current) glowRef.current.style.opacity = '1'; };
+  const hideGlow = () => { if (glowRef.current) glowRef.current.style.opacity = '0'; };
+
+  return (
+    <motion.div
+      ref={cardRef}
+      className={`m-card m-card-${tier}`}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: animDelay, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -5 }}
+      style={{ willChange: 'transform' }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={showGlow}
+      onMouseLeave={hideGlow}
+      onClick={() => onSelect(job)}
+    >
+      {/* Mouse-follow ambient glow — no React re-renders, direct DOM */}
+      <div
+        ref={glowRef}
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0,
+          opacity: 0,
+          transition: 'opacity 0.28s ease',
+          pointerEvents: 'none',
+          borderRadius: 'inherit',
+          zIndex: 0,
+        }}
+      />
+
+      <div className="m-card-stripe" />
+      <div className="m-card-logo">{(co || "Co").split(" ").slice(0, 2).map(w => w ? w[0] : "").join("")}</div>
+      <div className="m-card-body">
+        <div className="m-card-row1">
+          <h3 className="m-card-role">{job.internships?.title}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {trackerStatus && TRACKER_STATUS_BADGE[trackerStatus] && (
+              <span style={{
+                padding: '3px 8px', borderRadius: 999, fontSize: 9, fontWeight: 700,
+                background: TRACKER_STATUS_BADGE[trackerStatus].bg,
+                color: TRACKER_STATUS_BADGE[trackerStatus].text,
+                border: `1px solid ${TRACKER_STATUS_BADGE[trackerStatus].border}`,
+                textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap',
+              }}>
+                {TRACKER_STATUS_BADGE[trackerStatus].label}
+              </span>
+            )}
+            <button
+              className={`m-save ${isSaved ? 'm-save-active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onToggleSave(job.internships?.id, isSaved); }}
+            >
+              {isSaved ? <Icons.IconStar size={15} fill="currentColor" /> : <Icons.IconStar size={15} />}
+            </button>
+          </div>
+        </div>
+        <div className="m-card-meta">
+          <span className="m-card-co">{co}</span>
+          <span className="m-card-dot">·</span>
+          <span>{loc}</span>
+          <span className="m-card-dot">·</span>
+          <span className="mono">RM 1,500 - 2,500/mo</span>
+          <span className="m-card-dot">·</span>
+          <span className="m-card-posted"><Icons.IconClock size={11} /> 2d ago</span>
+        </div>
+        <div className="m-card-skills">
+          <span className="m-card-skills-label">Missing</span>
+          {gaps.slice(0, 3).map((sg, i) => (
+            <span key={i} className="skill-chip skill-miss">{sg.skills?.name}</span>
+          ))}
+          {gaps.length > 3 && <span className="skill-chip skill-miss">+{gaps.length - 3}</span>}
+        </div>
+      </div>
+      <div className="m-card-score">
+        <div className="pct-ring pct-ring-lg">
+          <svg viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" className="ring-track" />
+            <motion.circle
+              cx="18" cy="18" r="15"
+              className="ring-fill"
+              initial={{ strokeDasharray: '0, 94.25' }}
+              animate={{ strokeDasharray: `${(score / 100) * 94.25}, 94.25` }}
+              transition={{ delay: animDelay + 0.28, duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </svg>
+          <span className="pct-label pct-label-lg">{score}<i>%</i></span>
+        </div>
+        <div className="m-card-score-label">match</div>
+      </div>
+      <div className="m-card-actions" onClick={(e) => e.stopPropagation()}>
+        <a href={job.internships?.apply_url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">
+          Apply <Icons.IconArrowUpRight size={12} />
+        </a>
+        <button className="btn btn-ghost btn-sm" onClick={() => onSelect(job)}>Details</button>
+      </div>
+      <div className="m-card-hint">Click for details →</div>
+    </motion.div>
+  );
+};
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [skillGaps, setSkillGaps] = useState([]);
+  const [avgScore, setAvgScore] = useState(0);
+  const [loadingMatches, setLoadingMatches] = useState(true);
+  const [filter, setFilter] = useState('All');
+  const [matchFilter, setMatchFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('Best match');
+  const { applications: trackerApps } = useApplications();
+  const { createApplication: createTrackerApp, deleteApplication: deleteTrackerApp } = useUpdateApplication();
+
+  useEffect(() => {
+    const userData = localStorage.getItem('fitflow_user');
+    if (userData && userData !== 'null' && userData !== 'undefined') {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+        navigate('/auth');
+      }
+    } else {
+      navigate('/auth');
+    }
+  }, [navigate]);
+
+  const fetchMatches = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        setMatches([{ id: 'error-auth', match_score: 0, internships: { title: "Auth Error", company_name: "No valid session found. Please logout and login again." } }]);
+        return;
+      }
+      
+      // 1. Fetch matches
+      const { data: matchesData, error: matchesErr } = await supabase
+        .from('matching_results')
+        .select(`
+          id,
+          match_score,
+          internships ( id, title, company_name, location, apply_url, description, created_at, internship_skills ( skills ( name ) ) ),
+          skill_gaps ( skills ( name ) )
+        `)
+        .eq('student_id', authUser.id)
+        .order('match_score', { ascending: false });
+
+      if (matchesErr) {
+        setMatches([{ id: 'error', match_score: 0, internships: { title: "Error", company_name: matchesErr.message } }]);
+        return;
+      }
+
+      // 2. Fetch saved applications
+      const { data: appsData, error: appsErr } = await supabase
+        .from('applications')
+        .select('internship_id, status')
+        .eq('student_id', authUser.id);
+
+      if (appsErr) throw appsErr;
+
+      if (matchesData) {
+        // Merge applications into matches
+        const enrichedMatches = matchesData.map(m => ({
+          ...m,
+          applications: appsData?.filter(a => a.internship_id === m.internships?.id) || []
+        }));
+
+        setMatches(enrichedMatches);
+        
+        if (enrichedMatches.length > 0) {
+          const sum = enrichedMatches.reduce((acc, curr) => acc + Number(curr.match_score), 0);
+          setAvgScore(Math.round(sum / enrichedMatches.length));
+          
+          const counts = {};
+          enrichedMatches.forEach(m => {
+            m.skill_gaps?.forEach(sg => {
+              const name = sg.skills?.name;
+              if (name) counts[name] = (counts[name] || 0) + 1;
+            });
+          });
+          
+          setSkillGaps(Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count })));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching matches:', err);
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && user.role === 'student') {
+      fetchMatches();
+    } else if (user) {
+      setLoadingMatches(false);
+    }
+  }, [user]);
+
+  const toggleSave = async (internshipId, isSaved) => {
+    setMatches(prev => prev.map(m =>
+      m.internships?.id === internshipId
+        ? { ...m, applications: isSaved ? [] : [{ status: 'interested' }] }
+        : m
+    ));
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const match = matches.find(m => m.internships?.id === internshipId);
+      const internship = match?.internships;
+      const company = internship?.company_name?.toLowerCase().trim();
+      const title = internship?.title?.toLowerCase().trim();
+
+      if (isSaved) {
+        await supabase.from('applications')
+          .delete()
+          .eq('student_id', authUser.id)
+          .eq('internship_id', internshipId);
+
+        // Remove tracker entry only if still in 'saved' stage (preserve applied/interview/offer)
+        const trackerEntry = trackerApps.find(a =>
+          a.company_name?.toLowerCase().trim() === company &&
+          a.role_title?.toLowerCase().trim() === title &&
+          a.stage === 'saved'
+        );
+        if (trackerEntry) await deleteTrackerApp(trackerEntry.id);
+      } else {
+        await supabase.from('applications').upsert({
+          student_id: authUser.id,
+          internship_id: internshipId,
+          status: 'interested',
+        });
+
+        // Mirror into tracker_applications if not already tracked
+        const alreadyTracked = trackerApps.find(a =>
+          a.company_name?.toLowerCase().trim() === company &&
+          a.role_title?.toLowerCase().trim() === title
+        );
+        if (!alreadyTracked && internship) {
+          const allSkills = internship.internship_skills?.map(s => s.skills?.name).filter(Boolean) || [];
+          const missing = match?.skill_gaps?.map(g => g.skills?.name).filter(Boolean) || [];
+          const matched = allSkills.filter(s => !missing.includes(s));
+          await createTrackerApp({
+            company_name:   internship.company_name || 'Unknown',
+            role_title:     internship.title || 'Unknown',
+            role_category:  detectCategory(internship.title),
+            job_source:     detectSource(internship.apply_url),
+            source_url:     internship.apply_url || null,
+            match_score:    Math.round(match?.match_score || 0),
+            matched_skills: matched,
+            missing_skills: missing,
+            stage:          'saved',
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling save:', err);
+      fetchMatches();
+    }
+  };
+
+  const handleLogout = async () => {
+    localStorage.removeItem('fitflow_user');
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const getApplicationStatus = useCallback((match) => {
+    const company = match.internships?.company_name?.toLowerCase().trim();
+    const title = match.internships?.title?.toLowerCase().trim();
+    const found = trackerApps.find(a =>
+      a.company_name?.toLowerCase().trim() === company &&
+      a.role_title?.toLowerCase().trim() === title
+    );
+    return found?.stage || null;
+  }, [trackerApps]);
+
+  const countByFilter = (f) => {
+    if (f === 'all') return matches.length;
+    return matches.filter(m => {
+      const s = getApplicationStatus(m);
+      if (f === 'not_applied') return !s || s === 'saved';
+      if (f === 'applied') return s === 'applied';
+      if (f === 'interviewing') return s === 'interview';
+      if (f === 'offers') return s === 'offer';
+      return true;
+    }).length;
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="dashboard">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'var(--surface-2)',
+            color: 'var(--text)',
+            border: '1px solid var(--border-strong)',
+            fontSize: 13,
+          },
+          success: { iconTheme: { primary: '#34d399', secondary: '#07090f' } },
+          error:   { iconTheme: { primary: '#f87171', secondary: '#07090f' } },
+        }}
+      />
+      <Sidebar active={activeTab} setActive={setActiveTab} user={user} onLogout={handleLogout} />
+      
+      <main className="main">
+        <Topbar />
+        <div className="main-scroll custom-scrollbar">
+          
+          <div className="page-head">
+            <div>
+              <h1 className="page-title">
+                {activeTab === 'overview' && 'Dashboard Overview'}
+                {activeTab === 'matches' && 'My Matches'}
+                {activeTab === 'skills' && 'Skill Profile'}
+                {activeTab === 'applications' && 'Applications'}
+                {activeTab === 'cv' && 'CV Analyzing'}
+                {activeTab === 'learning' && 'Learning Hub'}
+                {activeTab === 'settings' && 'Settings'}
+              </h1>
+              <p className="page-sub">
+                {activeTab === 'overview' && 'Track your internship matches and skill progression.'}
+                {activeTab === 'matches' && 'All internships ranked by compatibility with your skill profile.'}
+                {activeTab === 'applications' && 'Track every application you submit — on any platform.'}
+              </p>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
+              ← Back to landing
+            </button>
+          </div>
+
+          {activeTab === 'overview' && (
+            <div className="space-y-4">
+              <div className="grid-top">
+                <WelcomeCard user={user} skillGaps={skillGaps} onContinueSetup={() => setShowOnboarding(true)} />
+                <KpiCard
+                  icon={<Icons.IconStar size={14} />}
+                  label="Avg match score"
+                  value={loadingMatches ? '...' : `${avgScore}%`}
+                  delta="▲ 6 pts"
+                  deltaTone="up"
+                  sub="vs last week"
+                  sparkline="M0 22 L14 18 L28 20 L42 12 L56 14 L70 8 L84 10 L100 4"
+                />
+                <KpiCard
+                  icon={<Icons.IconBriefcase size={14} />}
+                  label="Saved roles"
+                  value="12"
+                  delta="▲ 4 new"
+                  deltaTone="up"
+                  sub="this week"
+                  sparkline="M0 24 L14 22 L28 16 L42 18 L56 12 L70 10 L84 14 L100 6"
+                />
+              </div>
+
+              <div className="grid-mid">
+                {/* Matches List Widget */}
+                <div className="card matches-card">
+                  <div className="card-head">
+                    <div>
+                      <div className="card-kicker"><Icons.IconTarget size={12} /> Highest match potential</div>
+                      <h3 className="card-title">Roles ranked for you</h3>
+                    </div>
+                    <div className="card-head-right">
+                      <button className="link-btn" onClick={() => setActiveTab('matches')}>See all <Icons.IconArrowRight size={12} /></button>
+                    </div>
+                  </div>
+                  <div className="matches-list">
+                    {loadingMatches ? (
+                      <p className="text-sm text-text-mute">Analyzing internship compatibility...</p>
+                    ) : matches.length === 0 ? (
+                      <p className="text-sm text-text-mute">No matches found. Check your skills profile!</p>
+                    ) : (
+                      matches.slice(0, 5).map((job, idx) => (
+                        <MatchRow key={idx} job={job} onSelect={setSelectedJob} animDelay={idx * 0.06} />
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Skill Gap Widget */}
+                <div className="card skill-gap">
+                  <div className="card-head">
+                    <div>
+                      <div className="card-kicker"><Icons.IconBolt size={12} /> Gap to top tier</div>
+                      <h3 className="card-title">Master these to unlock more roles</h3>
+                    </div>
+                  </div>
+                  <div className="gap-list">
+                    {loadingMatches ? (
+                      <p className="text-sm text-text-mute">Generating skill matrix...</p>
+                    ) : skillGaps.length === 0 ? (
+                      <p className="text-sm text-text-mute">Amazing! Your skills perfectly cover the required internships!</p>
+                    ) : (
+                      skillGaps.slice(0, 4).map((gap, idx) => (
+                        <div key={idx} className={`gap-row ${idx === 0 ? "gap-urgent" : ""}`}>
+                          <div className="gap-row-head">
+                            <span className="gap-name">{gap.name}</span>
+                            {idx === 0 && <span className="badge badge-urgent">High priority</span>}
+                            <span className="gap-pct">{gap.count}<i> matched roles</i></span>
+                          </div>
+                          <div className="gap-bar">
+                            <div className="gap-bar-target" style={{ width: '100%' }} />
+                            <div className={`gap-bar-fill ${idx === 0 ? "gap-bar-urgent" : ""}`} style={{ width: `${(gap.count / (matches.length || 1)) * 100}%` }} />
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid-bot">
+                {/* Activity Card */}
+                <div className="card activity">
+                  <div className="card-head">
+                    <div>
+                      <div className="card-kicker"><Icons.IconClock size={12} /> Recent</div>
+                      <h3 className="card-title">Application activity</h3>
+                    </div>
+                  </div>
+                  <ul className="activity-list">
+                    {[
+                      { t: "Interview scheduled", who: "Experian · Wed 11:00", tone: "ok", icon: <Icons.IconCheck size={12} /> },
+                      { t: "CV viewed", who: "foodpanda · 2h ago", tone: "info", icon: <Icons.IconUsers size={12} /> },
+                      { t: "Awaiting reply", who: "SEEK · 4d", tone: "wait", icon: <Icons.IconClock size={12} /> },
+                    ].map((a, i) => (
+                      <li key={i} className={`act-item act-${a.tone}`}>
+                        <span className="act-icon">{a.icon}</span>
+                        <span className="act-text">{a.t}</span>
+                        <span className="act-who">{a.who}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Learning Hub Widget */}
+                <div className="card learn-card">
+                  <div className="card-head">
+                    <div>
+                      <div className="card-kicker"><Icons.IconBook size={12} /> Recommended</div>
+                      <h3 className="card-title">Close your top gap</h3>
+                    </div>
+                  </div>
+                  <div className="learn-row">
+                    <div className="learn-thumb"><Icons.IconChip size={20} /></div>
+                    <div className="learn-meta">
+                      <div className="learn-title">{skillGaps.length > 0 ? `Master ${skillGaps[0].name}` : "Level up your tech stack"}</div>
+                      <div className="learn-tags">
+                        <span className="skill-chip"><Icons.IconClock size={10} style={{marginRight: 4}} /> 2h 30m</span>
+                        <span className="skill-chip skill-pos">Unlocks {skillGaps.length > 0 ? skillGaps[0].count : 10} roles</span>
+                      </div>
+                    </div>
+                    <button className="btn btn-primary btn-sm" onClick={() => setActiveTab('learning')}>Start <Icons.IconArrowRight size={12} /></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'matches' && (
+            <div className="matches-view">
+              <div className="m-stats">
+                <div className="m-stat">
+                  <div className="m-stat-num">{matches.length}</div>
+                  <div className="m-stat-lbl">Total Matches</div>
+                </div>
+                <div className="m-stat-sep" />
+                <div className="m-stat">
+                  <div className="m-stat-num">{avgScore}<i>%</i></div>
+                  <div className="m-stat-lbl">Avg Score</div>
+                </div>
+                <div className="m-stat-sep" />
+                <div className="m-stat">
+                  <div className="m-stat-num">{matches.filter(m => m.match_score >= 85).length}</div>
+                  <div className="m-stat-lbl">High Potential</div>
+                </div>
+                <div className="m-stat-sep" />
+                <div className="m-stat">
+                  <div className="m-stat-num">{matches.filter(m => m.applications && m.applications.length > 0).length}</div>
+                  <div className="m-stat-lbl">Saved</div>
+                </div>
+              </div>
+
+              <div className="m-toolbar">
+                <div className="m-filters">
+                  {[
+                    { id: 'all',         label: 'All Matches' },
+                    { id: 'not_applied', label: 'Not Applied' },
+                    { id: 'applied',     label: 'Applied' },
+                    { id: 'interviewing',label: 'Interviewing' },
+                    { id: 'offers',      label: 'Offers' },
+                  ].map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => setMatchFilter(id)}
+                      className={`m-filter ${matchFilter === id ? 'm-filter-on' : ''}`}
+                    >
+                      {label}
+                      <span className="m-filter-count">{countByFilter(id)}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="m-sort">
+                  <span className="m-sort-lbl">Sort by</span>
+                  <div className="sort-btns">
+                    {['Best match', 'Stipend', 'Newest'].map(s => (
+                      <button key={s} onClick={() => setSortBy(s)} className={`sort-btn ${sortBy === s ? 'active' : ''}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {loadingMatches ? (
+                <div className="m-list">
+                  {[1, 2, 3].map(i => <div key={i} className="m-card animate-pulse" style={{ height: '120px' }} />)}
+                </div>
+              ) : matches.length === 0 ? (
+                <div className="card text-center py-24">
+                  <Icons.IconTarget size={48} className="mx-auto mb-4 text-text-dim" />
+                  <h3 className="text-xl font-bold">No matches yet</h3>
+                  <p className="text-text-mute">Complete your profile to generate matches.</p>
+                </div>
+              ) : (
+                <div className="m-list">
+                  {matches
+                    .filter(m => {
+                      const s = getApplicationStatus(m);
+                      if (matchFilter === 'all') return true;
+                      if (matchFilter === 'not_applied') return !s || s === 'saved';
+                      if (matchFilter === 'applied') return s === 'applied';
+                      if (matchFilter === 'interviewing') return s === 'interview';
+                      if (matchFilter === 'offers') return s === 'offer';
+                      return true;
+                    })
+                    .map((job, idx) => (
+                      <MatchCard
+                        key={idx}
+                        job={job}
+                        onSelect={setSelectedJob}
+                        onToggleSave={toggleSave}
+                        animDelay={idx * 0.045}
+                        trackerStatus={getApplicationStatus(job)}
+                      />
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'applications' && (
+            <ApplicationsTab />
+          )}
+
+          {activeTab === 'cv' && (
+            <CVAnalyzerPage user={user} />
+          )}
+
+          {activeTab === 'skills' && (
+            <SkillProfileTab skillGaps={skillGaps} />
+          )}
+
+          {activeTab === 'learning' && (
+            <LearningHubTab skillGaps={skillGaps} />
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="card">
+              <h3 className="card-title mb-6">Account Settings</h3>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl border border-border">
+                  <div>
+                    <div className="font-bold">Dark Mode</div>
+                    <div className="text-xs text-text-mute">Use the Midnight theme across the app</div>
+                  </div>
+                  <div className="bg-accent px-4 py-1 rounded-full text-[10px] font-bold text-accent-text uppercase tracking-widest">Active</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      <AnimatePresence>
+        {showOnboarding && (
+          <OnboardingModal
+            user={user}
+            onClose={() => setShowOnboarding(false)}
+            onNavigate={(tab) => setActiveTab(tab)}
+            onComplete={(updatedUser, shouldClose = true) => {
+              setUser(updatedUser);
+              if (shouldClose) setShowOnboarding(false);
+            }}
+          />
+        )}
+
+        {selectedJob && (
+          <InternshipDetailsModal
+            job={selectedJob}
+            onClose={() => setSelectedJob(null)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default Dashboard;
