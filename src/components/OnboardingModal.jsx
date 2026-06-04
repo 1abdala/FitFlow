@@ -140,7 +140,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         
         const { id: _, ...safeData } = profileData;
         const updatedUser = { ...user, ...safeData, completion_percentage: 66 };
-        await supabase.from('users').update({ completion_percentage: 66 }).eq('id', user.id);
+        await supabase.from('users').upsert({ id: user.id, name: user.name, email: user.email, role: user.role, completion_percentage: 66 });
         
         onComplete(updatedUser, false);
         setStep(3);
@@ -168,8 +168,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         await supabase.from('coordinator_profiles').upsert({ id: authUser.id, staff_id: staffId, department, position, company_name: faculty });
       }
 
-      const syncPayload = { completion_percentage: 100, profile_completed: true };
-      await supabase.from('users').update(syncPayload).eq('id', user.id);
+      const syncPayload = { id: user.id, name: user.name, email: user.email, role: user.role, completion_percentage: 100, profile_completed: true };
+      await supabase.from('users').upsert(syncPayload);
       if (user.role === 'student') await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
 
       const updatedUser = { ...user, completion_percentage: 100, profile_completed: true };
