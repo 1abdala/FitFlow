@@ -366,13 +366,34 @@ const Dashboard = () => {
         .single();
         
       if (error || !dbUser) {
+        const role = session.user.user_metadata?.role || 'student';
+        const table = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+        
+        let isComplete = false;
+        let percentage = 20;
+
+        try {
+          const { data: profileData } = await supabase.from(table).select('*').eq('id', session.user.id).single();
+          if (profileData) {
+             if (role === 'student' && profileData.matric && profileData.faculty && profileData.programme) {
+                isComplete = true;
+                percentage = 100;
+             } else if (role !== 'student' && profileData.staff_id && profileData.department) {
+                isComplete = true;
+                percentage = 100;
+             } else if (profileData.phone && profileData.dob) {
+                percentage = 66;
+             }
+          }
+        } catch (e) {}
+
         const fallbackUser = {
           id: session.user.id,
           email: session.user.email,
           name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
-          role: session.user.user_metadata?.role || 'student',
-          profile_completed: false,
-          completion_percentage: 20
+          role: role,
+          profile_completed: isComplete,
+          completion_percentage: percentage
         };
         setUser(fallbackUser);
       } else {
