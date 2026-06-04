@@ -555,6 +555,13 @@ const Dashboard = () => {
     }).length;
   };
 
+  const savedRolesCount = trackerApps.length;
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const newSavedThisWeek = trackerApps.filter(app => new Date(app.created_at) >= oneWeekAgo).length;
+  const savedDelta = newSavedThisWeek > 0 ? `▲ ${newSavedThisWeek} new` : null;
+  const savedDeltaTone = newSavedThisWeek > 0 ? 'up' : 'neutral';
+
   if (!user) return null;
 
   return (
@@ -605,18 +612,18 @@ const Dashboard = () => {
                   icon={<Icons.IconStar size={14} />}
                   label="Avg match score"
                   value={loadingMatches ? '...' : `${avgScore}%`}
-                  delta="▲ 6 pts"
-                  deltaTone="up"
-                  sub="vs last week"
+                  delta={null}
+                  deltaTone="neutral"
+                  sub={null}
                   sparkline="M0 22 L14 18 L28 20 L42 12 L56 14 L70 8 L84 10 L100 4"
                 />
                 <KpiCard
                   icon={<Icons.IconBriefcase size={14} />}
                   label="Saved roles"
-                  value="12"
-                  delta="▲ 4 new"
-                  deltaTone="up"
-                  sub="this week"
+                  value={savedRolesCount.toString()}
+                  delta={savedDelta}
+                  deltaTone={savedDeltaTone}
+                  sub={savedDelta ? "this week" : null}
                   sparkline="M0 24 L14 22 L28 16 L42 18 L56 12 L70 10 L84 14 L100 6"
                 />
               </div>
