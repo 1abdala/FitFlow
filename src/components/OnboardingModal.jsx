@@ -95,8 +95,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [position, setPosition] = useState('');
 
   const faculties = {
-    'FTMK': ['Software Engineering', 'Artificial Intelligence', 'Game Technology', 'Data Science'],
-    'FKEKK': ['Electrical Engineering', 'Mechatronics'],
+    'FTMK': ['Software Engineering', 'Artificial Intelligence', 'Game Technology', 'Data Science', 'Cybersecurity', 'Computer Networking', 'Interactive Media'],
+    'FKEKK': ['Electrical Engineering', 'Mechatronics', 'Computer Engineering'],
     'FkP': ['Manufacturing Engineering', 'Robotics']
   };
 
