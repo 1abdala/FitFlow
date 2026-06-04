@@ -12,6 +12,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [wasCompleted] = useState(() => Number(user?.completion_percentage) === 100 || user?.profile_completed);
 
   useEffect(() => {
     if (Number(user?.completion_percentage) >= 66 && step < 3) {
@@ -442,30 +443,40 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                      </motion.div>
                      
                      <div className="max-w-xs mx-auto">
-                        <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-3xl font-bold mb-3">Profile Complete 🎉</motion.h2>
+                        <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-3xl font-bold mb-3">
+                          {wasCompleted ? 'Profile Updated' : 'Profile Complete'} 🎉
+                        </motion.h2>
                         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-text-mute text-sm">
-                          Your internship recommendations are now personalized to your profile.
+                          {wasCompleted ? 'Your profile changes have been saved successfully.' : 'Your internship recommendations are now personalized to your profile.'}
                         </motion.p>
                      </div>
 
-                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="w-full max-w-sm text-left bg-surface-2 border border-border rounded-2xl p-5 space-y-4 shadow-lg">
-                        <div className="flex items-center gap-3">
-                           <div className="bg-accent/20 text-accent p-1.5 rounded-md"><Icons.IconSparkle size={16} /></div>
-                           <span className="font-bold text-sm">Match Engine Activated</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <div className="bg-accent/20 text-accent p-1.5 rounded-md"><Icons.IconTarget size={16} /></div>
-                           <span className="font-bold text-sm">Skill Gap Analysis Ready</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <div className="bg-accent/20 text-accent p-1.5 rounded-md"><Icons.IconBook size={16} /></div>
-                           <span className="font-bold text-sm">Learning Hub Personalized</span>
-                        </div>
-                     </motion.div>
+                     {!wasCompleted && (
+                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="w-full max-w-sm text-left bg-surface-2 border border-border rounded-2xl p-5 space-y-4 shadow-lg">
+                          <div className="flex items-center gap-3">
+                             <div className="bg-accent/20 text-accent p-1.5 rounded-md"><Icons.IconSparkle size={16} /></div>
+                             <span className="font-bold text-sm">Match Engine Activated</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <div className="bg-accent/20 text-accent p-1.5 rounded-md"><Icons.IconTarget size={16} /></div>
+                             <span className="font-bold text-sm">Skill Gap Analysis Ready</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <div className="bg-accent/20 text-accent p-1.5 rounded-md"><Icons.IconBook size={16} /></div>
+                             <span className="font-bold text-sm">Learning Hub Personalized</span>
+                          </div>
+                       </motion.div>
+                     )}
 
-                     <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} onClick={() => { onNavigate?.('matches'); onClose(); }} className="btn btn-primary btn-lg w-full max-w-sm justify-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)] mt-4">
-                       View My Matches <Icons.IconArrowRight size={18} />
-                     </motion.button>
+                     {wasCompleted ? (
+                       <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} onClick={onClose} className="btn btn-primary btn-lg w-full max-w-sm justify-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)] mt-4">
+                         Close Settings
+                       </motion.button>
+                     ) : (
+                       <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} onClick={() => { onNavigate?.('matches'); onClose(); }} className="btn btn-primary btn-lg w-full max-w-sm justify-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)] mt-4">
+                         View My Matches <Icons.IconArrowRight size={18} />
+                       </motion.button>
+                     )}
                    </motion.div>
                  )}
               </AnimatePresence>
