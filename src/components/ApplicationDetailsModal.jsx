@@ -118,7 +118,7 @@ const ApplicationDetailsModal = ({ app, onClose, onUpdate, onDelete, updateAppli
           {/* Timeline */}
           <div className="idm-section">
             <div className="idm-section-head"><Icons.IconCalendar size={13} /> Timeline</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
               {[
                 { label: 'Saved',     value: fmt(app.saved_at) },
                 { label: 'Applied',   value: fmt(app.applied_at) },
@@ -149,7 +149,7 @@ const ApplicationDetailsModal = ({ app, onClose, onUpdate, onDelete, updateAppli
                 </div>
               </div>
               {(app.matched_skills?.length > 0 || app.missing_skills?.length > 0) && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginTop: 10 }}>
                   {app.matched_skills?.length > 0 && (
                     <div>
                       <div style={{ fontSize: 10, color: '#34d399', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Matched</div>
@@ -226,7 +226,7 @@ const ApplicationDetailsModal = ({ app, onClose, onUpdate, onDelete, updateAppli
           </div>
 
           {/* Footer actions */}
-          <div className="idm-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+          <div className="idm-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, paddingTop: 8 }}>
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}

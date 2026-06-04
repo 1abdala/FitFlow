@@ -131,7 +131,7 @@ const ApplicationCard = ({ app, isExpanded, onToggle, onStageChange, updatingId,
               {/* Stage buttons */}
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Move to stage</div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 6 }}>
                   {STAGES.map(stage => (
                     <ActionButton
                       key={stage}
@@ -201,14 +201,24 @@ const MobileApplicationsList = ({ applications, setApplications, updateApplicati
   return (
     <>
       {/* Filter + Sort toolbar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center', minWidth: 0 }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: 6, 
+          flex: 1, 
+          overflowX: 'auto', 
+          flexWrap: 'nowrap',
+          paddingBottom: 4,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch'
+        }} className="no-scrollbar">
           {FILTER_STAGES.map(f => (
             <button
               key={f}
               onClick={() => setFilterStage(f)}
               className={`m-filter ${filterStage === f ? 'm-filter-on' : ''}`}
-              style={{ padding: '5px 11px', fontSize: 12 }}
+              style={{ padding: '6px 12px', fontSize: 12, flexShrink: 0 }}
             >{f}</button>
           ))}
         </div>

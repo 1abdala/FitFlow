@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import * as Icons from './Icons';
 
 /* Observes an element and adds 'reveal-in' when it enters the viewport.
@@ -66,32 +66,35 @@ const StepCard = ({ n, t, d, icon, delay = 0 }) => {
 
 
 
-const HeroVisual = () => (
-  <div className="hero-visual-container">
-    {/* The 3D Mascot Character - Animate dynamically with Framer Motion */}
-    <motion.div 
-      className="hero-character-wrapper"
-      animate={{
-        y: [-12, 12, -12],
-        rotate: [-1.2, 1.2, -1.2]
-      }}
-      transition={{
-        y: {
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut"
-        },
-        rotate: {
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }
-      }}
+const HeroVisual = () => {
+  return (
+    <div 
+      className="hero-visual-container"
+      style={{ perspective: 1200 }}
     >
-      <img src="/character.png" alt="FitFlow AI Guide" className="hero-character-img" />
-    </motion.div>
-  </div>
-);
+      <motion.div 
+        className="hero-character-wrapper"
+        style={{
+          transformStyle: "preserve-3d"
+        }}
+      >
+        <motion.div
+          style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-end", alignItems: "center" }}
+          animate={{
+            y: [-12, 12, -12],
+            rotate: [-1.2, 1.2, -1.2]
+          }}
+          transition={{
+            y: { duration: 6, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+          }}
+        >
+          <img src="/utem-student-3d.png" alt="FitFlow AI Guide" className="hero-character-img" />
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
 
 const LandingPage = () => {
   const navigate = useNavigate();

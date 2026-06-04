@@ -25,16 +25,25 @@ export function useApplications() {
   }, []);
 
   useEffect(() => {
+    let active = true;
     let channel;
 
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!user) {
+        if (active) setLoading(false);
+        return;
+      }
+      
+      if (!active) return;
       setUserId(user.id);
       await fetchApplications(user.id);
 
+      if (!active) return;
+
+      const channelName = `tracker_apps_${user.id}_${Date.now()}`;
       channel = supabase
-        .channel('tracker_apps_' + user.id)
+        .channel(channelName)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
@@ -52,12 +61,19 @@ export function useApplications() {
           } else if (eventType === 'DELETE') {
             setApplications(prev => prev.filter(a => a.id !== old.id));
           }
-        })
-        .subscribe();
+        });
+
+      channel.subscribe();
     };
 
     init();
-    return () => { if (channel) supabase.removeChannel(channel); };
+
+    return () => {
+      active = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [fetchApplications]);
 
   const refetch = useCallback(() => {

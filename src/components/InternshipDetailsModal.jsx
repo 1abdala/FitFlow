@@ -5,6 +5,7 @@ import * as Icons from './Icons';
 import LogApplicationModal from './LogApplicationModal';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
 import { useApplications } from '../hooks/useApplications';
+import { supabase } from '../lib/supabase';
 
 const detectSource = (url) => {
   if (!url) return 'manual';
@@ -153,7 +154,15 @@ const InternshipDetailsModal = ({ job, onClose }) => {
     if (loadingSummary) return;
     setLoadingSummary(true);
     try {
-      const response = await fetch(`/api/internship/${internships.id}/summary`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await fetch(`${apiBase}/api/internship/${internships.id}/summary`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch summary');
       const data = await response.json();
       setSummary(data.summary);

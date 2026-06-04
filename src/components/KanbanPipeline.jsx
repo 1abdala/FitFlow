@@ -58,20 +58,23 @@ const CardContent = ({ app, dim = false }) => (
       )}
     </div>
 
-    {app.missing_skills?.length > 0 && (
-      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-        {app.missing_skills.slice(0, 2).map(s => (
-          <span key={s} className="skill-chip skill-miss" style={{ fontSize: 9, padding: '2px 5px' }}>{s}</span>
-        ))}
-        {app.missing_skills.length > 2 && (
-          <span className="skill-chip" style={{ fontSize: 9, padding: '2px 5px' }}>+{app.missing_skills.length - 2}</span>
-        )}
+    {app.missing_skills?.length > 0 ? (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+        <span className="skill-chip skill-miss" style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}>
+          {app.missing_skills[0]}
+        </span>
       </div>
-    )}
+    ) : app.matched_skills?.length > 0 ? (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+        <span className="skill-chip" style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(52,211,153,0.1)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)' }}>
+          {app.matched_skills[0]}
+        </span>
+      </div>
+    ) : null}
 
     {(app.applied_at || app.saved_at) && (
-      <div style={{ fontSize: 9, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 3 }}>
-        <Icons.IconClock size={9} />
+      <div style={{ fontSize: 10, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+        <Icons.IconClock size={10} />
         {fmt(app.applied_at || app.saved_at)}
       </div>
     )}
@@ -87,10 +90,26 @@ const DraggableCard = ({ app, onClick }) => {
       ref={setNodeRef}
       style={{
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        opacity: isDragging ? 0.25 : 1,
+        padding: 0, borderRadius: 12,
+        background: 'var(--surface-2)', border: '1px solid var(--border)',
+        opacity: isDragging ? 0.5 : 1,
         cursor: isDragging ? 'grabbing' : 'grab',
-        touchAction: 'none',
-        transition: isDragging ? undefined : 'opacity 0.15s',
+        position: 'relative',
+        transition: isDragging ? undefined : 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.transform = 'translateY(-3px)';
+          e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(0,0,0,0.5)';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'var(--border)';
+        }
       }}
       {...listeners}
       {...attributes}
@@ -107,8 +126,7 @@ const KanbanColumn = ({ stage, apps, onCardClick }) => {
 
   return (
     <div style={{
-      width: 272, flexShrink: 0,
-      display: 'flex', flexDirection: 'column',
+      display: 'flex', flexDirection: 'column', height: '100%',
       background: isOver ? 'rgba(79,124,255,0.04)' : 'var(--surface)',
       border: `1px solid ${isOver ? 'rgba(79,124,255,0.35)' : 'var(--border)'}`,
       borderRadius: 14, overflow: 'hidden',
@@ -116,41 +134,66 @@ const KanbanColumn = ({ stage, apps, onCardClick }) => {
     }}>
       {/* Column header */}
       <div style={{
-        padding: '13px 14px', borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)',
+        padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(12px)',
+        position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <span style={{ width: 9, height: 9, borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{stage.label}</span>
-        <span style={{
-          fontSize: 10, padding: '2px 8px', borderRadius: 999,
-          background: apps.length > 0 ? stage.color + '18' : 'var(--surface-2)',
-          color: apps.length > 0 ? stage.color : 'var(--text-dim)',
-          fontWeight: 700, minWidth: 20, textAlign: 'center',
-        }}>{apps.length}</span>
+        <span style={{ color: stage.color, fontSize: 14 }}>●</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1, letterSpacing: '0.02em' }}>{stage.label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-dim)' }}>{apps.length}</span>
       </div>
 
       {/* Drop zone + cards */}
       <div
         ref={setNodeRef}
+        className="no-scrollbar"
         style={{
-          flex: 1, padding: 10, display: 'flex', flexDirection: 'column', gap: 7,
-          overflowY: 'auto', minHeight: 120,
+          flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
+          overflowY: 'auto',
         }}
       >
         {apps.length === 0 ? (
           <div style={{
-            flex: 1, display: 'grid', placeItems: 'center',
-            fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '24px 8px',
-            border: `1px dashed ${isOver ? stage.color + '60' : 'var(--border)'}`,
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', padding: '32px 16px',
+            border: `1px dashed ${isOver ? stage.color + '60' : 'rgba(255,255,255,0.05)'}`,
             borderRadius: 10, transition: 'border-color 0.15s',
           }}>
-            Drop here
+            {stage.id === 'interview' ? (
+              <>
+                <Icons.IconCalendar size={24} style={{ color: 'var(--text-dim)', marginBottom: 8 }} />
+                <span style={{ fontWeight: 600, color: 'var(--text-mute)' }}>No applications yet</span>
+                <span style={{ fontSize: 11, lineHeight: 1.4, marginTop: 4 }}>Drag applications here<br/>when you schedule<br/>an interview.</span>
+              </>
+            ) : stage.id === 'offer' ? (
+              <>
+                <Icons.IconBriefcase size={24} style={{ color: 'var(--text-dim)', marginBottom: 8 }} />
+                <span style={{ fontWeight: 600, color: 'var(--text-mute)' }}>No offers yet</span>
+                <span style={{ fontSize: 11, lineHeight: 1.4, marginTop: 4 }}>Keep going! Your<br/>offer will appear<br/>here.</span>
+              </>
+            ) : stage.id === 'rejected' ? (
+              <>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <Icons.IconArrowRight size={12} style={{ color: 'var(--text-dim)', transform: 'rotate(45deg)' }} />
+                </div>
+                <span style={{ fontWeight: 600, color: 'var(--text-mute)' }}>No rejected yet</span>
+                <span style={{ fontSize: 11, lineHeight: 1.4, marginTop: 4 }}>Every application<br/>is a step forward.</span>
+              </>
+            ) : (
+              'Drop here'
+            )}
           </div>
         ) : (
           apps.map(app => (
             <DraggableCard key={app.id} app={app} onClick={() => onCardClick(app)} />
           ))
         )}
+      </div>
+      <div style={{ padding: '12px 0', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+        <button className="btn-ghost" style={{ fontSize: 11, color: 'var(--text-mute)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+          + Add application
+        </button>
       </div>
     </div>
   );
@@ -196,7 +239,7 @@ const KanbanPipeline = ({ applications, setApplications, updateApplication }) =>
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 480 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12, height: '100%' }}>
           {STAGES.map(stage => (
             <KanbanColumn
               key={stage.id}

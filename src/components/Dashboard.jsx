@@ -27,7 +27,7 @@ const NavItem = ({ icon, label, active, badge, onClick }) => (
   </button>
 );
 
-const Sidebar = ({ active, setActive, user, onLogout }) => {
+const Sidebar = ({ active, setActive, user, onLogout, onBack }) => {
   const items = [
     { id: "overview", icon: <Icons.IconGrid size={18} />, label: "Overview" },
     { id: "matches", icon: <Icons.IconTarget size={18} />, label: "My Matches", badge: null }, // Badge will be updated via props if needed
@@ -351,19 +351,42 @@ const Dashboard = () => {
   const { applications: trackerApps } = useApplications();
   const { createApplication: createTrackerApp, deleteApplication: deleteTrackerApp } = useUpdateApplication();
 
-  useEffect(() => {
-    const userData = localStorage.getItem('fitflow_user');
-    if (userData && userData !== 'null' && userData !== 'undefined') {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error("Failed to parse user data", e);
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) {
         navigate('/auth');
+        return;
       }
-    } else {
+      
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (error || !dbUser) {
+        const fallbackUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+          role: session.user.user_metadata?.role || 'student',
+          profile_completed: false,
+          completion_percentage: 20
+        };
+        setUser(fallbackUser);
+      } else {
+        setUser(dbUser);
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
       navigate('/auth');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
 
   const fetchMatches = async () => {
     try {
@@ -383,7 +406,8 @@ const Dashboard = () => {
           skill_gaps ( skills ( name ) )
         `)
         .eq('student_id', authUser.id)
-        .order('match_score', { ascending: false });
+        .order('match_score', { ascending: false })
+        .limit(50);
 
       if (matchesErr) {
         setMatches([{ id: 'error', match_score: 0, internships: { title: "Error", company_name: matchesErr.message } }]);
@@ -548,7 +572,7 @@ const Dashboard = () => {
           error:   { iconTheme: { primary: '#f87171', secondary: '#07090f' } },
         }}
       />
-      <Sidebar active={activeTab} setActive={setActiveTab} user={user} onLogout={handleLogout} />
+      <Sidebar active={activeTab} setActive={setActiveTab} user={user} onLogout={handleLogout} onBack={() => navigate('/')} />
       
       <main className="main">
         <Topbar />
@@ -571,9 +595,6 @@ const Dashboard = () => {
                 {activeTab === 'applications' && 'Track every application you submit — on any platform.'}
               </p>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
-              ← Back to landing
-            </button>
           </div>
 
           {activeTab === 'overview' && (
@@ -802,7 +823,7 @@ const Dashboard = () => {
           )}
 
           {activeTab === 'cv' && (
-            <CVAnalyzerPage user={user} />
+            <CVAnalyzerPage user={user} onUserUpdate={fetchUserProfile} />
           )}
 
           {activeTab === 'skills' && (

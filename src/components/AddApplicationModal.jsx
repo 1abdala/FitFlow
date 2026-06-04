@@ -151,7 +151,7 @@ const AddApplicationModal = ({ onClose, onAdded, createApplication }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             <Field label="Company Name *" error={errors.company_name}>
               <input ref={firstRef} {...inputProps('company_name')} placeholder="e.g. Grab, Maybank" />
             </Field>
@@ -160,7 +160,7 @@ const AddApplicationModal = ({ onClose, onAdded, createApplication }) => {
             </Field>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             <Field label="Category">
               <select {...inputProps('role_category')} style={{ ...fieldStyle, cursor: 'pointer' }}>
                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -194,7 +194,7 @@ const AddApplicationModal = ({ onClose, onAdded, createApplication }) => {
             </div>
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             <Field label="Matched Skills">
               <input {...inputProps('matched_skills')} placeholder="React, Node.js, SQL (comma-separated)" />
             </Field>

@@ -33,6 +33,7 @@ const Skeleton = () => (
 
 const ApplicationsTab = () => {
   const isDesktop = useMediaQuery('(min-width: 1200px)');
+  const isLargeDesktop = useMediaQuery('(min-width: 1400px)');
   const [showAddModal, setShowAddModal] = useState(false);
 
   const { applications, loading, error, setApplications } = useApplications();
@@ -48,30 +49,16 @@ const ApplicationsTab = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, height: '100%' }}>
       {/* Tab toolbar */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 20, flexWrap: 'wrap', gap: 10,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        marginBottom: 16, gap: 16,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-mute)' }}>
-            {applications.length} application{applications.length !== 1 ? 's' : ''}
-          </span>
-          {!isDesktop && (
-            <span style={{
-              fontSize: 10, padding: '3px 8px', borderRadius: 999,
-              background: 'var(--surface-2)', color: 'var(--text-dim)',
-              border: '1px solid var(--border)',
-            }}>List view</span>
-          )}
-          {isDesktop && (
-            <span style={{
-              fontSize: 10, padding: '3px 8px', borderRadius: 999,
-              background: 'var(--accent-soft)', color: 'var(--accent)',
-              border: '1px solid rgba(79,124,255,0.25)',
-            }}>Kanban · drag to move</span>
-          )}
-        </div>
-        <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm">
-          <Icons.IconPlus size={14} /> Add Application
+        {isDesktop && (
+          <button className="btn btn-ghost" style={{ pointerEvents: 'none', fontSize: 14, fontWeight: 600 }}>
+            Kanban View
+          </button>
+        )}
+        <button onClick={() => setShowAddModal(true)} className="btn btn-primary" style={{ fontSize: 14, fontWeight: 600 }}>
+          <Icons.IconPlus size={16} style={{ marginRight: 6 }} /> Add Application
         </button>
       </div>
 
@@ -88,13 +75,13 @@ const ApplicationsTab = () => {
       {/* Main layout */}
       {isDesktop ? (
         /* Desktop: Kanban + Intelligence side-by-side */
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', minHeight: 0 }}>
-          <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'stretch', flex: 1, minHeight: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', paddingBottom: 16 }}>
             {loading ? (
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 16 }}>
                 {[1, 2, 3, 4, 5].map(i => (
                   <div key={i} className="animate-pulse" style={{
-                    width: 272, flexShrink: 0, height: 320, borderRadius: 14,
+                    flex: 1, minWidth: 200, height: 320, borderRadius: 14,
                     background: 'var(--surface)', border: '1px solid var(--border)',
                   }} />
                 ))}
@@ -107,9 +94,9 @@ const ApplicationsTab = () => {
               />
             )}
           </div>
-          <div style={{ width: 300, flexShrink: 0, position: 'sticky', top: 0 }}>
+          <div style={{ width: isLargeDesktop ? 320 : 280, flexShrink: 0, position: 'sticky', top: 24 }}>
             <div style={{
-              padding: 18, background: 'var(--surface)', border: '1px solid var(--border)',
+              padding: 20, background: 'var(--surface)', border: '1px solid var(--border)',
               borderRadius: 16,
             }}>
               <ApplicationsIntelligence applications={applications} />

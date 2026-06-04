@@ -129,23 +129,22 @@ const ApplicationsIntelligence = ({ applications }) => {
 
       {/* Pipeline bar */}
       <div style={{ padding: '14px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-        <div style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 10 }}>Pipeline</div>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-          {Object.entries(stageCounts).map(([stage, count]) => (
-            <div key={stage} style={{ flex: 1 }}>
-              <div style={{
-                height: 6, borderRadius: 999,
-                background: count > 0 ? STAGE_COLORS[stage] : 'var(--surface-3)',
-                marginBottom: 4,
-              }} />
-              <div style={{ fontSize: 11, color: 'var(--text-mute)', textAlign: 'center', fontWeight: 700 }}>{count}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {Object.keys(stageCounts).map(stage => (
-            <div key={stage} style={{ flex: 1, fontSize: 9, color: 'var(--text-dim)', textAlign: 'center', textTransform: 'capitalize' }}>{stage}</div>
-          ))}
+        <div style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 12 }}>Pipeline</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {Object.entries(stageCounts).map(([stage, count]) => {
+            const widthPct = total > 0 ? Math.max((count / total) * 100, 2) : 0;
+            return (
+              <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 60, fontSize: 11, color: count > 0 ? 'var(--text)' : 'var(--text-dim)', textTransform: 'capitalize' }}>{stage}</div>
+                <div style={{ flex: 1, height: 6, background: 'var(--surface-3)', borderRadius: 999, overflow: 'hidden' }}>
+                  {count > 0 && (
+                    <div style={{ width: `${widthPct}%`, height: '100%', background: STAGE_COLORS[stage], borderRadius: 999 }} />
+                  )}
+                </div>
+                <div style={{ width: 16, fontSize: 11, color: 'var(--text-mute)', textAlign: 'right', fontWeight: 700 }}>{count > 0 ? count : ''}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

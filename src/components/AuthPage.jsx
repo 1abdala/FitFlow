@@ -60,7 +60,6 @@ const AuthPage = () => {
           await supabase.from('users').insert([existingUser]);
         }
         
-        localStorage.setItem('fitflow_user', JSON.stringify(existingUser));
         navigate('/dashboard');
       } catch (err) { 
         console.error(err); 
@@ -93,8 +92,7 @@ const AuthPage = () => {
       const { data, error } = await supabase.auth.verifyOtp({ email, token, type: isForgotPassword ? 'recovery' : 'signup' });
       if (error) throw error;
       if (isForgotPassword) { setIsVerifying(false); setForgotStep(3); setOtp(['', '', '', '', '', '', '', '']); return; }
-      const { data: userData, error: insertError } = await supabase.from('users').insert([{ id: data.user.id, name, email, role }]).select().single();
-      localStorage.setItem('fitflow_user', JSON.stringify(userData || data.user));
+      await supabase.from('users').insert([{ id: data.user.id, name, email, role }]);
       navigate('/dashboard');
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
@@ -122,7 +120,6 @@ const AuthPage = () => {
           };
         }
         
-        localStorage.setItem('fitflow_user', JSON.stringify(data));
         navigate('/dashboard');
       } else {
         const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: role } } });
@@ -206,7 +203,7 @@ const AuthPage = () => {
                     }} className="otp-input" />
                   ))}
                 </div>
-                {error && <div className="auth-err"><Icons.IconAlert size={14} /> {error}</div>}
+                {error && <div className="auth-err"><Icons.IconAlertCircle size={14} /> {error}</div>}
                 <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center">
                   {loading ? 'Verifying...' : 'Verify account'}
                 </button>
@@ -234,7 +231,7 @@ const AuthPage = () => {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {error && <div className="auth-err"><Icons.IconAlert size={14} /> {error}</div>}
+                {error && <div className="auth-err"><Icons.IconAlertCircle size={14} /> {error}</div>}
                 
                 {!isLogin && (
                   <div className="input-group">

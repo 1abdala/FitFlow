@@ -139,7 +139,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         const updatedUser = { ...user, ...safeData, completion_percentage: 33 };
         await supabase.from('users').update({ completion_percentage: 33 }).eq('id', user.id);
         
-        localStorage.setItem('fitflow_user', JSON.stringify(updatedUser));
         onComplete(updatedUser, false);
         setStep(3);
       } catch (err) {
@@ -171,7 +170,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
       if (user.role === 'student') await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
 
       const updatedUser = { ...user, completion_percentage: 100, profile_completed: true };
-      localStorage.setItem('fitflow_user', JSON.stringify(updatedUser));
       onComplete(updatedUser, false);
       setStep(4);
     } catch (err) {

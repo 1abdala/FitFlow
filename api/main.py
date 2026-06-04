@@ -3,6 +3,9 @@ import json
 import io
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -18,10 +21,28 @@ GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
 app = FastAPI()
 
+# Setup API Rate Limiter to protect Gemini API quota
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+def get_user_id_from_token(auth_header: str, supabase_client: Client) -> str:
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = auth_header.replace("Bearer ", "")
+    try:
+        # Verify token against Supabase auth to fetch user
+        user_resp = supabase_client.auth.get_user(token)
+        if not user_resp or not user_resp.user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return user_resp.user.id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -36,13 +57,12 @@ if GEMINI_KEY:
 
 SUMMARY_SYSTEM = (
     "You are a career-coach assistant for FitFlow, an internship matching platform. "
-    "Summarise the given internship description in 3-4 concise bullet points. "
-    "Highlight: 1. Key Responsibilities, 2. Top Required Tech Skills, 3. Unique Benefits or Requirements. "
-    "End with one sentence of 'Pro Tip' for the student. "
-    "Be professional, encouraging, and very concise. Use emojis sparingly."
+    "Please summarize the given internship description into two short, concise sections: "
+    "'About the role' and 'What you'll be doing'. "
+    "Keep it highly professional, clear, and very concise without any extra fluff."
 )
 
-MODEL = "gemini-2.0-flash-lite"
+MODEL = "gemini-2.5-flash"
 
 
 class SummaryResponse(BaseModel):
@@ -51,12 +71,22 @@ class SummaryResponse(BaseModel):
 
 
 @app.get("/internship/{internship_id}/summary")
-async def get_summary(internship_id: str, request: Request):
+@limiter.limit("15/minute")
+async def get_summary(request: Request, internship_id: str):
     print(f"DEBUG: Received summary request for ID: {internship_id}")
 
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase or not gemini_client:
         raise HTTPException(status_code=500, detail="Backend not fully configured (missing API keys)")
+
+    # Enforce valid authentication token
+    auth_header = request.headers.get("Authorization")
+    get_user_id_from_token(auth_header, supabase)
+    
+    # Apply the auth token to database client for RLS context
+    if auth_header:
+        token = auth_header.replace("Bearer ", "")
+        supabase.postgrest.auth(token)
 
     try:
         resp = supabase.table("internships").select("*").eq("id", internship_id).single().execute()
@@ -82,7 +112,7 @@ async def get_summary(internship_id: str, request: Request):
             print("DEBUG: Gemini summary generated successfully.")
         except Exception as e:
             print(f"DEBUG: Gemini API failed: {str(e)}. Using fallback summary.")
-            summary_text = f"• Key Role: {title} at {company}\n• Required Skills: Relevant technical skills for the role.\n• Benefits: Standard company benefits and learning opportunities.\n\nPro Tip: Customize your CV to match the required skills for this role."
+            summary_text = f"About the role:\nThis is a {title} position at {company}.\n\nWhat you'll be doing:\nYou will be expected to utilize your technical skills to contribute to the team's ongoing projects."
 
         return {"internship_id": internship_id, "summary": summary_text}
 
@@ -94,28 +124,48 @@ async def get_summary(internship_id: str, request: Request):
 
 
 @app.post("/analyze-cv")
+@limiter.limit("5/minute")
 async def analyze_cv(request: Request, student_id: str = Form(...), file: UploadFile = File(...)):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase or not gemini_client:
         raise HTTPException(status_code=500, detail="Backend not fully configured")
 
+    # Secure endpoint by verifying authorization token and enforcing student_id matches token user
     auth_header = request.headers.get("Authorization")
-    if auth_header:
-        token = auth_header.replace("Bearer ", "")
-        supabase.postgrest.auth(token)
+    authenticated_user_id = get_user_id_from_token(auth_header, supabase)
+    
+    if authenticated_user_id != student_id:
+        raise HTTPException(status_code=403, detail="Forbidden: You can only analyze your own CV.")
+
+    # Apply the auth token to database client for RLS context
+    token = auth_header.replace("Bearer ", "")
+    supabase.postgrest.auth(token)
 
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
+    # Enforce file size limit (5MB)
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
     # Parse PDF
     try:
         content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="File size exceeds the 5MB limit.")
         pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
         text = ""
         for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        
+        print(f"DEBUG: Extracted {len(text)} characters from PDF")
+        if len(text.strip()) < 50:
+            raise HTTPException(status_code=400, detail="Could not extract enough text from this PDF. It might be an image-based PDF. Please try a text-based PDF.")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse PDF: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to parse PDF file. Ensure it is a valid non-corrupted PDF.")
 
     # Call Gemini for analysis
     cv_prompt = f"""You are an expert tech recruiter and career coach. Analyze this student's CV text.
