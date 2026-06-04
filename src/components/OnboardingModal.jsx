@@ -183,12 +183,12 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }} />
       
-      <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative w-full max-w-5xl bg-surface border border-border shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative w-full max-w-5xl border border-border rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]" style={{ background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', boxShadow: '0 0 80px rgba(var(--accent-rgb), 0.15), 0 20px 80px rgba(0,0,0,0.45)' }}>
         
         {/* SIDEBAR - CONTEXT & MOTIVATION */}
-        <div className="hidden md:flex w-1/3 bg-surface border-r border-border p-8 flex-col justify-between relative overflow-hidden">
+        <div className="hidden md:flex w-1/3 border-r border-border p-8 flex-col justify-between relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
            {/* glow effect */}
            <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
            
@@ -253,8 +253,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         </div>
 
         {/* RIGHT SIDE - FORM CONTENT */}
-        <div className="w-full md:w-2/3 flex flex-col bg-surface relative">
-           <div className="p-6 sm:px-10 sm:py-6 border-b border-border flex justify-between items-center bg-surface/80 backdrop-blur-md sticky top-0 z-30">
+        <div className="w-full md:w-2/3 flex flex-col bg-transparent relative">
+           <div className="p-6 sm:px-10 sm:py-6 border-b border-border flex justify-between items-center bg-transparent sticky top-0 z-30">
               <div>
                  <p className="text-xs font-bold text-accent mb-1 uppercase tracking-wider">
                    {step === 2 ? 'Step 1 of 2' : step === 3 ? 'Step 2 of 2' : 'Setup Complete'}
@@ -473,7 +473,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
 
            {/* Bottom Bar for Navigation */}
            {step !== 4 && (
-             <div className="px-6 py-5 sm:px-10 border-t border-border bg-surface/80 backdrop-blur-md flex justify-between items-center sticky bottom-0 z-30">
+             <div className="px-6 py-5 sm:px-10 border-t border-border bg-transparent flex justify-between items-center sticky bottom-0 z-30">
                <button onClick={onClose} className="btn btn-ghost text-text-mute hover:text-text">I'll do this later</button>
                <div className="flex gap-3">
                  {step > 2 && <button onClick={() => setStep(step - 1)} className="btn btn-ghost border-border bg-transparent">Back</button>}
