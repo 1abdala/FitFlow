@@ -119,7 +119,7 @@ const WelcomeCard = ({ user, skillGaps, onContinueSetup, onRefresh, refreshing }
         {(!user.profile_completed && Number(user.completion_percentage) !== 100) && (
           <button className="btn btn-primary btn-sm" onClick={onContinueSetup}>Continue Setup <Icons.IconArrowRight size={14} /></button>
         )}
-        <button className="btn btn-ghost btn-sm" onClick={onRefresh} disabled={refreshing}>
+        <button className="btn btn-ghost btn-sm" onClick={onRefresh} disabled={refreshing} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
           {refreshing ? 'Refreshing...' : 'Refresh matches'}
         </button>
       </div>
