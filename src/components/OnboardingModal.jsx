@@ -188,9 +188,9 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="relative w-full max-w-5xl bg-surface border border-border shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
         
         {/* SIDEBAR - CONTEXT & MOTIVATION */}
-        <div className="hidden md:flex w-1/3 bg-surface-2 border-r border-border p-8 flex-col justify-between relative overflow-hidden">
+        <div className="hidden md:flex w-1/3 bg-surface border-r border-border p-8 flex-col justify-between relative overflow-hidden">
            {/* glow effect */}
-           <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
+           <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
            
            <div>
               <div className="flex items-center gap-2 mb-6 relative z-10">
@@ -204,7 +204,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
 
               <div className="space-y-4 relative z-10">
                 <div className={`flex items-start gap-3 transition-opacity duration-300 ${step >= 2 ? 'opacity-100' : 'opacity-40'}`}>
-                   <div className={`mt-0.5 rounded-full p-1.5 ${step >= 2 ? 'bg-accent/20 text-accent' : 'bg-surface-3 text-text-mute'}`}>
+                   <div className={`mt-0.5 rounded-full p-1.5 ${step >= 2 ? 'bg-accent/10 text-accent' : 'bg-surface-2 text-text-mute'}`}>
                       <Icons.IconCheck size={12} />
                    </div>
                    <div>
@@ -213,7 +213,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                    </div>
                 </div>
                 <div className={`flex items-start gap-3 transition-opacity duration-300 ${step >= 3 ? 'opacity-100' : 'opacity-40'}`}>
-                   <div className={`mt-0.5 rounded-full p-1.5 ${step >= 3 ? 'bg-accent/20 text-accent' : 'bg-surface-3 text-text-mute'}`}>
+                   <div className={`mt-0.5 rounded-full p-1.5 ${step >= 3 ? 'bg-accent/10 text-accent' : 'bg-surface-2 text-text-mute'}`}>
                       <Icons.IconCheck size={12} />
                    </div>
                    <div>
@@ -222,7 +222,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                    </div>
                 </div>
                 <div className={`flex items-start gap-3 transition-opacity duration-300 ${step >= 4 ? 'opacity-100' : 'opacity-40'}`}>
-                   <div className={`mt-0.5 rounded-full p-1.5 ${step >= 4 ? 'bg-accent/20 text-accent' : 'bg-surface-3 text-text-mute'}`}>
+                   <div className={`mt-0.5 rounded-full p-1.5 ${step >= 4 ? 'bg-accent/10 text-accent' : 'bg-surface-2 text-text-mute'}`}>
                       <Icons.IconCheck size={12} />
                    </div>
                    <div>
@@ -238,7 +238,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                  <p className="text-xs font-bold uppercase tracking-wider text-accent">Match Accuracy</p>
                  <span className="text-sm font-bold">{step === 2 ? '33%' : step === 3 ? '66%' : '100%'}</span>
               </div>
-              <div className="h-1.5 w-full bg-surface-3 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
                  <motion.div 
                    className="h-full bg-accent shadow-[0_0_10px_rgba(var(--accent-rgb),0.5)]" 
                    initial={{ width: 0 }}
@@ -310,7 +310,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                        </div>
                      </div>
                      
-                     <div className="input-group mt-6 p-5 rounded-2xl border border-border bg-surface-2 transition-all duration-300">
+                     <div className="input-group mt-6 p-5 rounded-2xl border border-border bg-transparent transition-all duration-300">
                        <label className="flex items-center gap-3 cursor-pointer">
                          <input type="checkbox" checked={hasOku} onChange={(e) => setHasOku(e.target.checked)} className="accent-accent w-4 h-4 rounded" />
                          <span className="text-sm font-bold">Register as OKU (Optional)</span>
@@ -384,7 +384,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
 
                            <div className="flex flex-wrap gap-2 mb-3">
                              {skills.map(s => (
-                                <span key={s} className="bg-surface-3 text-text text-xs px-3 py-1.5 rounded-full flex items-center gap-2 border border-border shadow-sm">
+                                <span key={s} className="bg-surface-2 text-text text-xs px-3 py-1.5 rounded-full flex items-center gap-2 border border-border shadow-sm">
                                    {s} 
                                    <button onClick={() => removeSkill(s)} className="text-text-mute hover:text-red-400 transition-colors"><Icons.IconX size={12} /></button>
                                 </span>
@@ -473,10 +473,10 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
 
            {/* Bottom Bar for Navigation */}
            {step !== 4 && (
-             <div className="px-6 py-5 sm:px-10 border-t border-border bg-surface-2/80 backdrop-blur-md flex justify-between items-center sticky bottom-0 z-30">
+             <div className="px-6 py-5 sm:px-10 border-t border-border bg-surface/80 backdrop-blur-md flex justify-between items-center sticky bottom-0 z-30">
                <button onClick={onClose} className="btn btn-ghost text-text-mute hover:text-text">I'll do this later</button>
                <div className="flex gap-3">
-                 {step > 2 && <button onClick={() => setStep(step - 1)} className="btn btn-ghost border-border bg-surface">Back</button>}
+                 {step > 2 && <button onClick={() => setStep(step - 1)} className="btn btn-ghost border-border bg-transparent">Back</button>}
                  <button onClick={step === 3 ? wrapUpComplete : handleNext} disabled={loading} className="btn btn-primary px-8 shadow-[0_0_15px_rgba(var(--accent-rgb),0.2)]">
                    {loading ? 'Saving...' : (step === 3 ? 'Complete Profile' : 'Next Step')}
                  </button>
