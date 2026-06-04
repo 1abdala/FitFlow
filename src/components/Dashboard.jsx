@@ -91,7 +91,7 @@ const Topbar = () => (
   </div>
 );
 
-const WelcomeCard = ({ user, skillGaps, onContinueSetup }) => (
+const WelcomeCard = ({ user, skillGaps, onContinueSetup, onRefresh, refreshing }) => (
   <div className="welcome">
     <div className="welcome-bg" aria-hidden="true">
       <svg viewBox="0 0 600 200" preserveAspectRatio="none">
@@ -116,12 +116,12 @@ const WelcomeCard = ({ user, skillGaps, onContinueSetup }) => (
           : `Your profile is missing ${skillGaps.length > 0 ? `about ${skillGaps.length} key skills` : 'no key skills'} for your top matches. Close the gap and unlock more roles.`}
       </p>
       <div className="welcome-cta">
-        {(!user.profile_completed && Number(user.completion_percentage) !== 100) ? (
+        {(!user.profile_completed && Number(user.completion_percentage) !== 100) && (
           <button className="btn btn-primary btn-sm" onClick={onContinueSetup}>Continue Setup <Icons.IconArrowRight size={14} /></button>
-        ) : (
-          <button className="btn btn-primary btn-sm">View recommendations <Icons.IconArrowRight size={14} /></button>
         )}
-        <button className="btn btn-ghost btn-sm">Refresh matches</button>
+        <button className="btn btn-ghost btn-sm" onClick={onRefresh} disabled={refreshing}>
+          {refreshing ? 'Refreshing...' : 'Refresh matches'}
+        </button>
       </div>
     </div>
   </div>
@@ -600,7 +600,7 @@ const Dashboard = () => {
           {activeTab === 'overview' && (
             <div className="space-y-4">
               <div className="grid-top">
-                <WelcomeCard user={user} skillGaps={skillGaps} onContinueSetup={() => setShowOnboarding(true)} />
+                <WelcomeCard user={user} skillGaps={skillGaps} onContinueSetup={() => setShowOnboarding(true)} onRefresh={fetchMatches} refreshing={loadingMatches} />
                 <KpiCard
                   icon={<Icons.IconStar size={14} />}
                   label="Avg match score"
