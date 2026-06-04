@@ -63,14 +63,6 @@ const ApplicationDetailsModal = ({ app, onClose, onUpdate, onDelete, updateAppli
     }
   };
 
-  const textareaStyle = {
-    width: '100%', padding: '10px 12px',
-    background: 'var(--surface-2)', border: '1px solid var(--border)',
-    borderRadius: 10, color: 'var(--text)', fontSize: 13,
-    resize: 'vertical', fontFamily: 'inherit', outline: 'none',
-    boxSizing: 'border-box', lineHeight: 1.55,
-  };
-
   return (
     <div className="idm-backdrop" onClick={onClose}>
       <motion.div
@@ -114,89 +106,99 @@ const ApplicationDetailsModal = ({ app, onClose, onUpdate, onDelete, updateAppli
           </button>
         </div>
 
-        <div className="idm-body">
+        <div className="idm-body custom-scrollbar">
           {/* Timeline */}
           <div className="idm-section">
             <div className="idm-section-head"><Icons.IconCalendar size={13} /> Timeline</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
               {[
                 { label: 'Saved',     value: fmt(app.saved_at) },
                 { label: 'Applied',   value: fmt(app.applied_at) },
                 { label: 'Interview', value: fmt(app.interview_scheduled_at) },
                 { label: 'Offer',     value: fmt(app.offer_received_at) },
               ].map(({ label, value }) => (
-                <div key={label} style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 11, color: value !== '—' ? 'var(--text)' : 'var(--text-dim)', fontWeight: 600 }}>{value}</div>
+                <div key={label} className="idm-skill-card" style={{ padding: '12px 14px' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontSize: 12, color: value !== '—' ? 'var(--text)' : 'var(--text-dim)', fontWeight: 600 }}>{value}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Match score */}
+          {/* Match score & Skills */}
           {(app.match_score !== null && app.match_score !== undefined) && (
             <div className="idm-section">
               <div className="idm-section-head"><Icons.IconTarget size={13} /> Match at Apply Time</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{
-                  padding: '10px 16px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8,
-                  background: scoreColor(app.match_score) + '14', border: `1px solid ${scoreColor(app.match_score)}30`,
-                }}>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: scoreColor(app.match_score), fontFamily: "'Space Grotesk', sans-serif" }}>
-                    {app.match_score}%
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>match score</span>
+              
+              <div className="idm-skills-grid">
+                <div className="idm-skill-card idm-skill-pos" style={{ padding: '16px' }}>
+                  <div className="idm-skill-head">
+                    <span className="idm-skill-icon"><Icons.IconCheck size={13} /></span>
+                    Match Score
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 32, fontWeight: 700, color: scoreColor(app.match_score), fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {app.match_score}%
+                    </span>
+                    <div style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.4 }}>
+                      Based on your profile when you saved this role.
+                    </div>
+                  </div>
                 </div>
+
+                {(app.matched_skills?.length > 0 || app.missing_skills?.length > 0) && (
+                  <div className="idm-skill-card" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px' }}>
+                     {app.matched_skills?.length > 0 && (
+                        <div>
+                           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Matched Skills</div>
+                           <div className="idm-chip-row">
+                             {app.matched_skills.map(s => <span key={s} className="skill-chip skill-pos">{s}</span>)}
+                           </div>
+                        </div>
+                     )}
+                     {app.missing_skills?.length > 0 && (
+                        <div>
+                           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8, marginTop: app.matched_skills?.length ? 4 : 0 }}>Missing Skills</div>
+                           <div className="idm-chip-row">
+                             {app.missing_skills.map(s => <span key={s} className="skill-chip skill-miss">{s}</span>)}
+                           </div>
+                        </div>
+                     )}
+                  </div>
+                )}
               </div>
-              {(app.matched_skills?.length > 0 || app.missing_skills?.length > 0) && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginTop: 10 }}>
-                  {app.matched_skills?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: 10, color: '#34d399', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Matched</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {app.matched_skills.map(s => <span key={s} className="skill-chip skill-pos">{s}</span>)}
-                      </div>
-                    </div>
-                  )}
-                  {app.missing_skills?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: 10, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Missing</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {app.missing_skills.map(s => <span key={s} className="skill-chip skill-miss">{s}</span>)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
-          {/* Stage selector */}
+          {/* Update Stage */}
           <div className="idm-section">
             <div className="idm-section-head"><Icons.IconBriefcase size={13} /> Update Stage</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8 }}>
               {STAGES.map(s => (
                 <button
                   key={s.id}
                   onClick={() => setForm(f => ({ ...f, stage: s.id }))}
+                  className={`btn ${form.stage === s.id ? '' : 'btn-ghost'}`}
                   style={{
-                    padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                    border: `1px solid ${form.stage === s.id ? s.color : 'rgba(120,140,200,0.15)'}`,
-                    background: form.stage === s.id ? s.color + '20' : 'transparent',
+                    padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    background: form.stage === s.id ? s.color + '15' : 'var(--surface-2)',
                     color: form.stage === s.id ? s.color : 'var(--text-mute)',
-                    cursor: 'pointer', transition: 'all 0.15s ease',
+                    border: `1px solid ${form.stage === s.id ? s.color + '40' : 'var(--border)'}`,
                   }}
-                >{s.label}</button>
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, opacity: form.stage === s.id ? 1 : 0.4 }} />
+                  {s.label}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Source URL */}
+          {/* Job Source */}
           {app.source_url && (
             <div className="idm-section">
               <div className="idm-section-head"><Icons.IconExternalLink size={13} /> Job Posting</div>
-              <a href={app.source_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                View original posting <Icons.IconArrowUpRight size={12} />
+              <a href={app.source_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ background: 'var(--surface-2)' }}>
+                View Original Posting <Icons.IconArrowUpRight size={14} />
               </a>
             </div>
           )}
@@ -204,53 +206,56 @@ const ApplicationDetailsModal = ({ app, onClose, onUpdate, onDelete, updateAppli
           {/* Notes */}
           <div className="idm-section">
             <div className="idm-section-head"><Icons.IconDoc size={13} /> Notes</div>
-            <textarea
-              value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              placeholder="Application notes, contact details, deadlines…"
-              rows={3}
-              style={textareaStyle}
-            />
+            <div className="input-wrap" style={{ alignItems: 'flex-start' }}>
+              <textarea
+                value={form.notes}
+                onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Write down any notes about the company, role, or application process..."
+                style={{ width: '100%', minHeight: 90, padding: '12px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, resize: 'vertical', outline: 'none' }}
+              />
+            </div>
           </div>
 
-          {/* Interview notes */}
+          {/* Interview Notes */}
           <div className="idm-section">
             <div className="idm-section-head"><Icons.IconUsers size={13} /> Interview Notes</div>
-            <textarea
-              value={form.interview_notes}
-              onChange={e => setForm(f => ({ ...f, interview_notes: e.target.value }))}
-              placeholder="Questions asked, feedback, interviewer names, next steps…"
-              rows={4}
-              style={textareaStyle}
-            />
+            <div className="input-wrap" style={{ alignItems: 'flex-start' }}>
+              <textarea
+                value={form.interview_notes}
+                onChange={(e) => setForm(f => ({ ...f, interview_notes: e.target.value }))}
+                placeholder="What did they ask? Who did you speak with?..."
+                style={{ width: '100%', minHeight: 90, padding: '12px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 13, resize: 'vertical', outline: 'none' }}
+              />
+            </div>
           </div>
 
-          {/* Footer actions */}
-          <div className="idm-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, paddingTop: 8 }}>
-            {!confirmDelete ? (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, padding: 0 }}
-              >
-                <Icons.IconX size={13} /> Delete application
-              </button>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Sure?</span>
+        </div>
+
+        {/* Footer */}
+        <div className="idm-foot" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
+          <div>
+            {confirmDelete ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-mute)', fontWeight: 500 }}>Delete this app?</span>
                 <button onClick={handleDelete} disabled={deleting} className="btn btn-sm" style={{ background: 'var(--danger)', color: '#fff', border: 'none' }}>
-                  {deleting ? 'Deleting…' : 'Yes, delete'}
+                  {deleting ? 'Deleting...' : 'Yes, delete'}
                 </button>
                 <button onClick={() => setConfirmDelete(false)} className="btn btn-ghost btn-sm">Cancel</button>
               </div>
-            )}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={onClose} className="btn btn-ghost btn-sm">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="btn btn-primary btn-sm">
-                {saving ? 'Saving…' : 'Save changes'} <Icons.IconCheck size={13} />
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="btn btn-ghost btn-sm" style={{ color: 'var(--text-mute)' }}>
+                Delete
               </button>
-            </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} className="btn btn-ghost btn-sm">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="btn btn-primary btn-sm px-6">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </div>
+
       </motion.div>
     </div>
   );
