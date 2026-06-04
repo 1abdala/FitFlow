@@ -19,6 +19,7 @@ const AuthPage = () => {
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const getPasswordStrength = (pass) => {
     let score = 0;
@@ -254,8 +255,15 @@ const AuthPage = () => {
                 <div className="input-group">
                   <label className="input-label">Password</label>
                   <div className="input-wrap">
-                    <Icons.IconGear size={16} className="input-icon" />
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      className="input-icon"
+                    >
+                      {showPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                    </button>
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
                   </div>
                   {!isLogin && password && (
                     <div className="pass-strength">
