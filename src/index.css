@@ -3375,6 +3375,11 @@
   appearance: none;
 }
 
+.ob-input-wrap select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
 .ob-input-wrap .input-icon {
   position: absolute;
   left: 14px;
