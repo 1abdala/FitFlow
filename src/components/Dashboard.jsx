@@ -28,7 +28,7 @@ const NavItem = ({ icon, label, active, badge, onClick }) => (
   </button>
 );
 
-const Sidebar = ({ active, setActive, user, onLogout, onBack }) => {
+const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose }) => {
   const items = [
     { id: "overview", icon: <Icons.IconGrid size={18} />, label: "Overview" },
     { id: "matches", icon: <Icons.IconTarget size={18} />, label: "My Matches", badge: null }, // Badge will be updated via props if needed
@@ -38,11 +38,16 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack }) => {
     { id: "learning", icon: <Icons.IconBook size={18} />, label: "Learning Hub" },
   ];
   return (
-    <aside className="sidebar">
-      <DashLogo />
+    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+      <div className="sidebar-head-row">
+        <DashLogo />
+        <button className="sidebar-close-btn" onClick={onClose} title="Close menu">
+          <Icons.IconX size={18} />
+        </button>
+      </div>
       <nav className="nav">
         {items.map(it => (
-          <NavItem key={it.id} {...it} active={active === it.id} onClick={() => setActive(it.id)} />
+          <NavItem key={it.id} {...it} active={active === it.id} onClick={() => { setActive(it.id); onClose(); }} />
         ))}
       </nav>
       <div className="nav-spacer" />
@@ -52,10 +57,10 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack }) => {
           <span>Pro tips</span>
         </div>
         <div className="sb-card-body">Add 2 React projects to bump 8 more matches.</div>
-        <button className="sb-card-cta" onClick={() => setActive('skills')}>Show me <Icons.IconArrowRight size={12} /></button>
+        <button className="sb-card-cta" onClick={() => { setActive('skills'); onClose(); }}>Show me <Icons.IconArrowRight size={12} /></button>
       </div>
       <div className="sidebar-foot">
-        <NavItem icon={<Icons.IconGear size={18} />} label="Settings" onClick={() => setActive('settings')} active={active === 'settings'} />
+        <NavItem icon={<Icons.IconGear size={18} />} label="Settings" onClick={() => { setActive('settings'); onClose(); }} active={active === 'settings'} />
         <div className="user-row">
           <div className="user-ava">{user?.name?.slice(0, 2).toUpperCase() || 'FF'}</div>
           <div className="user-meta">
@@ -69,9 +74,12 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack }) => {
   );
 };
 
-const Topbar = () => (
+const Topbar = ({ onToggleSidebar }) => (
   <div className="topbar">
     <div className="topbar-left">
+      <button className="sidebar-toggle-btn" onClick={onToggleSidebar} title="Open menu">
+        <Icons.IconMenu size={20} />
+      </button>
       <div className="crumb">
         <span className="crumb-mute">FitFlow</span>
         <span className="crumb-sep">/</span>
@@ -340,6 +348,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -563,10 +572,11 @@ const Dashboard = () => {
           error:   { iconTheme: { primary: '#f87171', secondary: '#07090f' } },
         }}
       />
-      <Sidebar active={activeTab} setActive={setActiveTab} user={user} onLogout={handleLogout} onBack={() => navigate('/')} />
+      <Sidebar active={activeTab} setActive={setActiveTab} user={user} onLogout={handleLogout} onBack={() => navigate('/')} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       
       <main className="main">
-        <Topbar />
+        <Topbar onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
         <div className="main-scroll custom-scrollbar">
           
           <div className="page-head">
