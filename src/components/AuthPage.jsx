@@ -45,20 +45,17 @@ const AuthPage = () => {
         setLoading(true);
         const userEmail = session.user.email;
         const userName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
-        let { data: existingUser } = await supabase.from('users').select('*').eq('email', userEmail).single();
+        let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         
         if (!existingUser) {
-          // Auto-create user record if it doesn't exist for OAuth
+          // Auto-create base profile if it doesn't exist for OAuth
           existingUser = {
             id: session.user.id,
-            email: userEmail,
-            name: userName,
             role: 'student',
-            profile_completed: false,
-            completion_percentage: 20
+            full_name: userName
           };
           // Try to insert it so it persists
-          await supabase.from('users').insert([existingUser]);
+          await supabase.from('profiles').insert([existingUser]);
         }
         
         navigate('/dashboard');
@@ -93,7 +90,7 @@ const AuthPage = () => {
       const { data, error } = await supabase.auth.verifyOtp({ email, token, type: isForgotPassword ? 'recovery' : 'signup' });
       if (error) throw error;
       if (isForgotPassword) { setIsVerifying(false); setForgotStep(3); setOtp(['', '', '', '', '', '', '', '']); return; }
-      await supabase.from('users').insert([{ id: data.user.id, name, email, role }]);
+      await supabase.from('profiles').insert([{ id: data.user.id, full_name: name, role }]);
       navigate('/dashboard');
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
@@ -107,18 +104,16 @@ const AuthPage = () => {
         const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
         if (authErr) throw authErr;
         
-        let { data, error } = await supabase.from('users').select('*').eq('email', email).single();
+        let { data, error } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
         
-        // Fallback if user record in table is missing but auth succeeded
+        // Fallback if base profile in table is missing but auth succeeded
         if (!data) {
           data = {
             id: authData.user.id,
-            email: authData.user.email,
-            name: authData.user.user_metadata?.full_name || email.split('@')[0],
             role: authData.user.user_metadata?.role || 'student',
-            profile_completed: false,
-            completion_percentage: 20
+            full_name: authData.user.user_metadata?.full_name || email.split('@')[0]
           };
+          await supabase.from('profiles').insert([data]);
         }
         
         navigate('/dashboard');

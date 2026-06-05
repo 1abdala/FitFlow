@@ -272,7 +272,6 @@ const SkillProfileTab = ({ skillGaps = [] }) => {
         await supabase.from('user_skills').insert({ user_id: userId, skill_id: skillId });
         const updated = [...currentSkills, canonical];
         setCurrentSkills(updated);
-        await supabase.from('users').update({ skills: updated }).eq('id', userId);
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
       }
       setSkillInput('');
@@ -291,7 +290,6 @@ const SkillProfileTab = ({ skillGaps = [] }) => {
         await supabase.from('user_skills').delete().eq('user_id', userId).eq('skill_id', sd.id);
         const updated = currentSkills.filter(s => s !== skillToRemove);
         setCurrentSkills(updated);
-        await supabase.from('users').update({ skills: updated }).eq('id', userId);
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
       }
     } catch (err) {

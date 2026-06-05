@@ -215,16 +215,6 @@ CV TEXT:
                 }, on_conflict="user_id,skill_id").execute()
         except Exception as e:
             print("Error upserting skill", s, e)
-
-    try:
-        user_res = supabase.table("users").select("skills").eq("id", student_id).single().execute()
-        if user_res.data:
-            current_skills = user_res.data.get("skills") or []
-            new_skills = list(set(current_skills + extracted_skills))
-            supabase.table("users").update({"skills": new_skills, "completion_percentage": 100}).eq("id", student_id).execute()
-    except Exception as e:
-        print("Error updating public.users skills", e)
-
     # Save analysis
     db_payload = {
         "student_id": student_id,

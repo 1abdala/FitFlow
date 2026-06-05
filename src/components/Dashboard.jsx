@@ -12,6 +12,7 @@ import ApplicationsTab from './ApplicationsTab';
 import { Toaster } from 'react-hot-toast';
 import { useApplications } from '../hooks/useApplications';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
+import { fetchFullProfile } from '../lib/profileHelpers';
 const DashLogo = () => (
   <div className="ff-logo ff-logo-dash">
     <span className="ff-logo-mark"><Icons.IconLogo size={16} /></span>
@@ -359,46 +360,8 @@ const Dashboard = () => {
         return;
       }
       
-      const { data: dbUser, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-        
-      if (error || !dbUser) {
-        const role = session.user.user_metadata?.role || 'student';
-        const table = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
-        
-        let isComplete = false;
-        let percentage = 20;
-
-        try {
-          const { data: profileData } = await supabase.from(table).select('*').eq('id', session.user.id).single();
-          if (profileData) {
-             if (role === 'student' && profileData.matric && profileData.faculty && profileData.programme) {
-                isComplete = true;
-                percentage = 100;
-             } else if (role !== 'student' && profileData.staff_id && profileData.department) {
-                isComplete = true;
-                percentage = 100;
-             } else if (profileData.phone && profileData.dob) {
-                percentage = 66;
-             }
-          }
-        } catch (e) {}
-
-        const fallbackUser = {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
-          role: role,
-          profile_completed: isComplete,
-          completion_percentage: percentage
-        };
-        setUser(fallbackUser);
-      } else {
-        setUser(dbUser);
-      }
+      const fullProfile = await fetchFullProfile(session.user.id);
+      setUser(fullProfile);
     } catch (err) {
       console.error("Error fetching user profile:", err);
       navigate('/auth');
@@ -886,8 +849,8 @@ const Dashboard = () => {
             user={user}
             onClose={() => setShowOnboarding(false)}
             onNavigate={(tab) => setActiveTab(tab)}
-            onComplete={(updatedUser, shouldClose = true) => {
-              setUser(updatedUser);
+            onComplete={async (updatedUser, shouldClose = true) => {
+              await fetchUserProfile();
               if (shouldClose) setShowOnboarding(false);
             }}
           />

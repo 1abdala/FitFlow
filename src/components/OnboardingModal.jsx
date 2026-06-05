@@ -5,20 +5,28 @@ import { supabase } from '../lib/supabase';
 
 const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [step, setStep] = useState(() => {
-    return Number(user?.completion_percentage) >= 66 ? 3 : 2;
+    const hasStep2 = user?.phone && user?.dob;
+    return hasStep2 ? 3 : 2;
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [wasCompleted] = useState(() => Number(user?.completion_percentage) === 100 || user?.profile_completed);
+  const [wasCompleted] = useState(() => {
+    if (user?.role === 'student') {
+      return !!(user?.phone && user?.dob && user?.matric && user?.faculty && user?.programme && user?.skills?.length > 0);
+    } else {
+      return !!(user?.phone && user?.dob && user?.staff_id && user?.department && user?.position);
+    }
+  });
 
   useEffect(() => {
-    if (Number(user?.completion_percentage) >= 66 && step < 3) {
+    const hasStep2 = user?.phone && user?.dob;
+    if (hasStep2 && step < 3) {
       setStep(3);
     }
-  }, [user?.completion_percentage]);
+  }, [user?.phone, user?.dob, step]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -140,7 +148,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         
         const { id: _, ...safeData } = profileData;
         const updatedUser = { ...user, ...safeData, completion_percentage: 66 };
-        await supabase.from('users').upsert({ id: user.id, name: user.name, email: user.email, role: user.role, completion_percentage: 66 });
         
         onComplete(updatedUser, false);
         setStep(3);
@@ -168,8 +175,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         await supabase.from('coordinator_profiles').upsert({ id: authUser.id, staff_id: staffId, department, position, company_name: faculty });
       }
 
-      const syncPayload = { id: user.id, name: user.name, email: user.email, role: user.role, completion_percentage: 100, profile_completed: true };
-      await supabase.from('users').upsert(syncPayload);
       if (user.role === 'student') await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
 
       const updatedUser = { ...user, completion_percentage: 100, profile_completed: true };
