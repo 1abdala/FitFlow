@@ -13,6 +13,7 @@ import { Toaster } from 'react-hot-toast';
 import { useApplications } from '../hooks/useApplications';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
 import { fetchFullProfile } from '../lib/profileHelpers';
+import { getRelativeTimeString } from '../lib/dateUtils';
 const DashLogo = () => (
   <div className="ff-logo ff-logo-dash">
     <span className="ff-logo-mark"><Icons.IconLogo size={16} /></span>
@@ -307,7 +308,9 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
           <span className="m-card-dot">·</span>
           <span className="mono">RM 1,500 - 2,500/mo</span>
           <span className="m-card-dot">·</span>
-          <span className="m-card-posted"><Icons.IconClock size={11} /> 2d ago</span>
+          <span className="m-card-posted">
+            <Icons.IconClock size={11} /> {getRelativeTimeString(job.internships?.created_at || job.internships?.last_seen_at)}
+          </span>
         </div>
         <div className="m-card-skills">
           <span className="m-card-skills-label">Missing</span>
@@ -395,7 +398,7 @@ const Dashboard = () => {
         .select(`
           id,
           match_score,
-          internships ( id, title, company_name, location, apply_url, description, created_at, internship_skills ( skills ( name ) ) ),
+          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, internship_skills ( skills ( name ) ) ),
           skill_gaps ( skills ( name ) )
         `)
         .eq('student_id', authUser.id)

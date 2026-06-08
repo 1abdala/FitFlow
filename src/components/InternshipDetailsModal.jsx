@@ -4,8 +4,8 @@ import toast from 'react-hot-toast';
 import * as Icons from './Icons';
 import LogApplicationModal from './LogApplicationModal';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
-import { useApplications } from '../hooks/useApplications';
 import { supabase } from '../lib/supabase';
+import { getRelativeTimeString } from '../lib/dateUtils';
 
 const detectSource = (url) => {
   if (!url) return 'manual';
@@ -323,7 +323,10 @@ const InternshipDetailsModal = ({ job, onClose }) => {
 
           {/* Footer meta */}
           <div className="idm-foot">
-            <div className="idm-foot-item"><span>Posted</span><b>2d ago</b></div>
+            <div className="idm-foot-item">
+              <span>Posted</span>
+              <b>{getRelativeTimeString(internships?.created_at || internships?.last_seen_at)}</b>
+            </div>
             <div className="idm-foot-item"><span>Duration</span><b>6 months</b></div>
             <div className="idm-foot-item"><span>Mode</span><b>Hybrid</b></div>
             <div className="idm-foot-item"><span>Start</span><b>Jul 2026</b></div>
