@@ -15,7 +15,7 @@ from db import (
     create_scrape_run,
     update_scrape_run
 )
-from alerts import send_telegram_alert
+from alerts import send_telegram_notification
 
 def main():
     load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
@@ -81,6 +81,14 @@ def main():
                 total_processed=0,
                 total_failed=total_failed
             )
+            # Send Telegram Success Notification (with zero stats)
+            send_telegram_notification(
+                run_id=run_id,
+                status="success",
+                total_found=total_found,
+                total_processed=0,
+                total_failed=total_failed
+            )
             return
 
         # ── 4. Sync to Supabase ───────────────────────────────
@@ -101,7 +109,7 @@ def main():
         students = regenerate_all_matches()
         print(f"Matches refreshed for {students} student(s).")
 
-        # ── 6. Log Run Success ───────────────────────────────
+        # ── 6. Log Run Success & Notify ──────────────────────
         update_scrape_run(
             run_id=run_id,
             status="success",
@@ -109,6 +117,16 @@ def main():
             total_processed=total_processed,
             total_failed=total_failed
         )
+        
+        # Send Telegram Success Notification
+        send_telegram_notification(
+            run_id=run_id,
+            status="success",
+            total_found=total_found,
+            total_processed=total_processed,
+            total_failed=total_failed
+        )
+        
         print("\nScraper pipeline successfully completed!")
 
     except Exception as e:
@@ -128,8 +146,16 @@ def main():
             error_message=f"{error_msg}\n{tb_str}"
         )
         
-        # Send Telegram notification alert
-        send_telegram_alert(run_id=run_id, error_message=error_msg, traceback_str=tb_str)
+        # Send Telegram Failure Alert
+        send_telegram_notification(
+            run_id=run_id,
+            status="failed",
+            total_found=total_found,
+            total_processed=total_processed,
+            total_failed=total_failed + (total_found - total_processed),
+            error_message=error_msg,
+            traceback_str=tb_str
+        )
         
         # Exit with error status code for workflow runner
         sys.exit(1)

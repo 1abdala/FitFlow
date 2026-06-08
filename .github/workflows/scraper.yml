@@ -43,3 +43,26 @@ jobs:
           ENVIRONMENT: "GitHub Actions Production"
         run: |
           python scraper/main.py
+
+      - name: Send Telegram Failure Notification (Workflow Failure)
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "parse_mode=HTML" \
+              --data-urlencode "text=🚨 <b>FITFLOW WORKFLOW RUNTIME FAILURE</b>
+
+The GitHub Actions scheduled scraper job failed during preparation or execution.
+
+<b>Workflow:</b> FitFlow Daily Internship Scraper
+<b>Run URL:</b> https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+<b>Trigger:</b> Scheduled Daily Scrape
+
+Please check the GitHub Actions logs immediately."
+          else
+            echo "[WARNING] Telegram variables not configured. Cannot send workflow failure notification."
+          fi
