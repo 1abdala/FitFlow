@@ -151,9 +151,20 @@ def regenerate_all_matches() -> int:
     """
     After a scrape, call generate_internship_matches for every student in profiles
     so the UI shows fresh results immediately.
+    Also cleans up matching results for any inactive internships first.
     """
     supabase = get_supabase_client()
     try:
+        # 1. Clean up matches for inactive internships
+        inactive_jobs_res = supabase.table("internships").select("id").eq("is_active", False).execute()
+        inactive_ids = [j["id"] for j in (inactive_jobs_res.data or [])]
+        if inactive_ids:
+            print(f"[CLEANUP] Found {len(inactive_ids)} inactive internships. Deleting matching results...")
+            for i in range(0, len(inactive_ids), 100):
+                batch = inactive_ids[i:i+100]
+                supabase.table("matching_results").delete().in_("internship_id", batch).execute()
+        
+        # 2. Re-run matches for active students
         students = supabase.table("profiles").select("id").eq("role", "student").execute()
         count = 0
         for s in (students.data or []):
