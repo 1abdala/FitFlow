@@ -6,6 +6,7 @@ import LogApplicationModal from './LogApplicationModal';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
 import { supabase } from '../lib/supabase';
 import { getRelativeTimeString } from '../lib/dateUtils';
+import { useApplications } from '../hooks/useApplications';
 
 const detectSource = (url) => {
   if (!url) return 'manual';
