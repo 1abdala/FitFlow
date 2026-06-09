@@ -198,7 +198,7 @@ def scrape_linkedin_internships() -> list[dict]:
 
         if desc:
             requirements = extract_requirements(desc)
-            skills       = extract_skills(requirements or desc)
+            skills       = extract_skills(desc)
 
             job["description"]    = desc
             job["requirements"]   = requirements

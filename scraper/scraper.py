@@ -109,7 +109,7 @@ SKILL_KEYWORDS = {
     "Java": ["java", "core java", "j2ee"],
     "JavaScript": ["javascript", "js", "ecmascript"],
     "TypeScript": ["typescript", "ts"],
-    "C++": ["c++", "cpp", "c/c++"],
+    "C++": ["c++", "cpp", "c/c++", "c c++"],
     "C#": ["c#", "csharp", "c sharp"],
     "C": ["c programming", "c language"],
     "Go": ["golang", "go programming", "go language"],
@@ -120,6 +120,7 @@ SKILL_KEYWORDS = {
     "Ruby": ["ruby", "ruby on rails", "ror"],
     "R": ["r programming", "r language", "rstudio"],
     "SQL": ["sql", "structured query language"],
+    "Scala": ["scala"],
 
     # --- Web & Frameworks ---
     "React": ["react", "react.js", "reactjs", "react native"],
@@ -132,17 +133,19 @@ SKILL_KEYWORDS = {
     "Spring Boot": ["spring", "spring boot", "springboot"],
     "Laravel": ["laravel"],
     "ASP.NET": ["asp.net", ".net", "dotnet"],
-    "HTML/CSS": ["html", "css", "html5", "css3", "html/css"],
+    "HTML/CSS": ["html", "css", "html5", "css3", "html/css", "html css"],
     "Tailwind CSS": ["tailwind", "tailwindcss"],
     "GraphQL": ["graphql"],
     "REST API": ["rest api", "restful api", "restful"],
 
-    # --- Databases ---
+    # --- Databases & Warehouses ---
     "PostgreSQL": ["postgresql", "postgres"],
     "MySQL": ["mysql"],
     "MongoDB": ["mongodb", "mongo"],
     "Redis": ["redis"],
     "Oracle": ["oracle", "oracle database", "oracle db"],
+    "Snowflake": ["snowflake"],
+    "Databricks": ["databricks"],
 
     # --- Cloud & DevOps ---
     "AWS": ["aws", "amazon web services"],
@@ -154,35 +157,38 @@ SKILL_KEYWORDS = {
     "Jenkins": ["jenkins"],
     "Terraform": ["terraform"],
     "Linux": ["linux", "unix", "ubuntu", "centos", "bash", "shell window"],
+    "Azure Data Factory": ["azure data factory", "adf"],
 
     # --- Data & AI ---
     "Machine Learning": ["machine learning", "ml", "machine-learning"],
     "Artificial Intelligence": ["artificial intelligence", "ai"],
-    "Data Analysis": ["data analysis", "data analytics", "data analyst"],
+    "Data Analysis": ["data analysis", "data analytics", "data analyst", "visualization"],
     "TensorFlow": ["tensorflow", "tf"],
     "PyTorch": ["pytorch"],
     "Pandas": ["pandas"],
-    "Data Engineering": ["data engineering", "data pipeline", "etl"],
+    "Data Engineering": ["data engineering", "data pipeline", "etl", "data ingestion", "data integration", "data lake", "data modelling"],
     "Power BI": ["power bi", "powerbi", "tableau"],
     "Computer Vision": ["computer vision"],
     "NLP": ["nlp", "natural language processing"],
 
     # --- IT Infrastructure & Helpdesk ---
-    "Networking": ["networking", "network management", "tcp/ip", "lan/wan", "network+"],
+    "Networking": ["networking", "network management", "tcp/ip", "lan/wan", "network+", "tcp ip"],
     "Troubleshooting": ["troubleshooting", "hardware troubleshooting", "software troubleshooting", "technical support", "it support"],
     "System Administration": ["system administration", "sysadmin", "system admin"],
     "Active Directory": ["active directory", "ad"],
     "VMware": ["vmware", "virtualization", "hyper-v"],
-    "Cybersecurity": ["cybersecurity", "cyber security", "information security", "infosec", "comptia"],
+    "Cybersecurity": ["cybersecurity", "cyber security", "information security", "infosec", "comptia", "network security", "it security", "firewall", "ips"],
+    "OSI Model": ["osi model", "osi"],
 
     # --- Business, Design & Soft Skills ---
     "Microsoft Office": ["microsoft office", "ms office", "office 365", "microsoft office suite", "excel", "powerpoint", "word"],
-    "Project Management": ["project management", "agile", "scrum", "kanban", "jira"],
+    "Project Management": ["project management", "agile", "scrum", "kanban", "jira", "azure devops"],
     "Git": ["git", "version control", "github", "gitlab"],
     "UI/UX Design": ["ui/ux", "ui ux", "ux design", "user experience", "user interface", "figma", "adobe xd", "photoshop"],
     "Communication": ["communication", "interpersonal skills", "presentation skills"],
     "Problem Solving": ["problem solving", "problem-solving", "analytical skills"],
-    "ITIL": ["itil", "it infrastructure library"]
+    "ITIL": ["itil", "it infrastructure library"],
+    "CRM": ["crm"]
 }
 
 def normalize_text(text):
@@ -413,7 +419,7 @@ def scrape_internships(headless: bool = False) -> list[dict]:
                 requirements = extract_requirements(desc)
                 job["requirements"] = requirements
                 
-                skills = extract_skills(requirements or desc)
+                skills = extract_skills(desc)
                 job["required_skills"] = skills
 
                 print(f"  + Description Extracted successfully ({len(desc)} characters).")
