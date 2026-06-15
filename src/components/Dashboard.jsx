@@ -64,12 +64,27 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
       <div className="sidebar-foot">
         <NavItem icon={<Icons.IconGear size={18} />} label="Settings" onClick={() => { setActive('settings'); onClose(); }} active={active === 'settings'} />
         <div className="user-row">
-          <div className="user-ava" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div 
+            className="user-ava" 
+            style={{ 
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              overflow: 'hidden', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '2.5px solid rgba(168, 85, 247, 0.6)',
+              boxShadow: '0 0 10px rgba(99, 102, 241, 0.6), 0 0 20px rgba(168, 85, 247, 0.2)',
+              background: 'rgba(12, 18, 40, 0.8)',
+              flexShrink: 0
+            }}
+          >
             {user?.avatar_url ? (
               <img 
                 src={user.avatar_url} 
-                alt={user.name} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                alt={user.name || 'User'} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   e.target.style.display = 'none';
@@ -77,10 +92,11 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
                 }}
               />
             ) : null}
-            <span style={{ display: user?.avatar_url ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-              {user?.name?.slice(0, 2).toUpperCase() || 'FF'}
+            <span style={{ display: user?.avatar_url ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '12px', color: 'var(--accent)' }}>
+              {user?.full_name?.slice(0, 2).toUpperCase() || user?.name?.slice(0, 2).toUpperCase() || 'FF'}
             </span>
           </div>
+
           <div className="user-meta">
             <div className="user-name truncate">{user?.name}</div>
             <div className="user-role capitalize">{user?.role} · {user?.course || 'Student'}</div>

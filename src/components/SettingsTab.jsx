@@ -66,6 +66,10 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const [updatingCredentials, setUpdatingCredentials] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   useEffect(() => {
     if (user) {
@@ -380,6 +384,28 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     return mapping[field] || field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
+  const getPasswordStrength = (pass) => {
+    if (!pass) return null;
+    if (pass.length < 6) return { label: 'Weak (min 6 characters)', color: 'text-red-400', pct: 25, barColor: 'bg-red-500' };
+    const hasLetters = /[a-zA-Z]/.test(pass);
+    const hasNumbers = /[0-9]/.test(pass);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
+    
+    if (hasLetters && hasNumbers && hasSpecial) {
+      return { label: 'Strong Security', color: 'text-emerald-400', pct: 100, barColor: 'bg-emerald-500' };
+    }
+    if (hasLetters && hasNumbers) {
+      return { label: 'Medium Strength', color: 'text-amber-400', pct: 65, barColor: 'bg-amber-500' };
+    }
+    return { label: 'Weak', color: 'text-red-400', pct: 33, barColor: 'bg-red-500' };
+  };
+  
+  const pwStrength = getPasswordStrength(newPassword);
+
+  const totalRequired = 6;
+  const missingCount = profileStatus?.requiredMissingFields?.length || 0;
+  const completedCount = totalRequired - missingCount;
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 pb-12">
       {/* Left Column - 1/3 width */}
@@ -387,18 +413,15 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         
         {/* Card A: Profile Header & Avatar Selection */}
         <div 
-          className="flex flex-col items-center justify-center p-8 text-center rounded-3xl border border-border relative overflow-hidden" 
-          style={{ 
-            background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
-          }}
+          className="flex flex-col items-center justify-center p-8 text-center settings-premium-card" 
         >
-          {/* Decorative glow in background */}
+          {/* Decorative glows in background */}
           <div className="absolute -top-12 -left-12 w-24 h-24 rounded-full bg-accent/10 blur-xl pointer-events-none" />
           <div className="absolute -bottom-12 -right-12 w-24 h-24 rounded-full bg-accent-2/10 blur-xl pointer-events-none" />
 
           <div className="relative group cursor-pointer" onClick={() => setShowAvatarPicker(true)}>
-            <div className="w-28 h-28 rounded-full border-2 border-accent/20 overflow-hidden flex items-center justify-center bg-surface-2 transition-all duration-300 group-hover:border-accent shadow-lg">
+            {/* Glowing ring styling */}
+            <div className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center bg-surface-2 settings-avatar-glow shadow-lg">
               {user?.avatar_url ? (
                 <img 
                   src={user.avatar_url} 
@@ -411,15 +434,20 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   }}
                 />
               ) : null}
-              <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-4xl font-bold text-accent">
+              <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-5xl font-bold text-accent">
                 {fullName?.slice(0, 2).toUpperCase() || 'FF'}
               </span>
             </div>
             
             {/* Edit overlay */}
             <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <Icons.IconDoc size={20} className="text-white mb-1" />
+              <Icons.IconDoc size={24} className="text-white mb-1" />
               <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
+            </div>
+            
+            {/* Floating edit button at bottom right */}
+            <div className="absolute bottom-1 right-1 bg-accent hover:bg-accent-2 text-white p-2 rounded-full shadow-lg border border-white/10 group-hover:scale-110 transition-transform duration-200">
+              <Icons.IconDoc size={14} />
             </div>
           </div>
           
@@ -444,11 +472,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         {/* Card B: Profile Completion Progress Status */}
         {profileStatus && (
           <div 
-            className="p-6 flex flex-col justify-between rounded-3xl border border-border relative overflow-hidden"
-            style={{ 
-              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-              boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
-            }}
+            className="p-6 flex flex-col justify-between settings-premium-card"
           >
             <div>
               <div className="flex justify-between items-center mb-4">
@@ -461,12 +485,18 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                     <path 
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                       fill="none" 
-                      stroke="var(--accent)" 
+                      stroke="url(#completion-grad)" 
                       strokeWidth="3.2" 
                       strokeDasharray="100, 100"
                       strokeDashoffset={100 - profileStatus.percentage}
                       style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}
                     />
+                    <defs>
+                      <linearGradient id="completion-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4f7cff" />
+                        <stop offset="100%" stopColor="#d946ef" />
+                      </linearGradient>
+                    </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tracking-tighter text-text">
                     {profileStatus.percentage}%
@@ -475,11 +505,20 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               </div>
               
               {/* Progress Line */}
-              <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 mb-6 relative">
+              <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 mb-3 relative completion-bar-shine">
                 <div 
-                  className="h-full bg-accent rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(var(--accent-rgb),0.8)]"
-                  style={{ width: `${profileStatus.percentage}%` }}
+                  className="h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(217,70,239,0.5)]"
+                  style={{ 
+                    width: `${profileStatus.percentage}%`,
+                    background: 'linear-gradient(90deg, #4f7cff 0%, #d946ef 100%)'
+                  }}
                 />
+              </div>
+
+              {/* Dynamic counters */}
+              <div className="flex justify-between items-center text-[11px] text-text-mute mt-1 mb-6 font-medium tracking-tight">
+                <span>{completedCount} of {totalRequired} Required Fields Completed</span>
+                <span className="text-accent font-bold">{profileStatus.percentage}%</span>
               </div>
             </div>
 
@@ -548,253 +587,260 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         {/* Form: Profile Settings */}
         <form onSubmit={handleSaveProfile} className="space-y-6">
           
-          {/* Card C: Personal Details */}
-          <div 
-            className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
-            style={{ 
-              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-              boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
-            }}
-          >
-            <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
-              <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
-                <Icons.IconGear size={16} />
-              </div>
-              Personal Information
-            </h3>
+          {/* Responsive Layout Grid: Desktop: Personal Info Left, Academic Info Right */}
+          <div className={user?.role === 'student' ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "grid grid-cols-1 gap-6"}>
             
-            <div className="space-y-4">
-              <div className="input-group">
-                <label className="input-label">Full Name</label>
-                <div className="ob-input-wrap">
-                  <div className="input-icon"><Icons.IconUser size={16} /></div>
-                  <input 
-                    type="text" 
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your Full Name"
-                    required
-                  />
+            {/* Card C: Personal Details */}
+            <div className="p-6 space-y-5 settings-premium-card">
+              <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
+                <div className="bg-accent/10 text-accent p-2.5 rounded-xl border border-accent/20 shrink-0">
+                  <Icons.IconUser size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-text tracking-tight">
+                    Personal Information
+                  </h3>
+                  <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
+                    Manage your identity and contact details
+                  </p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="input-group">
-                  <label className="input-label">Phone Number</label>
-                  <div className="ob-input-wrap">
-                    <div className="input-icon"><Icons.IconPhone size={16} /></div>
-                    <input 
-                      type="text" 
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+601XXXXXXXX"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Date of Birth</label>
-                  <div className="ob-input-wrap">
-                    <Icons.IconCalendar size={16} className="input-icon" />
-                    <input 
-                      type="date" 
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="input-group">
-                  <label className="input-label">Gender</label>
-                  <div className="ob-input-wrap">
-                    <div className="input-icon"><Icons.IconUser size={16} /></div>
-                    <select 
-                      value={gender} 
-                      onChange={(e) => setGender(e.target.value)}
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Nationality</label>
-                  <div className="ob-input-wrap">
-                    <Icons.IconMapPin size={16} className="input-icon" />
-                    <select 
-                      value={nationality} 
-                      onChange={(e) => setNationality(e.target.value)}
-                    >
-                      <option value="Malaysian">Malaysian</option>
-                      <option value="International">International</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card D: Academic Details (Students Only) */}
-          {user.role === 'student' && (
-            <div 
-              className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
-              style={{ 
-                background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-                boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
-              }}
-            >
-              <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
-                <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
-                  <Icons.IconCap size={16} />
-                </div>
-                Academic Information
-              </h3>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="input-group">
+                  <label className="input-label">Full Name</label>
+                  <div className="settings-glass-input">
+                    <div className="input-icon"><Icons.IconUser size={16} /></div>
+                    <input 
+                      type="text" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Your Full Name"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="input-group">
-                    <label className="input-label">Matric No</label>
-                    <div className="ob-input-wrap">
-                      <Icons.IconCap size={16} className="input-icon" />
+                    <label className="input-label">Phone Number</label>
+                    <div className="settings-glass-input">
+                      <div className="input-icon"><Icons.IconPhone size={16} /></div>
                       <input 
                         type="text" 
-                        value={matric}
-                        onChange={(e) => setMatric(e.target.value)}
-                        placeholder="B03XXXXXXXX"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+601XXXXXXXX"
                         required
                       />
                     </div>
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Faculty</label>
-                    <div className="ob-input-wrap">
-                      <Icons.IconBriefcase size={16} className="input-icon" />
-                      <select 
-                        value={faculty} 
-                        onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}
+                    <label className="input-label">Date of Birth</label>
+                    <div className="settings-glass-input">
+                      <Icons.IconCalendar size={16} className="input-icon" />
+                      <input 
+                        type="date" 
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
                         required
-                      >
-                        <option value="">Select</option>
-                        {Object.keys(FACULTIES).map(f => <option key={f} value={f}>{f}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Programme</label>
-                    <div className="ob-input-wrap">
-                      <Icons.IconBook size={16} className="input-icon" />
-                      <select 
-                        value={programme} 
-                        onChange={(e) => setProgramme(e.target.value)}
-                        disabled={!faculty}
-                        required
-                      >
-                        <option value="">Select</option>
-                        {faculty && FACULTIES[faculty]?.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="input-group">
-                    <label className="input-label">Year of Study</label>
-                    <div className="ob-input-wrap">
-                      <Icons.IconCalendar size={16} className="input-icon" />
+                    <label className="input-label">Gender</label>
+                    <div className="settings-glass-input">
+                      <div className="input-icon"><Icons.IconUser size={16} /></div>
                       <select 
-                        value={yearOfStudy} 
-                        onChange={(e) => setYearOfStudy(e.target.value)}
+                        value={gender} 
+                        onChange={(e) => setGender(e.target.value)}
                       >
-                        <option value="">Select Year</option>
-                        <option value="1">Year 1</option>
-                        <option value="2">Year 2</option>
-                        <option value="3">Year 3</option>
-                        <option value="4">Year 4</option>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
                       </select>
                     </div>
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Semester</label>
-                    <div className="ob-input-wrap">
-                      <Icons.IconClock size={16} className="input-icon" />
+                    <label className="input-label">Nationality</label>
+                    <div className="settings-glass-input">
+                      <Icons.IconMapPin size={16} className="input-icon" />
                       <select 
-                        value={semester} 
-                        onChange={(e) => setSemester(e.target.value)}
+                        value={nationality} 
+                        onChange={(e) => setNationality(e.target.value)}
                       >
-                        <option value="">Select Sem</option>
-                        <option value="1">Semester 1</option>
-                        <option value="2">Semester 2</option>
-                        <option value="3">Short Semester</option>
+                        <option value="Malaysian">Malaysian</option>
+                        <option value="International">International</option>
                       </select>
                     </div>
                   </div>
                 </div>
-
-                {/* Social Links */}
-                <div className="pt-4 border-t border-white/5 space-y-3">
-                  <div className="text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-1.5 mb-1">
-                    <Icons.IconExternalLink size={12} />
-                    Professional Portals (Optional)
-                  </div>
-                  <div className="space-y-3">
-                    <div className="input-group">
-                      <div className="ob-input-wrap">
-                        <div className="input-icon"><Icons.IconTarget size={16} /></div>
-                        <input 
-                          type="url" 
-                          placeholder="LinkedIn Profile URL (https://...)" 
-                          value={linkedinUrl} 
-                          onChange={(e) => setLinkedinUrl(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="input-group">
-                      <div className="ob-input-wrap">
-                        <div className="input-icon"><Icons.IconBook size={16} /></div>
-                        <input 
-                          type="url" 
-                          placeholder="GitHub Profile URL (https://...)" 
-                          value={githubUrl} 
-                          onChange={(e) => setGithubUrl(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="input-group">
-                      <div className="ob-input-wrap">
-                        <div className="input-icon"><Icons.IconDoc size={16} /></div>
-                        <input 
-                          type="url" 
-                          placeholder="Personal Portfolio URL (https://...)" 
-                          value={portfolioUrl} 
-                          onChange={(e) => setPortfolioUrl(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
               </div>
             </div>
-          )}
+
+            {/* Card D: Academic Details (Students Only) */}
+            {user.role === 'student' && (
+              <div className="p-6 space-y-5 settings-premium-card">
+                <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
+                  <div className="bg-accent/10 text-accent p-2.5 rounded-xl border border-accent/20 shrink-0">
+                    <Icons.IconCap size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-text tracking-tight">
+                      Academic Information
+                    </h3>
+                    <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
+                      Manage university and programme details
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="input-group">
+                      <label className="input-label">Matric No</label>
+                      <div className="settings-glass-input">
+                        <Icons.IconCap size={16} className="input-icon" />
+                        <input 
+                          type="text" 
+                          value={matric}
+                          onChange={(e) => setMatric(e.target.value)}
+                          placeholder="B03XXXXXXXX"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Faculty</label>
+                      <div className="settings-glass-input">
+                        <Icons.IconBriefcase size={16} className="input-icon" />
+                        <select 
+                          value={faculty} 
+                          onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}
+                          required
+                        >
+                          <option value="">Select</option>
+                          {Object.keys(FACULTIES).map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Programme</label>
+                      <div className="settings-glass-input">
+                        <Icons.IconBook size={16} className="input-icon" />
+                        <select 
+                          value={programme} 
+                          onChange={(e) => setProgramme(e.target.value)}
+                          disabled={!faculty}
+                          required
+                        >
+                          <option value="">Select</option>
+                          {faculty && FACULTIES[faculty]?.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="input-group">
+                      <label className="input-label">Year of Study</label>
+                      <div className="settings-glass-input">
+                        <Icons.IconCalendar size={16} className="input-icon" />
+                        <select 
+                          value={yearOfStudy} 
+                          onChange={(e) => setYearOfStudy(e.target.value)}
+                        >
+                          <option value="">Select Year</option>
+                          <option value="1">Year 1</option>
+                          <option value="2">Year 2</option>
+                          <option value="3">Year 3</option>
+                          <option value="4">Year 4</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Semester</label>
+                      <div className="settings-glass-input">
+                        <Icons.IconClock size={16} className="input-icon" />
+                        <select 
+                          value={semester} 
+                          onChange={(e) => setSemester(e.target.value)}
+                        >
+                          <option value="">Select Sem</option>
+                          <option value="1">Semester 1</option>
+                          <option value="2">Semester 2</option>
+                          <option value="3">Short Semester</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Social Links */}
+                  <div className="pt-4 border-t border-white/5 space-y-3">
+                    <div className="text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-1.5 mb-1">
+                      <Icons.IconExternalLink size={12} />
+                      Professional Portals (Optional)
+                    </div>
+                    <div className="space-y-3">
+                      <div className="input-group">
+                        <div className="settings-glass-input">
+                          <div className="input-icon"><Icons.IconTarget size={16} /></div>
+                          <input 
+                            type="url" 
+                            placeholder="LinkedIn Profile URL (https://...)" 
+                            value={linkedinUrl} 
+                            onChange={(e) => setLinkedinUrl(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="input-group">
+                        <div className="settings-glass-input">
+                          <div className="input-icon"><Icons.IconBook size={16} /></div>
+                          <input 
+                            type="url" 
+                            placeholder="GitHub Profile URL (https://...)" 
+                            value={githubUrl} 
+                            onChange={(e) => setGithubUrl(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="input-group">
+                        <div className="settings-glass-input">
+                          <div className="input-icon"><Icons.IconDoc size={16} /></div>
+                          <input 
+                            type="url" 
+                            placeholder="Personal Portfolio URL (https://...)" 
+                            value={portfolioUrl} 
+                            onChange={(e) => setPortfolioUrl(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Card E: Notification Preferences JSONB */}
-          <div 
-            className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
-            style={{ 
-              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-              boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
-            }}
-          >
-            <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
-              <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
-                <Icons.IconBell size={16} />
+          <div className="p-6 space-y-5 settings-premium-card">
+            <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
+              <div className="bg-accent/10 text-accent p-2.5 rounded-lg border border-accent/20 shrink-0">
+                <Icons.IconBell size={20} />
               </div>
-              Notification Preferences
-            </h3>
+              <div>
+                <h3 className="font-bold text-lg text-text tracking-tight">
+                  Notification Preferences
+                </h3>
+                <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
+                  Configure how you receive system updates and alerts
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
               <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
@@ -808,7 +854,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   </div>
                 </div>
                 <div 
-                  className="ob-toggle shrink-0" 
+                  className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.match_updates}
                   onClick={() => handleNotificationChange('match_updates')}
@@ -826,7 +872,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   </div>
                 </div>
                 <div 
-                  className="ob-toggle shrink-0" 
+                  className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.new_internships}
                   onClick={() => handleNotificationChange('new_internships')}
@@ -844,7 +890,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   </div>
                 </div>
                 <div 
-                  className="ob-toggle shrink-0" 
+                  className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.application_status}
                   onClick={() => handleNotificationChange('application_status')}
@@ -862,7 +908,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   </div>
                 </div>
                 <div 
-                  className="ob-toggle shrink-0" 
+                  className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.weekly_summary}
                   onClick={() => handleNotificationChange('weekly_summary')}
@@ -887,18 +933,21 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         {/* ── Form: Account Credentials ────────────────────── */}
         <form 
           onSubmit={handleUpdateCredentials} 
-          className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
-          style={{ 
-            background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
-          }}
+          className="p-6 space-y-5 settings-premium-card"
         >
-          <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
-            <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
-              <Icons.IconShield size={16} />
+          <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
+            <div className="bg-accent/10 text-accent p-2.5 rounded-lg border border-accent/20 shrink-0">
+              <Icons.IconShield size={20} />
             </div>
-            Security & Credentials
-          </h3>
+            <div>
+              <h3 className="font-bold text-lg text-text tracking-tight">
+                Security & Credentials
+              </h3>
+              <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
+                Manage your credentials and password settings
+              </p>
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
@@ -910,7 +959,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               </div>
               <div className="input-group">
                 <label className="input-label">New Email Address</label>
-                <div className="ob-input-wrap">
+                <div className="settings-glass-input">
                   <div className="input-icon"><Icons.IconMail size={16} /></div>
                   <input 
                     type="email" 
@@ -936,44 +985,82 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               <div className="space-y-4">
                 <div className="input-group">
                   <label className="input-label">Current Password (Required for changes)</label>
-                  <div className="ob-input-wrap">
+                  <div className="settings-glass-input">
                     <div className="input-icon"><Icons.IconLock size={16} /></div>
                     <input 
-                      type="password" 
+                      type={showCurrentPassword ? "text" : "password"} 
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••"
                     />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)} 
+                      className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
+                    >
+                      {showCurrentPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                    </button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="input-group">
                     <label className="input-label">New Password</label>
-                    <div className="ob-input-wrap">
+                    <div className="settings-glass-input">
                       <div className="input-icon"><Icons.IconLock size={16} /></div>
                       <input 
-                        type="password" 
+                        type={showNewPassword ? "text" : "password"} 
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Min 6 chars"
                       />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowNewPassword(!showNewPassword)} 
+                        className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
+                      >
+                        {showNewPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                      </button>
                     </div>
                   </div>
 
                   <div className="input-group">
                     <label className="input-label">Confirm New Password</label>
-                    <div className="ob-input-wrap">
+                    <div className="settings-glass-input">
                       <div className="input-icon"><Icons.IconLock size={16} /></div>
                       <input 
-                        type="password" 
+                        type={showConfirmPassword ? "text" : "password"} 
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirm password"
                       />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                        className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
+                      >
+                        {showConfirmPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                      </button>
                     </div>
                   </div>
                 </div>
+
+                {/* Password Strength Indicator */}
+                {pwStrength && (
+                  <div className="pt-2 space-y-1.5 animate-fadeIn">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-text-mute">Password Security:</span>
+                      <span className={`font-bold ${pwStrength.color}`}>{pwStrength.label}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${pwStrength.barColor} transition-all duration-300`} 
+                        style={{ width: `${pwStrength.pct}%` }} 
+                      />
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
 
@@ -994,7 +1081,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
       {/* ── Avatar Picker Modal ─────────────────────────────── */}
       {showAvatarPicker && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 animate-fadeIn">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowAvatarPicker(false)} />
           <div 
             className="relative w-full max-w-xl p-8 overflow-hidden max-h-[85vh] flex flex-col rounded-3xl border border-border"
