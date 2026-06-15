@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendNotification } from '../lib/notificationService';
 
 const STAGE_TIMESTAMPS = {
   saved:     {},
@@ -38,6 +39,37 @@ export function useUpdateApplication() {
           event_title: `Moved to ${updates.stage}`,
           event_date: new Date().toISOString(),
         });
+
+        if (data) {
+          try {
+            let priority = 'low';
+            let title = `Application for ${data.role_title} at ${data.company_name} updated: moved to ${updates.stage}`;
+            
+            if (updates.stage === 'interview') {
+              priority = 'high';
+              title = `🎯 Interview invitation scheduled for ${data.role_title} at ${data.company_name}!`;
+            } else if (updates.stage === 'offer') {
+              priority = 'high';
+              title = `🎉 Congratulations! Offer received for ${data.role_title} at ${data.company_name}!`;
+            } else if (updates.stage === 'rejected') {
+              priority = 'medium';
+              title = `Application status update: ${data.role_title} at ${data.company_name}`;
+            } else if (updates.stage === 'applied') {
+              priority = 'medium';
+              title = `Sent application for ${data.role_title} at ${data.company_name}.`;
+            }
+
+            await sendNotification(data.user_id, {
+              type: 'application',
+              title,
+              priority,
+              action_type: 'open_applications',
+              action_target: updates.stage
+            });
+          } catch (notifErr) {
+            console.error("Failed to insert stage update notification:", notifErr);
+          }
+        }
       }
 
       return data;

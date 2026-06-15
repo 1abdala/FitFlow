@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { checkAndNotifyMatchChanges } from '../lib/notificationService';
 import { getProfileStatus } from '../lib/profileHelpers';
 import * as Icons from './Icons';
 import { toast } from 'react-hot-toast';
@@ -440,6 +441,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       // 4. Regenerate matches if student (since preferred locations/academics might impact matching weights)
       if (user.role === 'student') {
         await supabase.rpc('generate_internship_matches', { p_student_id: user.id });
+        await checkAndNotifyMatchChanges(user.id);
       }
 
       toast.success('Profile settings updated successfully!');

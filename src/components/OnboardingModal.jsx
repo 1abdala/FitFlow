@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
+import { sendNotification } from '../lib/notificationService';
 
 const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [step, setStep] = useState(() => {
@@ -175,7 +176,18 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         await supabase.from('coordinator_profiles').upsert({ id: authUser.id, staff_id: staffId, department, position, company_name: faculty });
       }
 
-      if (user.role === 'student') await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
+      if (user.role === 'student') {
+        await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
+        try {
+          await sendNotification(authUser.id, {
+            type: 'system',
+            title: 'Profile initialized! Welcome to FitFlow, start exploring matches.',
+            priority: 'low'
+          });
+        } catch (notifErr) {
+          console.error("Failed to insert onboarding notification:", notifErr);
+        }
+      }
 
       const updatedUser = { ...user, completion_percentage: 100, profile_completed: true };
       onComplete(updatedUser, false);

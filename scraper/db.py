@@ -1,5 +1,6 @@
 import os
 import requests
+import re
 from supabase import create_client, Client
 from datetime import datetime, timedelta, timezone
 
@@ -152,6 +153,7 @@ def regenerate_all_matches() -> int:
     After a scrape, call generate_internship_matches for every student in profiles
     so the UI shows fresh results immediately.
     Also cleans up matching results for any inactive internships first.
+    Performs old vs new match comparison to insert student notifications for new matches/improvements.
     """
     supabase = get_supabase_client()
     try:
@@ -168,8 +170,111 @@ def regenerate_all_matches() -> int:
         students = supabase.table("profiles").select("id").eq("role", "student").execute()
         count = 0
         for s in (students.data or []):
-            supabase.rpc("generate_internship_matches", {"p_student_id": s["id"]}).execute()
+            student_id = s["id"]
+            
+            # Fetch notification preferences
+            prof_res = supabase.table("profiles").select("notification_preferences").eq("id", student_id).single().execute()
+            prefs = (prof_res.data or {}).get("notification_preferences") or {}
+            
+            match_enabled = prefs.get("match_updates") != False
+            new_internships_enabled = prefs.get("new_internships") != False
+            
+            if not match_enabled and not new_internships_enabled:
+                supabase.rpc("generate_internship_matches", {"p_student_id": student_id}).execute()
+                count += 1
+                continue
+
+            # Fetch old matches
+            old_matches_res = supabase.table("matching_results").select("internship_id, match_score").eq("student_id", student_id).execute()
+            old_matches = {m["internship_id"]: float(m["match_score"]) for m in (old_matches_res.data or []) if m.get("internship_id")}
+
+            # Run matching RPC
+            supabase.rpc("generate_internship_matches", {"p_student_id": student_id}).execute()
             count += 1
+
+            # Fetch new matches
+            new_matches_res = supabase.table("matching_results").select("internship_id, match_score, internships(title, company_name)").eq("student_id", student_id).execute()
+
+            # Fetch recent notifications to prevent duplicate inserts
+            recent_res = supabase.table("notifications").select("type, action_target, title").eq("student_id", student_id).in_("type", ["match", "internship"]).execute()
+            notified_new_internships = set()
+            notified_match_internships = set()
+            notified_scores = {}
+
+            for n in (recent_res.data or []):
+                action_target = n.get("action_target")
+                if not action_target:
+                    continue
+                if n["type"] == "internship":
+                    notified_new_internships.add(action_target)
+                elif n["type"] == "match":
+                    notified_match_internships.add(action_target)
+                    match_pct = re.search(r"(\d+)%\s*Match", n["title"]) or re.search(r"->\s*(\d+)%", n["title"])
+                    if match_pct:
+                        score = float(match_pct.group(1))
+                        if action_target not in notified_scores or score > notified_scores[action_target]:
+                            notified_scores[action_target] = score
+
+            # Compare and generate notifications
+            for m in (new_matches_res.data or []):
+                internship_id = m.get("internship_id")
+                if not internship_id:
+                    continue
+                new_score = round(float(m["match_score"]))
+                internship = m.get("internships") or {}
+                title = internship.get("title", "Internship")
+                company = internship.get("company_name", "Company")
+
+                # Scenario A: Newly Scraped Match (High Score) -> type: 'internship'
+                is_new = internship_id not in old_matches
+                if is_new and new_score >= 80 and internship_id not in notified_new_internships and new_internships_enabled:
+                    supabase.table("notifications").insert({
+                        "student_id": student_id,
+                        "type": "internship",
+                        "title": f"New internship opportunity matches your skills: {title} at ${company} ({new_score}% Match)",
+                        "priority": "medium",
+                        "action_type": "open_internship",
+                        "action_target": internship_id,
+                        "is_read": False
+                    }).execute()
+                    notified_new_internships.add(internship_id)
+
+                # Scenario B: Match Score Improved -> type: 'match'
+                prev_notified = notified_scores.get(internship_id)
+                if prev_notified is None and internship_id in old_matches:
+                    prev_notified = old_matches[internship_id]
+
+                if prev_notified is not None and new_score > prev_notified and match_enabled:
+                    supabase.table("notifications").insert({
+                        "student_id": student_id,
+                        "type": "match",
+                        "title": f"Match score for {title} at {company} increased from {round(prev_notified)}% -> {new_score}%!",
+                        "priority": "high",
+                        "action_type": "open_internship",
+                        "action_target": internship_id,
+                        "is_read": False
+                    }).execute()
+                    notified_scores[internship_id] = float(new_score)
+
+                # Scenario C: High Match -> type: 'match'
+                elif new_score >= 80 and internship_id not in notified_match_internships and match_enabled:
+                    supabase.table("notifications").insert({
+                        "student_id": student_id,
+                        "type": "match",
+                        "title": f"🎯 High Match Found! You are a {new_score}% match for {title} at {company}.",
+                        "priority": "high" if new_score >= 90 else "medium",
+                        "action_type": "open_internship",
+                        "action_target": internship_id,
+                        "is_read": False
+                    }).execute()
+                    notified_match_internships.add(internship_id)
+                    notified_scores[internship_id] = float(new_score)
+
+        # 3. Retention Cleanup: Delete notifications older than 90 days
+        ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
+        supabase.table("notifications").delete().lt("sent_at", ninety_days_ago.isoformat()).execute()
+        print(f"[CLEANUP] Stale notifications older than 90 days deleted.")
+
         return count
     except Exception as e:
         print(f"Warning: match regeneration failed: {e}")

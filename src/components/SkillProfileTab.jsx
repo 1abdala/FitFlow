@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
+import { checkAndNotifyMatchChanges } from '../lib/notificationService';
 
 /* ─── Tech colour map ─────────────────────────────────────────────── */
 const TECH_COLORS = {
@@ -273,6 +274,7 @@ const SkillProfileTab = ({ skillGaps = [] }) => {
         const updated = [...currentSkills, canonical];
         setCurrentSkills(updated);
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
+        await checkAndNotifyMatchChanges(userId);
       }
       setSkillInput('');
     } catch (err) {
@@ -291,6 +293,7 @@ const SkillProfileTab = ({ skillGaps = [] }) => {
         const updated = currentSkills.filter(s => s !== skillToRemove);
         setCurrentSkills(updated);
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
+        await checkAndNotifyMatchChanges(userId);
       }
     } catch (err) {
       console.error('Error removing skill:', err);

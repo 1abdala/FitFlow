@@ -10,7 +10,7 @@ import * as Icons from './Icons';
 import { CVAnalyzerPage } from './CVAnalyzerPage';
 import { SettingsTab } from './SettingsTab';
 import ApplicationsTab from './ApplicationsTab';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { useApplications } from '../hooks/useApplications';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
 import { fetchFullProfile } from '../lib/profileHelpers';
@@ -108,28 +108,186 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
   );
 };
 
-const Topbar = ({ onToggleSidebar }) => (
+const getNotificationRelativeTime = (dateValue) => {
+  if (!dateValue) return 'Just now';
+  const date = new Date(dateValue);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+  
+  return getRelativeTimeString(dateValue);
+};
+
+const getNotificationDetails = (notification) => {
+  const type = notification.type;
+  const priority = notification.priority || 'low';
+  
+  let icon = Icons.IconBell;
+  let color = 'text-text-mute';
+  let borderColor = 'transparent';
+
+  if (type === 'match' || type === 'match_score_improved') {
+    icon = Icons.IconSparkle;
+    color = 'text-accent';
+  } else if (type === 'internship') {
+    icon = Icons.IconBriefcase;
+    color = 'text-emerald-400';
+  } else if (type === 'application') {
+    icon = Icons.IconTarget;
+    color = 'text-amber-400';
+  } else if (type === 'cv') {
+    icon = Icons.IconDoc;
+    color = 'text-accent-2';
+  } else {
+    icon = Icons.IconGear;
+    color = 'text-text-mute';
+  }
+
+  if (priority === 'high') {
+    borderColor = '#f87171';
+  } else if (priority === 'medium') {
+    borderColor = '#facc15';
+  } else if (priority === 'low') {
+    borderColor = '#4f7cff';
+  }
+
+  return { icon, color, borderColor };
+};
+
+const Topbar = ({ 
+  onToggleSidebar, 
+  notifications = [], 
+  unreadCount = 0, 
+  showDropdown = false, 
+  setShowDropdown, 
+  onMarkAsRead, 
+  onMarkAllAsRead 
+}) => (
   <div className="topbar">
     <div className="topbar-left">
       <button className="sidebar-toggle-btn" onClick={onToggleSidebar} title="Open menu">
         <Icons.IconMenu size={20} />
       </button>
-      <div className="crumb">
+      <div className="crumb select-none">
         <span className="crumb-mute">FitFlow</span>
         <span className="crumb-sep">/</span>
         <span>Dashboard</span>
       </div>
     </div>
     <div className="topbar-right">
-      <div className="search">
+      <div className="search select-none">
         <Icons.IconSearch size={16} />
         <input placeholder="Search internships, skills, companies…" />
         <span className="kbd">⌘K</span>
       </div>
-      <button className="icon-btn" title="Notifications">
-        <Icons.IconBell size={16} />
-        <span className="icon-dot" />
-      </button>
+      
+      <div className="relative">
+        <button 
+          className={`icon-btn ${showDropdown ? 'bg-white/10 text-text' : 'text-text-mute hover:text-text'} transition-colors relative`}
+          onClick={() => setShowDropdown(!showDropdown)} 
+          title="Notifications"
+        >
+          <Icons.IconBell size={16} />
+          {unreadCount > 0 && (
+            <span className="icon-dot absolute -top-0.5 -right-0.5 bg-accent w-2 h-2 rounded-full ring-2 ring-[#0B1220] flex items-center justify-center text-[8px] font-bold text-white p-1 select-none">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+        
+        <AnimatePresence>
+          {showDropdown && (
+            <>
+              <div className="fixed inset-0 z-[190]" onClick={() => setShowDropdown(false)} />
+              
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl z-[200] overflow-hidden"
+                style={{
+                  background: 'rgba(11, 18, 32, 0.95)',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(79, 124, 255, 0.1)'
+                }}
+              >
+                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2 select-none">
+                    <Icons.IconBell size={14} className="text-accent" />
+                    <span className="font-bold text-sm text-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="bg-accent/10 text-accent text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={onMarkAllAsRead}
+                      className="text-[10px] font-bold text-accent hover:text-accent-2 transition-colors focus:outline-none"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                
+                <div className="max-h-[360px] overflow-y-auto custom-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center select-none">
+                      <div className="p-3 bg-white/5 border border-white/5 rounded-2xl text-text-mute mb-3">
+                        <Icons.IconBell size={24} />
+                      </div>
+                      <span className="font-bold text-xs text-text">You're all caught up</span>
+                      <span className="text-[10px] text-text-mute mt-1">No new notifications are available.</span>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {notifications.map((notif) => {
+                        const details = getNotificationDetails(notif);
+                        const Icon = details.icon;
+                        
+                        return (
+                          <div 
+                            key={notif.id}
+                            onClick={() => onMarkAsRead(notif)}
+                            className={`p-4 flex gap-3.5 hover:bg-white/4 cursor-pointer transition-all duration-200 group relative ${!notif.is_read ? 'bg-accent/2' : ''}`}
+                            style={{
+                              borderLeft: `3px solid ${details.borderColor}`
+                            }}
+                          >
+                            <div className={`p-2 rounded-xl bg-white/3 border border-white/5 shrink-0 flex items-center justify-center w-8 h-8 group-hover:scale-105 transition-transform ${details.color}`}>
+                              <Icon size={14} />
+                            </div>
+                            
+                            <div className="flex-1 min-w-0 flex flex-col">
+                              <span className="text-[11px] font-bold text-text group-hover:text-accent transition-colors leading-normal pr-4">
+                                {notif.title}
+                              </span>
+                              <span className="text-[9px] text-text-mute mt-1.5 font-medium flex items-center gap-1.5 select-none">
+                                <Icons.IconClock size={10} />
+                                {notif.timeString || 'Just now'}
+                              </span>
+                            </div>
+                            
+                            {!notif.is_read && (
+                              <span className="absolute right-4 top-[50%] -translate-y-[50%] w-1.5 h-1.5 rounded-full bg-accent" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   </div>
 );
@@ -417,6 +575,10 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [loadingNotif, setLoadingNotif] = useState(true);
   const [matches, setMatches] = useState([]);
   const [skillGaps, setSkillGaps] = useState([]);
   const [avgScore, setAvgScore] = useState(0);
@@ -446,6 +608,231 @@ const Dashboard = () => {
   useEffect(() => {
     fetchUserProfile();
   }, [fetchUserProfile]);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) return;
+
+      setLoadingNotif(true);
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('student_id', session.user.id)
+        .order('sent_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (data) {
+        const internshipIds = data.map(n => n.action_target).filter(id => {
+          return id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        });
+        
+        let internshipsMap = {};
+        if (internshipIds.length > 0) {
+          const { data: internshipsData, error: intErr } = await supabase
+            .from('internships')
+            .select('id, title, company_name, company_logo_url')
+            .in('id', internshipIds);
+
+          if (!intErr && internshipsData) {
+            internshipsMap = internshipsData.reduce((acc, item) => {
+              acc[item.id] = item;
+              return acc;
+            }, {});
+          }
+        }
+
+        const enriched = data.map(n => {
+          const internship = n.action_target ? internshipsMap[n.action_target] : null;
+          return {
+            ...n,
+            internship,
+            timeString: getNotificationRelativeTime(n.sent_at)
+          };
+        });
+
+        setNotifications(enriched);
+        setUnreadCount(enriched.filter(n => !n.is_read).length);
+        
+        if (enriched.length === 0) {
+          await seedInitialNotifications(session.user.id);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setLoadingNotif(false);
+    }
+  }, []);
+
+  const seedInitialNotifications = async (userId) => {
+    try {
+      const { data } = await supabase.from('notifications').select('id').eq('student_id', userId).limit(1);
+      if (data && data.length > 0) return;
+
+      await supabase.from('notifications').insert({
+        student_id: userId,
+        type: 'system',
+        title: 'Welcome to FitFlow! Start exploring internship matches.',
+        priority: 'low',
+        is_read: false
+      });
+
+      await supabase.from('notifications').insert({
+        student_id: userId,
+        type: 'system',
+        title: 'Complete your Skill Profile to improve matching accuracy.',
+        priority: 'low',
+        action_type: 'open_skill_profile',
+        is_read: false
+      });
+
+      const { data: freshData } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('student_id', userId)
+        .order('sent_at', { ascending: false });
+      
+      if (freshData) {
+        const enriched = freshData.map(n => ({
+          ...n,
+          timeString: getNotificationRelativeTime(n.sent_at)
+        }));
+        setNotifications(enriched);
+        setUnreadCount(enriched.filter(n => !n.is_read).length);
+      }
+    } catch (err) {
+      console.error("Failed to seed initial notifications:", err);
+    }
+  };
+
+  const handleMarkAsRead = async (notif) => {
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+    setUnreadCount(prev => Math.max(0, prev - (notif.is_read ? 0 : 1)));
+
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notif.id);
+      
+      setShowNotifDropdown(false);
+
+      if (notif.action_type === 'open_internship' && notif.action_target) {
+        const { data: job, error } = await supabase
+          .from('internships')
+          .select(`
+            id,
+            title,
+            company_name,
+            location,
+            apply_url,
+            description,
+            created_at,
+            last_seen_at,
+            company_logo_url,
+            internship_skills ( skills ( name ) )
+          `)
+          .eq('id', notif.action_target)
+          .single();
+        
+        if (!error && job) {
+          setSelectedJob(job);
+        }
+      } else if (notif.action_type === 'open_applications') {
+        setActiveTab('applications');
+      } else if (notif.action_type === 'open_skill_profile') {
+        setActiveTab('skills');
+      }
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('student_id', user.id)
+        .eq('is_read', false);
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
+  };
+
+  useEffect(() => {
+    let channel;
+    
+    const setupNotifications = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) return;
+
+      await fetchNotifications();
+
+      channel = supabase
+        .channel(`notifications-user-${session.user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `student_id=eq.${session.user.id}`
+          },
+          async (payload) => {
+            const newNotif = payload.new;
+            let internship = null;
+
+            if (newNotif.action_target && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newNotif.action_target)) {
+              const { data } = await supabase
+                .from('internships')
+                .select('id, title, company_name, company_logo_url')
+                .eq('id', newNotif.action_target)
+                .single();
+              if (data) internship = data;
+            }
+
+            const enrichedNotif = {
+              ...newNotif,
+              internship,
+              timeString: 'Just now'
+            };
+
+            setNotifications(prev => [enrichedNotif, ...prev.slice(0, 9)]);
+            setUnreadCount(prev => prev + 1);
+
+            let toastIcon = '🔔';
+            if (newNotif.type === 'match' || newNotif.type === 'match_score_improved') toastIcon = '🎯';
+            else if (newNotif.type === 'internship') toastIcon = '💼';
+            else if (newNotif.type === 'application') toastIcon = '📊';
+            else if (newNotif.type === 'cv') toastIcon = '📄';
+
+            toast(newNotif.title, {
+              icon: toastIcon,
+              duration: 5000,
+              id: newNotif.id
+            });
+          }
+        )
+        .subscribe();
+    };
+
+    setupNotifications();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [fetchNotifications]);
 
   const fetchMatches = async () => {
     try {
@@ -642,7 +1029,15 @@ const Dashboard = () => {
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       
       <main className="main">
-        <Topbar onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
+        <Topbar 
+          onToggleSidebar={() => setSidebarOpen(prev => !prev)} 
+          notifications={notifications}
+          unreadCount={unreadCount}
+          showDropdown={showNotifDropdown}
+          setShowDropdown={setShowNotifDropdown}
+          onMarkAsRead={handleMarkAsRead}
+          onMarkAllAsRead={handleMarkAllAsRead}
+        />
         <div className="main-scroll custom-scrollbar">
           
           <div className="page-head">

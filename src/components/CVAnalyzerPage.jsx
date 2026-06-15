@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendNotification } from '../lib/notificationService';
 import * as Icons from './Icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -92,6 +93,17 @@ export const CVAnalyzerPage = ({ user, onUserUpdate }) => {
       
       if (onUserUpdate) {
         await onUserUpdate();
+      }
+
+      try {
+        await sendNotification(user.id, {
+          type: 'cv',
+          title: `CV Analysis complete! ATS Score: ${data.cv_score}%. Your matching scores have been updated.`,
+          priority: 'medium',
+          action_type: 'open_skill_profile'
+        });
+      } catch (notifErr) {
+        console.error("Failed to insert CV notification:", notifErr);
       }
 
     } catch (err) {
