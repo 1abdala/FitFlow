@@ -229,35 +229,24 @@ const Spinner = () => (
 );
 
 /* ─── Main component ──────────────────────────────────────────────── */
-const SkillProfileTab = ({ skillGaps = [] }) => {
+const SkillProfileTab = ({ user, onUserUpdate, onMatchesUpdate, skillGaps = [] }) => {
   const [skillInput, setSkillInput]   = useState('');
   const [isAdding, setIsAdding]       = useState(false);
-  const [currentSkills, setCurrentSkills] = useState([]);
-  const [userId, setUserId]           = useState(null);
-  const [loading, setLoading]         = useState(true);
+  const [currentSkills, setCurrentSkills] = useState(user?.skills || []);
+  const [userId, setUserId]           = useState(user?.id || null);
+  const [loading, setLoading]         = useState(!user);
   const [focused, setFocused]         = useState(false);
   const inputRef = useRef(null);
 
-  useEffect(() => { loadUserSkills(); }, []);
-
-  async function loadUserSkills() {
-    try {
-      setLoading(true);
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
-      setUserId(authUser.id);
-      const { data, error } = await supabase
-        .from('user_skills')
-        .select('skill_id, skills:skill_id(id, name)')
-        .eq('user_id', authUser.id);
-      if (error) throw error;
-      if (data) setCurrentSkills(data.map(us => us.skills.name));
-    } catch (err) {
-      console.error('Error loading skills:', err);
-    } finally {
+  useEffect(() => {
+    if (user) {
+      setUserId(user.id);
+      if (user.skills) {
+        setCurrentSkills(user.skills);
+      }
       setLoading(false);
     }
-  }
+  }, [user]);
 
   const handleAddSkill = async (e) => {
     e.preventDefault();
@@ -270,11 +259,21 @@ const SkillProfileTab = ({ skillGaps = [] }) => {
       const { data: realSkill } = await supabase.from('skills').select('name').eq('id', skillId).single();
       const canonical = realSkill.name;
       if (!currentSkills.includes(canonical)) {
+        // Fetch old matches BEFORE inserting skill and regenerating
+        const { data: oldMatches } = await supabase
+          .from('matching_results')
+          .select('internship_id, match_score')
+          .eq('student_id', userId);
+
         await supabase.from('user_skills').insert({ user_id: userId, skill_id: skillId });
         const updated = [...currentSkills, canonical];
         setCurrentSkills(updated);
+
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
-        await checkAndNotifyMatchChanges(userId);
+        await checkAndNotifyMatchChanges(userId, oldMatches);
+
+        if (onUserUpdate) await onUserUpdate();
+        if (onMatchesUpdate) await onMatchesUpdate();
       }
       setSkillInput('');
     } catch (err) {
@@ -289,11 +288,21 @@ const SkillProfileTab = ({ skillGaps = [] }) => {
     try {
       const { data: sd } = await supabase.from('skills').select('id').eq('name', skillToRemove).single();
       if (sd) {
+        // Fetch old matches BEFORE deleting skill and regenerating
+        const { data: oldMatches } = await supabase
+          .from('matching_results')
+          .select('internship_id, match_score')
+          .eq('student_id', userId);
+
         await supabase.from('user_skills').delete().eq('user_id', userId).eq('skill_id', sd.id);
         const updated = currentSkills.filter(s => s !== skillToRemove);
         setCurrentSkills(updated);
+
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
-        await checkAndNotifyMatchChanges(userId);
+        await checkAndNotifyMatchChanges(userId, oldMatches);
+
+        if (onUserUpdate) await onUserUpdate();
+        if (onMatchesUpdate) await onMatchesUpdate();
       }
     } catch (err) {
       console.error('Error removing skill:', err);

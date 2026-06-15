@@ -165,8 +165,8 @@ const Topbar = ({
   unreadCount = 0, 
   showDropdown = false, 
   setShowDropdown, 
-  onMarkAsRead, 
-  onMarkAllAsRead 
+  onNotificationClick, 
+  onClearAll 
 }) => (
   <div className="topbar">
     <div className="topbar-left">
@@ -226,12 +226,12 @@ const Topbar = ({
                       </span>
                     )}
                   </div>
-                  {unreadCount > 0 && (
+                  {notifications.length > 0 && (
                     <button 
-                      onClick={onMarkAllAsRead}
+                      onClick={onClearAll}
                       className="text-[10px] font-bold text-accent hover:text-accent-2 transition-colors focus:outline-none"
                     >
-                      Mark all as read
+                      Clear all
                     </button>
                   )}
                 </div>
@@ -254,7 +254,7 @@ const Topbar = ({
                         return (
                           <div 
                             key={notif.id}
-                            onClick={() => onMarkAsRead(notif)}
+                            onClick={() => onNotificationClick(notif)}
                             className={`p-4 flex gap-3.5 hover:bg-white/4 cursor-pointer transition-all duration-200 group relative ${!notif.is_read ? 'bg-accent/2' : ''}`}
                             style={{
                               borderLeft: `3px solid ${details.borderColor}`
@@ -709,14 +709,16 @@ const Dashboard = () => {
     }
   };
 
-  const handleMarkAsRead = async (notif) => {
-    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+  const handleNotificationClick = async (notif) => {
+    // Immediately remove from UI state
+    setNotifications(prev => prev.filter(n => n.id !== notif.id));
     setUnreadCount(prev => Math.max(0, prev - (notif.is_read ? 0 : 1)));
 
     try {
+      // Delete notification from database immediately on click
       await supabase
         .from('notifications')
-        .update({ is_read: true })
+        .delete()
         .eq('id', notif.id);
       
       setShowNotifDropdown(false);
@@ -748,12 +750,12 @@ const Dashboard = () => {
         setActiveTab('skills');
       }
     } catch (err) {
-      console.error("Failed to mark notification as read:", err);
+      console.error("Failed to delete notification on click:", err);
     }
   };
 
-  const handleMarkAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  const handleClearAll = async () => {
+    setNotifications([]);
     setUnreadCount(0);
 
     try {
@@ -762,11 +764,10 @@ const Dashboard = () => {
 
       await supabase
         .from('notifications')
-        .update({ is_read: true })
-        .eq('student_id', user.id)
-        .eq('is_read', false);
+        .delete()
+        .eq('student_id', user.id);
     } catch (err) {
-      console.error("Failed to mark all notifications as read:", err);
+      console.error("Failed to clear all notifications:", err);
     }
   };
 
@@ -1035,8 +1036,8 @@ const Dashboard = () => {
           unreadCount={unreadCount}
           showDropdown={showNotifDropdown}
           setShowDropdown={setShowNotifDropdown}
-          onMarkAsRead={handleMarkAsRead}
-          onMarkAllAsRead={handleMarkAllAsRead}
+          onNotificationClick={handleNotificationClick}
+          onClearAll={handleClearAll}
         />
         <div className="main-scroll custom-scrollbar">
           
@@ -1289,7 +1290,12 @@ const Dashboard = () => {
           )}
 
           {activeTab === 'skills' && (
-            <SkillProfileTab skillGaps={skillGaps} />
+            <SkillProfileTab 
+              user={user} 
+              onUserUpdate={fetchUserProfile} 
+              onMatchesUpdate={fetchMatches}
+              skillGaps={skillGaps} 
+            />
           )}
 
           {activeTab === 'learning' && (

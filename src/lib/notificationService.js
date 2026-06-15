@@ -98,7 +98,7 @@ export async function sendNotification(studentId, { type, title, priority = 'low
  * Checks for new high matches and match score improvements, then inserts notifications.
  * Respects student's notification preferences and prevents duplicate spam.
  */
-export async function checkAndNotifyMatchChanges(studentId) {
+export async function checkAndNotifyMatchChanges(studentId, oldMatches = null) {
   if (!studentId) return { error: new Error('Student ID is required') };
 
   try {
@@ -167,6 +167,16 @@ export async function checkAndNotifyMatchChanges(studentId) {
       }
     });
 
+    // Create oldMatches map if passed
+    const oldMatchesMap = {};
+    if (oldMatches && Array.isArray(oldMatches)) {
+      oldMatches.forEach(m => {
+        if (m.internship_id) {
+          oldMatchesMap[m.internship_id] = Math.round(Number(m.match_score));
+        }
+      });
+    }
+
     // 4. Iterate over new matches and check if we should notify
     for (const match of newMatches) {
       const internshipId = match.internship_id;
@@ -178,7 +188,8 @@ export async function checkAndNotifyMatchChanges(studentId) {
       const company = internship.company_name;
 
       // Scenario A: Newly Scraped Match (High Score) -> type: 'internship'
-      if (newScore >= 80 && !notifiedNewInternships[internshipId] && newInternshipsEnabled) {
+      const isNew = oldMatches ? !(internshipId in oldMatchesMap) : !notifiedNewInternships[internshipId];
+      if (isNew && newScore >= 80 && !notifiedNewInternships[internshipId] && newInternshipsEnabled) {
         await supabase.from('notifications').insert({
           student_id: studentId,
           type: 'internship',
@@ -192,16 +203,20 @@ export async function checkAndNotifyMatchChanges(studentId) {
 
       // Scenario B: Match Score Improved -> type: 'match'
       const prevNotifiedScore = notifiedScores[internshipId];
-      if (prevNotifiedScore !== undefined && newScore > prevNotifiedScore && matchEnabled) {
+      const oldScore = oldMatchesMap[internshipId];
+      const prevScore = prevNotifiedScore !== undefined ? prevNotifiedScore : oldScore;
+
+      if (prevScore !== undefined && newScore > prevScore && matchEnabled) {
         await supabase.from('notifications').insert({
           student_id: studentId,
           type: 'match',
-          title: `Match score for ${title} at ${company} increased from ${prevNotifiedScore}% -> ${newScore}%!`,
+          title: `Match score for ${title} at ${company} increased from ${prevScore}% -> ${newScore}%!`,
           priority: 'high',
           action_type: 'open_internship',
           action_target: internshipId
         });
         notifiedScores[internshipId] = newScore; 
+        notifiedMatchInternships[internshipId] = true; // Mark as notified
       }
       
       // Scenario C: High Match -> type: 'match'

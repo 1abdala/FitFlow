@@ -3,7 +3,8 @@
 -- Run this in your Supabase SQL Editor (https://supabase.com/dashboard)
 -- ========================================================
 
--- 1. Add metadata columns for actionable routing and priority levels
+-- 1. Add metadata columns for actionable routing, priority levels, and title
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS title TEXT;
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'low';
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS action_type TEXT;
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS action_target TEXT;
