@@ -270,6 +270,43 @@ def regenerate_all_matches() -> int:
                     notified_match_internships.add(internship_id)
                     notified_scores[internship_id] = float(new_score)
 
+            # 2.7 Weekly Summary Notification (Digest)
+            weekly_summary_enabled = prefs.get("weekly_summary", False)
+            if weekly_summary_enabled:
+                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+                
+                recent_digest_res = supabase.table("notifications")\
+                    .select("id")\
+                    .eq("student_id", student_id)\
+                    .eq("type", "system")\
+                    .like("title", "Weekly Digest:%")\
+                    .gt("sent_at", seven_days_ago)\
+                    .limit(1)\
+                    .execute()
+                
+                if not (recent_digest_res.data or []):
+                    # Count matches >= 80%
+                    high_matches = len([m for m in (new_matches_res.data or []) if round(float(m["match_score"])) >= 80])
+                    
+                    # Fetch active application count from tracker
+                    apps_res = supabase.table("applications")\
+                        .select("id")\
+                        .eq("student_id", student_id)\
+                        .execute()
+                    apps_count = len(apps_res.data or [])
+                    
+                    digest_title = f"Weekly Digest: You have {high_matches} high-probability matches (80%+) and {apps_count} active applications."
+                    supabase.table("notifications").insert({
+                        "student_id": student_id,
+                        "type": "system",
+                        "title": digest_title,
+                        "priority": "low",
+                        "action_type": "open_skill_profile",
+                        "action_target": "skills",
+                        "is_read": False
+                    }).execute()
+                    print(f"[WEEKLY DIGEST] Sent to student: {student_id}")
+
         # 3. Retention Cleanup: Delete notifications older than 90 days
         ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
         supabase.table("notifications").delete().lt("sent_at", ninety_days_ago.isoformat()).execute()
