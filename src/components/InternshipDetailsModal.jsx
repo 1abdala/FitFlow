@@ -188,8 +188,19 @@ const InternshipDetailsModal = ({ job, onClose }) => {
         {/* Header */}
         <header className="idm-head">
           <div className="idm-head-left">
-            <div className="idm-logo">
-              <Icons.IconBriefcase size={22} />
+            <div className="idm-logo" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {internships?.company_logo_url ? (
+                <img 
+                  src={internships.company_logo_url} 
+                  alt={internships.company_name} 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <Icons.IconBriefcase size={22} style={{ display: internships?.company_logo_url ? 'none' : 'block' }} />
             </div>
             <div>
               <div className="idm-kicker">

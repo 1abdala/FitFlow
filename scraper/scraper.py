@@ -278,6 +278,14 @@ def _parse_job_card(card, index):
         except:
             pass
 
+        # Company Logo (optional)
+        logo_url = None
+        try:
+            logo_img = card.find_element(By.CSS_SELECTOR, "img")
+            logo_url = logo_img.get_attribute("src")
+        except:
+            pass
+
         # Must be an internship
         title_lower = title.lower()
         if "intern" not in title_lower:
@@ -311,7 +319,8 @@ def _parse_job_card(card, index):
             "description": "Description pending (Phase 2).",
             "apply_url": job_url,
             "source": "JobStreet",
-            "is_active": True
+            "is_active": True,
+            "company_logo_url": logo_url
         }
 
     except Exception as e:

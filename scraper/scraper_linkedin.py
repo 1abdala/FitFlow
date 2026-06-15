@@ -94,11 +94,17 @@ def _fetch_listings(session: requests.Session, query: str, start: int = 0) -> li
                 # Ensure URL is directed to global www subdomain to force English locale
                 url = url.replace("my.linkedin.com", "www.linkedin.com")
 
+                logo_el    = card.find("img")
+                logo_url   = None
+                if logo_el:
+                    logo_url = logo_el.get("data-delayed-url") or logo_el.get("src")
+
                 jobs.append({
                     "title":        title_el.get_text(strip=True),
                     "company_name": company_el.get_text(strip=True) if company_el else "Unknown",
                     "location":     loc_el.get_text(strip=True)     if loc_el     else "Malaysia",
                     "apply_url":    url,
+                    "company_logo_url": logo_url
                 })
             except Exception:
                 continue
