@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { getProfileStatus } from '../lib/profileHelpers';
 import * as Icons from './Icons';
@@ -161,6 +161,39 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const pwStrength = useMemo(() => {
+    if (!newPassword) return null;
+    let score = 0;
+    if (newPassword.length >= 8) score++;
+    if (/[A-Z]/.test(newPassword)) score++;
+    if (/[a-z]/.test(newPassword)) score++;
+    if (/[0-9]/.test(newPassword)) score++;
+    if (/[^A-Za-z0-9]/.test(newPassword)) score++;
+
+    if (score <= 2) {
+      return {
+        label: 'Weak',
+        color: 'text-red-400',
+        barColor: 'bg-red-400',
+        pct: Math.max(10, (score / 5) * 100)
+      };
+    } else if (score <= 4) {
+      return {
+        label: 'Medium',
+        color: 'text-amber-400',
+        barColor: 'bg-amber-400',
+        pct: (score / 5) * 100
+      };
+    } else {
+      return {
+        label: 'Strong',
+        color: 'text-emerald-400',
+        barColor: 'bg-emerald-400',
+        pct: 100
+      };
+    }
+  }, [newPassword]);
 
   useEffect(() => {
     if (user) {
