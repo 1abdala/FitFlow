@@ -426,7 +426,7 @@ const Dashboard = () => {
         .select(`
           id,
           match_score,
-          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, internship_skills ( skills ( name ) ) ),
+          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, company_logo_url, internship_skills ( skills ( name ) ) ),
           skill_gaps ( skills ( name ) )
         `)
         .eq('student_id', authUser.id)
