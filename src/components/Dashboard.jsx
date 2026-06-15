@@ -8,6 +8,7 @@ import SkillProfileTab from './SkillProfileTab';
 import LearningHubTab from './LearningHubTab';
 import * as Icons from './Icons';
 import { CVAnalyzerPage } from './CVAnalyzerPage';
+import { SettingsTab } from './SettingsTab';
 import ApplicationsTab from './ApplicationsTab';
 import { Toaster } from 'react-hot-toast';
 import { useApplications } from '../hooks/useApplications';
@@ -63,7 +64,23 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
       <div className="sidebar-foot">
         <NavItem icon={<Icons.IconGear size={18} />} label="Settings" onClick={() => { setActive('settings'); onClose(); }} active={active === 'settings'} />
         <div className="user-row">
-          <div className="user-ava">{user?.name?.slice(0, 2).toUpperCase() || 'FF'}</div>
+          <div className="user-ava" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {user?.avatar_url ? (
+              <img 
+                src={user.avatar_url} 
+                alt={user.name} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <span style={{ display: user?.avatar_url ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              {user?.name?.slice(0, 2).toUpperCase() || 'FF'}
+            </span>
+          </div>
           <div className="user-meta">
             <div className="user-name truncate">{user?.name}</div>
             <div className="user-role capitalize">{user?.role} · {user?.course || 'Student'}</div>
@@ -869,18 +886,7 @@ const Dashboard = () => {
           )}
 
           {activeTab === 'settings' && (
-            <div className="card">
-              <h3 className="card-title mb-6">Account Settings</h3>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl border border-border">
-                  <div>
-                    <div className="font-bold">Dark Mode</div>
-                    <div className="text-xs text-text-mute">Use the Midnight theme across the app</div>
-                  </div>
-                  <div className="bg-accent px-4 py-1 rounded-full text-[10px] font-bold text-accent-text uppercase tracking-widest">Active</div>
-                </div>
-              </div>
-            </div>
+            <SettingsTab user={user} onUserUpdate={fetchUserProfile} />
           )}
 
         </div>

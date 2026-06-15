@@ -27,7 +27,7 @@ export function getProfileStatus(profile, skills = []) {
     const requiredFields = ['phone', 'dob', 'matric', 'faculty', 'programme'];
     
     // 2. Optional Fields for Student
-    const optionalFields = ['nationality', 'gender', 'address', 'year_of_study', 'semester', 'preferred_location', 'preferred_industry', 'university', 'course', 'cv_url'];
+    const optionalFields = ['nationality', 'gender', 'address', 'year_of_study', 'semester', 'preferred_location', 'preferred_industry', 'university', 'course', 'cv_url', 'linkedin_url', 'github_url', 'portfolio_url', 'avatar_url'];
 
     // Track completed counts
     let completedCount = 0;
