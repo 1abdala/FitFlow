@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getProfileStatus } from '../lib/profileHelpers';
 import * as Icons from './Icons';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // 9 Premium Gradient SVG presets
 const PRESET_AVATARS = [
@@ -23,8 +24,91 @@ const FACULTIES = {
   'FkP': ['Manufacturing Engineering', 'Robotics']
 };
 
+const REQUIRED_FIELD_LABELS = {
+  phone: 'Phone',
+  dob: 'DOB',
+  matric: 'Matric',
+  faculty: 'Faculty',
+  programme: 'Programme',
+  skills: 'Skills'
+};
+
+const OPTIONAL_FIELD_LABELS = {
+  avatar_url: 'Avatar',
+  linkedin_url: 'LinkedIn',
+  github_url: 'GitHub',
+  portfolio_url: 'Portfolio'
+};
+
+// Reusable stat pill inside Profile Card
+const StatPill = ({ label, value, color }) => (
+  <div
+    className="flex flex-col items-center px-3 py-2 rounded-xl text-center w-full"
+    style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)' }}
+  >
+    <span
+      className="text-base font-bold leading-none tracking-tight"
+      style={{ fontFamily: "'Space Grotesk', sans-serif", color: color || 'var(--text)' }}
+    >
+      {value}
+    </span>
+    <span className="text-[8px] uppercase tracking-widest mt-1 text-text-mute font-semibold">
+      {label}
+    </span>
+  </div>
+);
+
+// Reusable header component for settings cards with minimal styling
+const CardHeader = ({ icon: IconComponent, title, subtitle }) => (
+  <div className="flex items-center gap-5 border-b border-white/5 pb-4 select-none">
+    <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 flex items-center justify-center">
+      <IconComponent size={18} />
+    </div>
+    <div>
+      <h3 className="font-semibold text-base text-text tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        {title}
+      </h3>
+      <p className="text-[11px] text-text-mute mt-0.5 font-medium leading-normal">
+        {subtitle}
+      </p>
+    </div>
+  </div>
+);
+
+// Reusable glassmorphism input wrapper with dropdown chevron support
+const SettingsField = ({ label, icon: IconComponent, error, children }) => {
+  const isSelect = React.Children.toArray(children).some(
+    child => child.type === 'select'
+  );
+
+  return (
+    <div className="input-group flex flex-col gap-1.5 w-full">
+      {label && <label className="text-xs font-semibold text-text-mute tracking-tight">{label}</label>}
+      <div className="settings-glass-input relative flex items-center w-full">
+        {IconComponent && (
+          <div className="input-icon absolute left-4 text-text-dim pointer-events-none flex items-center justify-center">
+            <IconComponent size={16} />
+          </div>
+        )}
+        {children}
+        {isSelect && (
+          <div className="absolute right-4 text-text-dim pointer-events-none flex items-center justify-center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        )}
+      </div>
+      {error && <span className="text-[11px] text-red-400 mt-1">{error}</span>}
+    </div>
+  );
+};
+
 export const SettingsTab = ({ user, onUserUpdate }) => {
   const [profileStatus, setProfileStatus] = useState(null);
+  const [appCount, setAppCount] = useState(0);
+  const [matchScore, setMatchScore] = useState(0);
+  const [authUserDetail, setAuthUserDetail] = useState(null);
 
   // Form states - Personal Info
   const [fullName, setFullName] = useState(user?.full_name || user?.name || '');
@@ -45,7 +129,11 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const [githubUrl, setGithubUrl] = useState(user?.github_url || '');
   const [portfolioUrl, setPortfolioUrl] = useState(user?.portfolio_url || '');
 
-  // Form states - Credentials update
+  // Modal State Control
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  // Form states - Credentials update (Modals only)
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -69,7 +157,6 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
 
   useEffect(() => {
     if (user) {
@@ -99,6 +186,44 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       setEmail(user.email || '');
       if (user.notification_preferences) {
         setNotifications(user.notification_preferences);
+      }
+    }
+  }, [user]);
+
+  // Dynamic async statistics loader
+  useEffect(() => {
+    if (user) {
+      const getAuthUserDetail = async () => {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          setAuthUserDetail(authUser);
+        }
+      };
+      
+      const fetchDashboardStats = async () => {
+        // Fetch saved applications count
+        const { count, error: countErr } = await supabase
+          .from('applications')
+          .select('*', { count: 'exact', head: true })
+          .eq('student_id', user.id);
+        if (!countErr && count !== null) {
+          setAppCount(count);
+        }
+
+        // Fetch matched items score average
+        const { data: matchesData, error: matchErr } = await supabase
+          .from('matching_results')
+          .select('match_score')
+          .eq('student_id', user.id);
+        if (!matchErr && matchesData && matchesData.length > 0) {
+          const sum = matchesData.reduce((acc, curr) => acc + Number(curr.match_score), 0);
+          setMatchScore(Math.round(sum / matchesData.length));
+        }
+      };
+
+      getAuthUserDetail();
+      if (user.role === 'student') {
+        fetchDashboardStats();
       }
     }
   }, [user]);
@@ -229,7 +354,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
   // Save profile information
   const handleSaveProfile = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setSavingProfile(true);
 
     try {
@@ -289,66 +414,6 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     }
   };
 
-  // Secure auth credentials update
-  const handleUpdateCredentials = async (e) => {
-    e.preventDefault();
-    if (!email && !newPassword) return;
-
-    setUpdatingCredentials(true);
-    try {
-      // A. Updating Email (Direct update - Supabase handles confirmation emails)
-      if (email && email !== user.email) {
-        const { error: emailErr } = await supabase.auth.updateUser({ email });
-        if (emailErr) throw emailErr;
-        toast.success('Confirmation link sent to your new email!');
-      }
-
-      // B. Updating Password
-      if (newPassword) {
-        if (newPassword !== confirmPassword) {
-          toast.error('New passwords do not match.');
-          setUpdatingCredentials(false);
-          return;
-        }
-
-        if (newPassword.length < 6) {
-          toast.error('Password must be at least 6 characters.');
-          setUpdatingCredentials(false);
-          return;
-        }
-
-        if (!currentPassword) {
-          toast.error('Current password is required to verify identity.');
-          setUpdatingCredentials(false);
-          return;
-        }
-
-        // Dedicated Re-Auth Check: Verify user password before updating
-        const { error: authErr } = await supabase.auth.signInWithPassword({
-          email: user.email,
-          password: currentPassword
-        });
-
-        if (authErr) {
-          throw new Error('Current password verification failed. Please try again.');
-        }
-
-        // Perform password update
-        const { error: passErr } = await supabase.auth.updateUser({ password: newPassword });
-        if (passErr) throw passErr;
-
-        toast.success('Password updated successfully!');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      }
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setUpdatingCredentials(false);
-    }
-  };
-
   // Toggle notification checkbox
   const handleNotificationChange = (key) => {
     setNotifications(prev => ({
@@ -357,610 +422,794 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     }));
   };
 
-  // Clean field keys for presentation
-  const formatFieldLabel = (field) => {
-    const mapping = {
-      phone: 'Phone Number',
-      dob: 'Date of Birth',
-      matric: 'Matric Card Number',
-      faculty: 'Faculty Selection',
-      programme: 'Degree Programme',
-      skills: 'Skills List',
-      avatar_url: 'Profile Picture',
-      linkedin_url: 'LinkedIn URL',
-      github_url: 'GitHub URL',
-      portfolio_url: 'Portfolio Link',
-      nationality: 'Nationality Status',
-      gender: 'Gender',
-      address: 'Home Address',
-      year_of_study: 'Year of Study',
-      semester: 'Academic Semester',
-      preferred_location: 'Location Preferences',
-      preferred_industry: 'Industry Focus',
-      university: 'University Identity',
-      course: 'Course Identity',
-      cv_url: 'Uploaded CV Document'
-    };
-    return mapping[field] || field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const handleCancelChanges = () => {
+    if (user) {
+      setFullName(user.full_name || user.name || '');
+      setPhone(user.phone || '');
+      setDob(user.dob || '');
+      setGender(user.gender || '');
+      setNationality(user.nationality || 'Malaysian');
+      setMatric(user.matric || '');
+      setFaculty(user.faculty || '');
+      setProgramme(user.programme || '');
+      setYearOfStudy(user.year_of_study || '');
+      setSemester(user.semester || '');
+      setLinkedinUrl(user.linkedin_url || '');
+      setGithubUrl(user.github_url || '');
+      setPortfolioUrl(user.portfolio_url || '');
+      if (user.notification_preferences) {
+        setNotifications(user.notification_preferences);
+      }
+      toast.success('Changes reverted');
+    }
   };
 
-  const getPasswordStrength = (pass) => {
-    if (!pass) return null;
-    if (pass.length < 6) return { label: 'Weak (min 6 characters)', color: 'text-red-400', pct: 25, barColor: 'bg-red-500' };
-    const hasLetters = /[a-zA-Z]/.test(pass);
-    const hasNumbers = /[0-9]/.test(pass);
-    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
-    
-    if (hasLetters && hasNumbers && hasSpecial) {
-      return { label: 'Strong Security', color: 'text-emerald-400', pct: 100, barColor: 'bg-emerald-500' };
-    }
-    if (hasLetters && hasNumbers) {
-      return { label: 'Medium Strength', color: 'text-amber-400', pct: 65, barColor: 'bg-amber-500' };
-    }
-    return { label: 'Weak', color: 'text-red-400', pct: 33, barColor: 'bg-red-500' };
-  };
-  
-  const pwStrength = getPasswordStrength(newPassword);
+  // Compute hasChanges dynamically
+  const hasChanges = user && (
+    fullName !== (user.full_name || user.name || '') ||
+    phone !== (user.phone || '') ||
+    dob !== (user.dob || '') ||
+    gender !== (user.gender || '') ||
+    nationality !== (user.nationality || 'Malaysian') ||
+    matric !== (user.matric || '') ||
+    faculty !== (user.faculty || '') ||
+    programme !== (user.programme || '') ||
+    String(yearOfStudy) !== String(user.year_of_study || '') ||
+    String(semester) !== String(user.semester || '') ||
+    linkedinUrl !== (user.linkedin_url || '') ||
+    githubUrl !== (user.github_url || '') ||
+    portfolioUrl !== (user.portfolio_url || '') ||
+    JSON.stringify(notifications) !== JSON.stringify(user.notification_preferences || {
+      match_updates: true,
+      new_internships: true,
+      application_status: true,
+      weekly_summary: false
+    })
+  );
 
   const totalRequired = 6;
   const missingCount = profileStatus?.requiredMissingFields?.length || 0;
   const completedCount = totalRequired - missingCount;
+  const isStudent = user?.role === 'student';
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 pb-12">
-      {/* Left Column - 1/3 width */}
-      <div className="w-full lg:w-1/3 space-y-6">
-        
-        {/* Card A: Profile Header & Avatar Selection */}
-        <div 
-          className="flex flex-col items-center justify-center p-8 text-center settings-premium-card" 
-        >
-          {/* Decorative glows in background */}
-          <div className="absolute -top-12 -left-12 w-24 h-24 rounded-full bg-accent/10 blur-xl pointer-events-none" />
-          <div className="absolute -bottom-12 -right-12 w-24 h-24 rounded-full bg-accent-2/10 blur-xl pointer-events-none" />
+    <div className="space-y-8 pb-28">
+      
+      {/* ── ROW 1: PROFILE, PERSONAL & ACADEMIC GRID ─────────── */}
+      <form id="settings-form" onSubmit={handleSaveProfile}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Column 1: Profile Card */}
+          <div className="p-6 flex flex-col items-center justify-between settings-premium-card text-center relative overflow-hidden select-none">
+            {/* Background decorations */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+              <div className="absolute -right-24 -top-24 w-48 h-48 rounded-full"
+                   style={{ background: 'var(--accent)', filter: 'blur(64px)', opacity: 0.05 }} />
+              <div className="absolute -left-16 bottom-0 w-36 h-36 rounded-full"
+                   style={{ background: 'var(--hero-glow-b)', filter: 'blur(48px)', opacity: 0.08 }} />
+            </div>
 
-          <div className="relative group cursor-pointer" onClick={() => setShowAvatarPicker(true)}>
-            {/* Glowing ring styling */}
-            <div className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center bg-surface-2 settings-avatar-glow shadow-lg">
-              {user?.avatar_url ? (
-                <img 
-                  src={user.avatar_url} 
-                  alt={user?.name || 'Avatar'} 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-5xl font-bold text-accent">
-                {fullName?.slice(0, 2).toUpperCase() || 'FF'}
-              </span>
-            </div>
-            
-            {/* Edit overlay */}
-            <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <Icons.IconDoc size={24} className="text-white mb-1" />
-              <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
-            </div>
-            
-            {/* Floating edit button at bottom right */}
-            <div className="absolute bottom-1 right-1 bg-accent hover:bg-accent-2 text-white p-2 rounded-full shadow-lg border border-white/10 group-hover:scale-110 transition-transform duration-200">
-              <Icons.IconDoc size={14} />
+            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full py-4">
+              {/* Glowing Avatar */}
+              <div className="relative shrink-0 select-none">
+                <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-surface-2 settings-avatar-glow shadow-lg">
+                  {user?.avatar_url ? (
+                    <img 
+                      src={user.avatar_url} 
+                      alt={user?.name || 'Avatar'} 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-4xl font-bold text-accent">
+                    {fullName?.slice(0, 2).toUpperCase() || 'FF'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <span className="px-2.5 py-0.5 rounded bg-accent/10 text-accent font-semibold border border-accent/20 text-[9px] uppercase tracking-wider">
+                  {user?.role === 'student' ? 'Student' : 'Coordinator'}
+                </span>
+              </div>
+
+              <h3 className="mt-3 font-bold text-xl text-text tracking-tight leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                {fullName || 'Student Name'}
+              </h3>
+              
+              <p className="text-xs text-text-mute mt-1.5 leading-normal max-w-[200px] font-medium">
+                {user?.role === 'student' ? (
+                  <>
+                    {programme || 'No Degree Selected'}
+                    {faculty && <div className="text-[10px] text-text-dim mt-1 font-semibold">Faculty of {faculty}</div>}
+                  </>
+                ) : (
+                  user?.email
+                )}
+              </p>
+
+              <button 
+                type="button" 
+                className="btn btn-glass btn-sm mt-5 shadow-sm font-semibold rounded-xl flex items-center gap-2" 
+                onClick={() => setShowAvatarPicker(true)}
+              >
+                <Icons.IconDoc size={14} /> Change Photo
+              </button>
+
+              {/* Stats List */}
+              {isStudent && (
+                <div className="w-full grid grid-cols-2 gap-2.5 mt-6 pt-6 border-t border-white/5">
+                  <StatPill label="Completion" value={`${profileStatus?.percentage || 0}%`} color="var(--accent)" />
+                  <StatPill label="Skills" value={user?.skills?.length || 0} color="#38bdf8" />
+                  <StatPill label="Applications" value={appCount} color="#ec4899" />
+                  <StatPill label="Match Score" value={matchScore ? `${matchScore}%` : '0%'} color="#10b981" />
+                </div>
+              )}
             </div>
           </div>
-          
-          <h4 className="mt-4 font-bold text-xl text-text tracking-tight">{fullName || 'User Profile'}</h4>
-          <p className="text-xs text-text-mute capitalize mt-1.5 flex items-center gap-1.5 justify-center">
-            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent font-semibold border border-accent/20 text-[10px]">
-              {user?.role}
-            </span>
-            {user?.role === 'student' && <span className="text-text-mute">·</span>}
-            {user?.role === 'student' && <span className="text-text-mute font-medium">{programme || 'FitFlow Member'}</span>}
-          </p>
-          
-          <button 
-            type="button" 
-            className="btn btn-glass btn-sm mt-5 shadow-sm font-semibold rounded-xl flex items-center gap-2" 
-            onClick={() => setShowAvatarPicker(true)}
-          >
-            <Icons.IconDoc size={14} /> Change Photo
-          </button>
+
+          {/* Column 2: Personal Information Card */}
+          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+            <CardHeader 
+              icon={Icons.IconUser} 
+              title="Personal Information" 
+              subtitle="Manage your identity and contact details" 
+            />
+
+            <div className="space-y-4">
+              <SettingsField label="Full Name" icon={Icons.IconUser}>
+                <input 
+                  type="text" 
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Your Full Name"
+                  required
+                />
+              </SettingsField>
+
+              <SettingsField label="Phone Number" icon={Icons.IconPhone}>
+                <input 
+                  type="text" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+601XXXXXXXX"
+                  required
+                />
+              </SettingsField>
+
+              <SettingsField label="Date of Birth" icon={Icons.IconCalendar}>
+                <input 
+                  type="date" 
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  required
+                />
+              </SettingsField>
+
+              <SettingsField label="Gender" icon={Icons.IconUser}>
+                <select 
+                  value={gender} 
+                  onChange={(e) => setGender(e.target.value)}
+                  required
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </SettingsField>
+
+              <SettingsField label="Nationality" icon={Icons.IconMapPin}>
+                <select 
+                  value={nationality} 
+                  onChange={(e) => setNationality(e.target.value)}
+                  required
+                >
+                  <option value="Malaysian">Malaysian</option>
+                  <option value="International">International</option>
+                </select>
+              </SettingsField>
+            </div>
+          </div>
+
+          {/* Column 3: Academic Information Card */}
+          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+            <CardHeader 
+              icon={Icons.IconCap} 
+              title="Academic Information" 
+              subtitle="Manage university and programme details" 
+            />
+
+            <div className="space-y-4">
+              {isStudent ? (
+                <>
+                  {/* Matric Number spanning full width of card ensures no truncation */}
+                  <SettingsField label="Matric No" icon={Icons.IconCap}>
+                    <input 
+                      type="text" 
+                      value={matric}
+                      onChange={(e) => setMatric(e.target.value)}
+                      placeholder="B03XXXXXXXX"
+                      required
+                    />
+                  </SettingsField>
+
+                  <SettingsField label="Faculty" icon={Icons.IconBriefcase}>
+                    <select 
+                      value={faculty} 
+                      onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}
+                      required
+                    >
+                      <option value="">Select Faculty</option>
+                      {Object.keys(FACULTIES).map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </SettingsField>
+
+                  <SettingsField label="Programme" icon={Icons.IconBook}>
+                    <select 
+                      value={programme} 
+                      onChange={(e) => setProgramme(e.target.value)}
+                      disabled={!faculty}
+                      required
+                    >
+                      <option value="">Select Programme</option>
+                      {faculty && FACULTIES[faculty]?.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </SettingsField>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <SettingsField label="Year" icon={Icons.IconCalendar}>
+                      <select 
+                        value={yearOfStudy} 
+                        onChange={(e) => setYearOfStudy(e.target.value)}
+                        required
+                      >
+                        <option value="">Select</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                      </select>
+                    </SettingsField>
+                    <SettingsField label="Semester" icon={Icons.IconClock}>
+                      <select 
+                        value={semester} 
+                        onChange={(e) => setSemester(e.target.value)}
+                        required
+                      >
+                        <option value="">Select</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">Short</option>
+                      </select>
+                    </SettingsField>
+                  </div>
+
+                  {/* Social Links */}
+                  <div className="pt-2 border-t border-white/5 space-y-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-accent flex items-center gap-1.5 mb-1 select-none">
+                      <Icons.IconExternalLink size={12} />
+                      Professional Portals
+                    </div>
+                    <SettingsField icon={Icons.IconTarget}>
+                      <input 
+                        type="url" 
+                        placeholder="LinkedIn Profile URL (https://...)" 
+                        value={linkedinUrl} 
+                        onChange={(e) => setLinkedinUrl(e.target.value)}
+                      />
+                    </SettingsField>
+                    <SettingsField icon={Icons.IconBook}>
+                      <input 
+                        type="url" 
+                        placeholder="GitHub Profile URL (https://...)" 
+                        value={githubUrl} 
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                      />
+                    </SettingsField>
+                    <SettingsField icon={Icons.IconDoc}>
+                      <input 
+                        type="url" 
+                        placeholder="Portfolio Website URL (https://...)" 
+                        value={portfolioUrl} 
+                        onChange={(e) => setPortfolioUrl(e.target.value)}
+                      />
+                    </SettingsField>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-center select-none">
+                  <Icons.IconCap size={32} className="text-text-dim opacity-30 mb-3" />
+                  <p className="text-sm font-semibold text-text-mute">Academic settings restricted</p>
+                  <p className="text-[11px] text-text-dim mt-1.5 px-4 leading-relaxed">Coordinator accounts do not hold university student profiles.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
 
-        {/* Card B: Profile Completion Progress Status */}
-        {profileStatus && (
-          <div 
-            className="p-6 flex flex-col justify-between settings-premium-card"
-          >
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-bold text-text tracking-tight text-md">Profile Completion</span>
-                
-                {/* Circular Progress from Onboarding */}
-                <div className="relative w-14 h-14 flex items-center justify-center">
-                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.4)]">
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+        {/* ── ROW 2: COMPLETION & NOTIFICATIONS GRID ─────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          
+          {/* Profile Completion Card */}
+          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+            <div className="flex justify-between items-center pb-4 border-b border-white/5">
+              <CardHeader 
+                icon={Icons.IconSparkle} 
+                title="Profile Completion" 
+                subtitle="Fulfill required fields for better matching" 
+              />
+
+              {/* Circular Progress Ring */}
+              {profileStatus && (
+                <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.3)]">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3.2" />
                     <path 
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
                       fill="none" 
-                      stroke="url(#completion-grad)" 
-                      strokeWidth="3.2" 
+                      stroke="url(#completion-grad-tab)" 
+                      strokeWidth="3.4" 
                       strokeDasharray="100, 100"
                       strokeDashoffset={100 - profileStatus.percentage}
                       style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}
                     />
                     <defs>
-                      <linearGradient id="completion-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <linearGradient id="completion-grad-tab" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor="#4f7cff" />
-                        <stop offset="100%" stopColor="#d946ef" />
+                        <stop offset="100%" stopColor="#3b82f6" />
                       </linearGradient>
                     </defs>
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tracking-tighter text-text">
+                  <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tracking-tighter text-text font-space-grotesk" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     {profileStatus.percentage}%
                   </div>
                 </div>
-              </div>
-              
-              {/* Progress Line */}
-              <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 mb-3 relative completion-bar-shine">
-                <div 
-                  className="h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(217,70,239,0.5)]"
-                  style={{ 
-                    width: `${profileStatus.percentage}%`,
-                    background: 'linear-gradient(90deg, #4f7cff 0%, #d946ef 100%)'
-                  }}
-                />
-              </div>
-
-              {/* Dynamic counters */}
-              <div className="flex justify-between items-center text-[11px] text-text-mute mt-1 mb-6 font-medium tracking-tight">
-                <span>{completedCount} of {totalRequired} Required Fields Completed</span>
-                <span className="text-accent font-bold">{profileStatus.percentage}%</span>
-              </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {/* Required checklist */}
-              <div className="p-4 rounded-2xl bg-white/2 border border-white/5 shadow-sm">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                  Required Fields
-                </div>
-                <div className="space-y-2.5">
-                  {['phone', 'dob', 'matric', 'faculty', 'programme', 'skills'].map((field) => {
-                    const isMissing = profileStatus.requiredMissingFields.includes(field);
-                    return (
-                      <div key={field} className="flex items-center gap-2.5 text-xs">
-                        {isMissing ? (
-                          <div className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20">
-                            <Icons.IconX size={10} />
-                          </div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                            <Icons.IconCheck size={10} />
-                          </div>
-                        )}
-                        <span className={isMissing ? 'text-text-mute font-medium' : 'text-text/90 font-medium'}>{formatFieldLabel(field)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Optional Improvements checklist */}
-              <div className="p-4 rounded-2xl bg-white/2 border border-white/5 shadow-sm">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-text-mute mb-3 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-text-mute" />
-                  Optional Upgrades
-                </div>
-                <div className="space-y-2.5">
-                  {['avatar_url', 'linkedin_url', 'github_url', 'portfolio_url'].map((field) => {
-                    const isMissing = profileStatus.optionalMissingFields.includes(field);
-                    return (
-                      <div key={field} className="flex items-center gap-2.5 text-xs">
-                        {isMissing ? (
-                          <div className="w-4 h-4 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-[10px] shrink-0 border border-amber-500/20">
-                            !
-                          </div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                            <Icons.IconCheck size={10} />
-                          </div>
-                        )}
-                        <span className={isMissing ? 'text-text-mute font-medium' : 'text-text/90 font-medium'}>{formatFieldLabel(field)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Right Column - 2/3 width */}
-      <div className="w-full lg:w-2/3 space-y-6">
-        
-        {/* Form: Profile Settings */}
-        <form onSubmit={handleSaveProfile} className="space-y-6">
-          
-          {/* Responsive Layout Grid: Desktop: Personal Info Left, Academic Info Right */}
-          <div className={user?.role === 'student' ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "grid grid-cols-1 gap-6"}>
-            
-            {/* Card C: Personal Details */}
-            <div className="p-6 space-y-5 settings-premium-card">
-              <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
-                <div className="bg-accent/10 text-accent p-2.5 rounded-xl border border-accent/20 shrink-0">
-                  <Icons.IconUser size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-text tracking-tight">
-                    Personal Information
-                  </h3>
-                  <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
-                    Manage your identity and contact details
-                  </p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="input-group">
-                  <label className="input-label">Full Name</label>
-                  <div className="settings-glass-input">
-                    <div className="input-icon"><Icons.IconUser size={16} /></div>
-                    <input 
-                      type="text" 
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Your Full Name"
-                      required
+            {profileStatus ? (
+              <div className="space-y-6">
+                {/* Progress Line */}
+                <div className="space-y-2">
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 relative completion-bar-shine">
+                    <div 
+                      className="h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(79,124,255,0.3)]"
+                      style={{ 
+                        width: `${profileStatus.percentage}%`,
+                        background: 'linear-gradient(90deg, #4f7cff 0%, #3b82f6 100%)'
+                      }}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="input-group">
-                    <label className="input-label">Phone Number</label>
-                    <div className="settings-glass-input">
-                      <div className="input-icon"><Icons.IconPhone size={16} /></div>
-                      <input 
-                        type="text" 
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+601XXXXXXXX"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Date of Birth</label>
-                    <div className="settings-glass-input">
-                      <Icons.IconCalendar size={16} className="input-icon" />
-                      <input 
-                        type="date" 
-                        value={dob}
-                        onChange={(e) => setDob(e.target.value)}
-                        required
-                      />
-                    </div>
+                  <div className="flex justify-between items-center text-[10px] text-text-mute font-semibold tracking-tight uppercase">
+                    <span>{completedCount} of {totalRequired} Required Setup Completed</span>
+                    <span className="text-accent font-bold">{profileStatus.percentage}%</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="input-group">
-                    <label className="input-label">Gender</label>
-                    <div className="settings-glass-input">
-                      <div className="input-icon"><Icons.IconUser size={16} /></div>
-                      <select 
-                        value={gender} 
-                        onChange={(e) => setGender(e.target.value)}
-                      >
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="input-group">
-                    <label className="input-label">Nationality</label>
-                    <div className="settings-glass-input">
-                      <Icons.IconMapPin size={16} className="input-icon" />
-                      <select 
-                        value={nationality} 
-                        onChange={(e) => setNationality(e.target.value)}
-                      >
-                        <option value="Malaysian">Malaysian</option>
-                        <option value="International">International</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Card D: Academic Details (Students Only) */}
-            {user.role === 'student' && (
-              <div className="p-6 space-y-5 settings-premium-card">
-                <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
-                  <div className="bg-accent/10 text-accent p-2.5 rounded-xl border border-accent/20 shrink-0">
-                    <Icons.IconCap size={20} />
-                  </div>
+                {/* Status Badge Chips */}
+                <div className="space-y-4 pt-1">
                   <div>
-                    <h3 className="font-bold text-lg text-text tracking-tight">
-                      Academic Information
-                    </h3>
-                    <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
-                      Manage university and programme details
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="input-group">
-                      <label className="input-label">Matric No</label>
-                      <div className="settings-glass-input">
-                        <Icons.IconCap size={16} className="input-icon" />
-                        <input 
-                          type="text" 
-                          value={matric}
-                          onChange={(e) => setMatric(e.target.value)}
-                          placeholder="B03XXXXXXXX"
-                          required
-                        />
-                      </div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-accent mb-2.5 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                      Required Checklist
                     </div>
-                    <div className="input-group">
-                      <label className="input-label">Faculty</label>
-                      <div className="settings-glass-input">
-                        <Icons.IconBriefcase size={16} className="input-icon" />
-                        <select 
-                          value={faculty} 
-                          onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}
-                          required
-                        >
-                          <option value="">Select</option>
-                          {Object.keys(FACULTIES).map(f => <option key={f} value={f}>{f}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label">Programme</label>
-                      <div className="settings-glass-input">
-                        <Icons.IconBook size={16} className="input-icon" />
-                        <select 
-                          value={programme} 
-                          onChange={(e) => setProgramme(e.target.value)}
-                          disabled={!faculty}
-                          required
-                        >
-                          <option value="">Select</option>
-                          {faculty && FACULTIES[faculty]?.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                      </div>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.keys(REQUIRED_FIELD_LABELS).map((field) => {
+                        const isMissing = profileStatus.requiredMissingFields.includes(field);
+                        return (
+                          <div 
+                            key={field} 
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-300 select-none ${
+                              isMissing 
+                                ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            }`}
+                          >
+                            {isMissing ? <Icons.IconX size={9} /> : <Icons.IconCheck size={9} />}
+                            {REQUIRED_FIELD_LABELS[field]}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="input-group">
-                      <label className="input-label">Year of Study</label>
-                      <div className="settings-glass-input">
-                        <Icons.IconCalendar size={16} className="input-icon" />
-                        <select 
-                          value={yearOfStudy} 
-                          onChange={(e) => setYearOfStudy(e.target.value)}
-                        >
-                          <option value="">Select Year</option>
-                          <option value="1">Year 1</option>
-                          <option value="2">Year 2</option>
-                          <option value="3">Year 3</option>
-                          <option value="4">Year 4</option>
-                        </select>
-                      </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-text-mute mb-2.5 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-text-mute" />
+                      Optional Improvements
                     </div>
-                    <div className="input-group">
-                      <label className="input-label">Semester</label>
-                      <div className="settings-glass-input">
-                        <Icons.IconClock size={16} className="input-icon" />
-                        <select 
-                          value={semester} 
-                          onChange={(e) => setSemester(e.target.value)}
-                        >
-                          <option value="">Select Sem</option>
-                          <option value="1">Semester 1</option>
-                          <option value="2">Semester 2</option>
-                          <option value="3">Short Semester</option>
-                        </select>
-                      </div>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.keys(OPTIONAL_FIELD_LABELS).map((field) => {
+                        const isMissing = profileStatus.optionalMissingFields.includes(field);
+                        return (
+                          <div 
+                            key={field} 
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all duration-300 select-none ${
+                              isMissing 
+                                ? 'bg-white/2 text-text-dim border-white/5' 
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            }`}
+                          >
+                            {isMissing ? <span className="font-bold text-[9px] mr-0.5 text-text-dim">!</span> : <Icons.IconCheck size={9} />}
+                            {OPTIONAL_FIELD_LABELS[field]}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-
-                  {/* Social Links */}
-                  <div className="pt-4 border-t border-white/5 space-y-3">
-                    <div className="text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-1.5 mb-1">
-                      <Icons.IconExternalLink size={12} />
-                      Professional Portals (Optional)
-                    </div>
-                    <div className="space-y-3">
-                      <div className="input-group">
-                        <div className="settings-glass-input">
-                          <div className="input-icon"><Icons.IconTarget size={16} /></div>
-                          <input 
-                            type="url" 
-                            placeholder="LinkedIn Profile URL (https://...)" 
-                            value={linkedinUrl} 
-                            onChange={(e) => setLinkedinUrl(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="input-group">
-                        <div className="settings-glass-input">
-                          <div className="input-icon"><Icons.IconBook size={16} /></div>
-                          <input 
-                            type="url" 
-                            placeholder="GitHub Profile URL (https://...)" 
-                            value={githubUrl} 
-                            onChange={(e) => setGithubUrl(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="input-group">
-                        <div className="settings-glass-input">
-                          <div className="input-icon"><Icons.IconDoc size={16} /></div>
-                          <input 
-                            type="url" 
-                            placeholder="Personal Portfolio URL (https://...)" 
-                            value={portfolioUrl} 
-                            onChange={(e) => setPortfolioUrl(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               </div>
+            ) : (
+              <div className="h-24 animate-pulse rounded-2xl bg-white/2" />
             )}
           </div>
 
-          {/* Card E: Notification Preferences JSONB */}
-          <div className="p-6 space-y-5 settings-premium-card">
-            <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
-              <div className="bg-accent/10 text-accent p-2.5 rounded-lg border border-accent/20 shrink-0">
-                <Icons.IconBell size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-text tracking-tight">
-                  Notification Preferences
-                </h3>
-                <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
-                  Configure how you receive system updates and alerts
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
-                <div className="flex items-center gap-3.5">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
-                    <Icons.IconSparkle size={16} />
+          {/* Notification Preferences Card */}
+          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+            <CardHeader 
+              icon={Icons.IconBell} 
+              title="Notification Settings" 
+              subtitle="Configure how you receive system updates and alerts" 
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Option 1 */}
+              <div 
+                onClick={() => handleNotificationChange('match_updates')}
+                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    <Icons.IconSparkle size={14} />
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-text">Internship Match Updates</div>
-                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Score change alerts for targeted positions</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-text truncate">Match Updates</div>
+                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Score change alerts</div>
                   </div>
                 </div>
                 <div 
                   className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.match_updates}
-                  onClick={() => handleNotificationChange('match_updates')}
                 />
-              </label>
+              </div>
 
-              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
-                <div className="flex items-center gap-3.5">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
-                    <Icons.IconSearch size={16} />
+              {/* Option 2 */}
+              <div 
+                onClick={() => handleNotificationChange('new_internships')}
+                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    <Icons.IconSearch size={14} />
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-text">New Internships</div>
-                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Notifies when fresh matched postings are scraped</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-text truncate">New Positions</div>
+                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Scraped matches alerts</div>
                   </div>
                 </div>
                 <div 
                   className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.new_internships}
-                  onClick={() => handleNotificationChange('new_internships')}
                 />
-              </label>
+              </div>
 
-              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
-                <div className="flex items-center gap-3.5">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
-                    <Icons.IconCheckCircle size={16} />
+              {/* Option 3 */}
+              <div 
+                onClick={() => handleNotificationChange('application_status')}
+                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    <Icons.IconCheckCircle size={14} />
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-text">Application Status Changes</div>
-                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Alerts when internship status moves in the tracker</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-text truncate">Tracker Updates</div>
+                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Status movement alerts</div>
                   </div>
                 </div>
                 <div 
                   className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.application_status}
-                  onClick={() => handleNotificationChange('application_status')}
                 />
-              </label>
+              </div>
 
-              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
-                <div className="flex items-center gap-3.5">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
-                    <Icons.IconFileText size={16} />
+              {/* Option 4 */}
+              <div 
+                onClick={() => handleNotificationChange('weekly_summary')}
+                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    <Icons.IconFileText size={14} />
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-text">Weekly Summary Digest</div>
-                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Condensed weekend report of matches & stats</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-text truncate">Weekly Digest</div>
+                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Weekend summary report</div>
                   </div>
                 </div>
                 <div 
                   className="settings-premium-toggle shrink-0" 
                   role="switch" 
                   aria-checked={!!notifications.weekly_summary}
-                  onClick={() => handleNotificationChange('weekly_summary')}
                 />
-              </label>
-
-            </div>
-          </div>
-
-          {/* Form Action Save */}
-          <div className="flex justify-end">
-            <button 
-              type="submit" 
-              className="btn btn-primary font-bold shadow-md shadow-accent/20 px-8 py-3 rounded-xl transition-all duration-300 hover:shadow-accent/40"
-              disabled={savingProfile}
-            >
-              {savingProfile ? 'Saving Changes...' : 'Save Profile Settings'}
-            </button>
-          </div>
-        </form>
-
-        {/* ── Form: Account Credentials ────────────────────── */}
-        <form 
-          onSubmit={handleUpdateCredentials} 
-          className="p-6 space-y-5 settings-premium-card"
-        >
-          <div className="flex items-center gap-3.5 border-b border-white/5 pb-4">
-            <div className="bg-accent/10 text-accent p-2.5 rounded-lg border border-accent/20 shrink-0">
-              <Icons.IconShield size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-text tracking-tight">
-                Security & Credentials
-              </h3>
-              <p className="text-xs text-text-mute mt-0.5 font-medium leading-normal">
-                Manage your credentials and password settings
-              </p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Email Update section */}
-            <div className="space-y-4">
-              <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
-                <Icons.IconMail size={12} />
-                Change Email Address
               </div>
-              <div className="input-group">
-                <label className="input-label">New Email Address</label>
-                <div className="settings-glass-input">
-                  <div className="input-icon"><Icons.IconMail size={16} /></div>
+            </div>
+          </div>
+
+        </div>
+      </form>
+
+      {/* ── ROW 3: SECURITY & CREDENTIALS (FULL WIDTH) ───────── */}
+      <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+        <CardHeader 
+          icon={Icons.IconShield} 
+          title="Security Summary" 
+          subtitle="Manage your credentials and login safety" 
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 select-none">
+          <div className="flex flex-col gap-1 p-4 rounded-xl bg-white/2 border border-white/5">
+            <span className="text-[10px] font-bold text-text-mute uppercase tracking-widest">Current Email</span>
+            <span className="text-sm font-bold text-text truncate mt-1 select-all">{authUserDetail?.email || user?.email || 'Loading...'}</span>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4 rounded-xl bg-white/2 border border-white/5">
+            <span className="text-[10px] font-bold text-text-mute uppercase tracking-widest">Verification Status</span>
+            <div>
+              <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1.5 ${
+                authUserDetail?.email_confirmed_at 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+              }`}>
+                {authUserDetail?.email_confirmed_at ? 'Verified' : 'Pending'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4 rounded-xl bg-white/2 border border-white/5">
+            <span className="text-[10px] font-bold text-text-mute uppercase tracking-widest">Password Status</span>
+            <span className="text-sm font-bold text-text mt-1.5 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Protected
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4 rounded-xl bg-white/2 border border-white/5">
+            <span className="text-[10px] font-bold text-text-mute uppercase tracking-widest">Last Updated</span>
+            <span className="text-sm font-bold text-text-dim mt-1.5 font-space-grotesk" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              {authUserDetail?.updated_at 
+                ? new Date(authUserDetail.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Recently'
+              }
+            </span>
+          </div>
+        </div>
+
+        {/* Trigger modals instead of raw password forms inline */}
+        <div className="pt-2 border-t border-white/5 flex gap-4">
+          <button 
+            type="button"
+            onClick={() => setShowEmailModal(true)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-white/2 border border-white/5 text-text hover:bg-white/5 hover:border-white/10 transition-all duration-200"
+          >
+            <Icons.IconMail size={14} className="text-accent" />
+            Change Email
+          </button>
+          <button 
+            type="button"
+            onClick={() => {
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+              setShowPasswordModal(true);
+            }}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-white/2 border border-white/5 text-text hover:bg-white/5 hover:border-white/10 transition-all duration-200"
+          >
+            <Icons.IconLock size={14} className="text-accent" />
+            Change Password
+          </button>
+        </div>
+      </div>
+
+      {/* ── STICKY ACTION BAR ────────────────────────────────── */}
+      <AnimatePresence>
+        {hasChanges && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-6 left-[50%] -translate-x-[50%] lg:left-[calc(50%+124px)] z-[200] flex items-center justify-between gap-4 p-4 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-lg w-[calc(100%-2.5rem)] max-w-3xl"
+            style={{
+              background: 'rgba(10, 15, 30, 0.9)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(79, 124, 255, 0.15)',
+            }}
+          >
+            <div className="flex flex-col select-none">
+              <span className="text-xs font-bold text-text">Unsaved changes detected</span>
+              <span className="text-[10px] text-text-mute mt-0.5">You have modified your profile details</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCancelChanges}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-text-mute hover:text-text hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="settings-form"
+                disabled={savingProfile}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent-2 text-white shadow-lg shadow-accent/20 hover:shadow-accent/40 transition-all flex items-center gap-2"
+              >
+                {savingProfile ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── AVATAR PICKER MODAL ──────────────────────────────── */}
+      <AnimatePresence>
+        {showAvatarPicker && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+              onClick={() => setShowAvatarPicker(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="relative w-full max-w-xl p-6 md:p-8 overflow-hidden max-h-[85vh] flex flex-col rounded-3xl border border-border bg-[#0B1220] shadow-2xl"
+              style={{ 
+                background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)'
+              }}
+            >
+              <header className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-xl text-text tracking-tight flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <Icons.IconSparkle className="text-accent" size={18} />
+                  Change Profile Picture
+                </h3>
+                <button 
+                  className="p-1.5 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors" 
+                  onClick={() => setShowAvatarPicker(false)}
+                >
+                  <Icons.IconX size={18} />
+                </button>
+              </header>
+
+              {uploadingAvatar ? (
+                <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                  <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+                  <div className="text-sm text-text-mute font-medium">Uploading image to storage...</div>
+                </div>
+              ) : (
+                <div className="overflow-y-auto space-y-6 pr-1 custom-scrollbar">
+                  
+                  {/* Custom upload trigger */}
+                  <div className="p-8 border-2 border-dashed border-white/10 hover:border-accent rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative group bg-white/2 hover:bg-white/4">
+                    <div className="p-3 bg-accent/10 border border-accent/20 text-accent rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <Icons.IconDoc size={24} />
+                    </div>
+                    <span className="font-bold text-sm text-text">Upload custom photo</span>
+                    <span className="text-xs text-text-mute mt-1.5 text-center">PNG, JPG or JPEG. Max size 5MB (auto-cropped to 200x200).</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleCustomAvatarUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Presets Grid */}
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
+                      <Icons.IconSparkle size={12} />
+                      Choose Premium Preset
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                      {PRESET_AVATARS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => handleSelectPreset(preset.value)}
+                          className="group flex flex-col items-center p-2.5 rounded-xl bg-white/2 border border-white/5 hover:border-accent hover:bg-white/5 transition-all duration-200"
+                        >
+                          <div 
+                            className="w-12 h-12 rounded-full overflow-hidden border border-white/10 group-hover:scale-105 group-hover:border-accent transition-all duration-200"
+                            dangerouslySetInnerHTML={{ __html: preset.value.replace('data:image/svg+xml;utf8,', '') }}
+                          />
+                          <span className="text-[10px] text-text-mute mt-1.5 text-center font-medium truncate w-full group-hover:text-text transition-colors">{preset.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Revert options */}
+                  {user?.avatar_url && (
+                    <div className="pt-4 border-t border-white/5 flex justify-end">
+                      <button 
+                        type="button" 
+                        onClick={handleRemoveAvatar} 
+                        className="btn btn-ghost text-red-400 hover:text-red-300 bg-red-500/5 hover:bg-red-500/10 rounded-xl px-4 py-2 text-xs font-bold transition-all"
+                      >
+                        Delete Current Avatar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── CHANGE EMAIL MODAL ───────────────────────────────── */}
+      <AnimatePresence>
+        {showEmailModal && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+              onClick={() => setShowEmailModal(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="relative w-full max-w-md p-6 overflow-hidden rounded-3xl border border-border/80 bg-[#0B1220] shadow-2xl"
+              style={{ 
+                background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)'
+              }}
+            >
+              <header className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg text-text tracking-tight flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <Icons.IconMail className="text-accent" size={18} />
+                  Change Email Address
+                </h3>
+                <button 
+                  className="p-1.5 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors" 
+                  onClick={() => setShowEmailModal(false)}
+                >
+                  <Icons.IconX size={18} />
+                </button>
+              </header>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setUpdatingCredentials(true);
+                try {
+                  if (email && email !== user.email) {
+                    const { error } = await supabase.auth.updateUser({ email });
+                    if (error) throw error;
+                    toast.success('Confirmation link sent to your new email!');
+                    setShowEmailModal(false);
+                  } else {
+                    toast.error('Please enter a new email address.');
+                  }
+                } catch (err) {
+                  toast.error(err.message);
+                } finally {
+                  setUpdatingCredentials(false);
+                }
+              }} className="space-y-4">
+                <SettingsField label="New Email Address" icon={Icons.IconMail}>
                   <input 
                     type="email" 
                     value={email}
@@ -968,91 +1217,214 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                     placeholder="name@student.utem.edu.my"
                     required
                   />
-                </div>
-              </div>
-              <p className="text-[11px] text-text-mute leading-relaxed">
-                Updating your email will trigger a confirmation link sent to the new address. Your account email won't change until verified.
-              </p>
-            </div>
+                </SettingsField>
+                
+                <p className="text-[11px] text-text-mute leading-relaxed">
+                  Updating your email will trigger a confirmation link sent to the new address. Your account email won't change until verified.
+                </p>
 
-            {/* Password Update section */}
-            <div className="space-y-4 border-t md:border-t-0 md:border-l border-white/5 pt-5 md:pt-0 md:pl-6">
-              <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
-                <Icons.IconLock size={12} />
-                Update Password
-              </div>
-              
-              <div className="space-y-4">
-                <div className="input-group">
-                  <label className="input-label">Current Password (Required for changes)</label>
-                  <div className="settings-glass-input">
-                    <div className="input-icon"><Icons.IconLock size={16} /></div>
-                    <input 
-                      type={showCurrentPassword ? "text" : "password"} 
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="••••••••"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)} 
-                      className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
-                    >
-                      {showCurrentPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
-                    </button>
-                  </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button 
+                    type="button" 
+                    className="px-4 py-2 text-xs font-bold text-text-mute hover:text-text bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                    onClick={() => setShowEmailModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                    disabled={updatingCredentials}
+                  >
+                    {updatingCredentials ? 'Sending...' : 'Send Confirmation'}
+                  </button>
                 </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="input-group">
-                    <label className="input-label">New Password</label>
-                    <div className="settings-glass-input">
-                      <div className="input-icon"><Icons.IconLock size={16} /></div>
-                      <input 
-                        type={showNewPassword ? "text" : "password"} 
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Min 6 chars"
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setShowNewPassword(!showNewPassword)} 
-                        className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
-                      >
-                        {showNewPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
-                      </button>
-                    </div>
-                  </div>
+      {/* ── CHANGE PASSWORD MODAL ────────────────────────────── */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+              onClick={() => setShowPasswordModal(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="relative w-full max-w-md p-6 overflow-hidden rounded-3xl border border-border/80 bg-[#0B1220] shadow-2xl"
+              style={{ 
+                background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)'
+              }}
+            >
+              <header className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg text-text tracking-tight flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <Icons.IconLock className="text-accent" size={18} />
+                  Update Password
+                </h3>
+                <button 
+                  className="p-1.5 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors" 
+                  onClick={() => setShowPasswordModal(false)}
+                >
+                  <Icons.IconX size={18} />
+                </button>
+              </header>
 
-                  <div className="input-group">
-                    <label className="input-label">Confirm New Password</label>
-                    <div className="settings-glass-input">
-                      <div className="input-icon"><Icons.IconLock size={16} /></div>
-                      <input 
-                        type={showConfirmPassword ? "text" : "password"} 
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm password"
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
-                        className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
-                      >
-                        {showConfirmPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                  toast.error('All password fields are required.');
+                  return;
+                }
+                if (newPassword !== confirmPassword) {
+                  toast.error('New passwords do not match.');
+                  return;
+                }
+                if (newPassword.length < 8) {
+                  toast.error('Password must meet minimum requirements.');
+                  return;
+                }
+                if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+                  toast.error('Password must meet minimum requirements.');
+                  return;
+                }
+
+                setUpdatingCredentials(true);
+                try {
+                  // Dedicated Re-Auth Check: Verify user password before updating
+                  const { error: authErr } = await supabase.auth.signInWithPassword({
+                    email: user.email,
+                    password: currentPassword
+                  });
+
+                  if (authErr) {
+                    throw new Error('Current password verification failed. Please try again.');
+                  }
+
+                  // Perform password update
+                  const { error: passErr } = await supabase.auth.updateUser({ password: newPassword });
+                  if (passErr) throw passErr;
+
+                  toast.success('Password updated successfully!');
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setShowPasswordModal(false);
+                } catch (err) {
+                  toast.error(err.message);
+                } finally {
+                  setUpdatingCredentials(false);
+                }
+              }} className="space-y-4">
+                
+                <SettingsField label="Current Password" icon={Icons.IconLock}>
+                  <input 
+                    type={showCurrentPassword ? "text" : "password"} 
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)} 
+                    className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
+                  >
+                    {showCurrentPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                  </button>
+                </SettingsField>
+
+                <SettingsField label="New Password" icon={Icons.IconLock}>
+                  <input 
+                    type={showNewPassword ? "text" : "password"} 
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowNewPassword(!showNewPassword)} 
+                    className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
+                  >
+                    {showNewPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                  </button>
+                </SettingsField>
+
+                <SettingsField label="Confirm New Password" icon={Icons.IconLock}>
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                    className="absolute right-4 text-text-mute hover:text-text focus:outline-none transition-colors"
+                  >
+                    {showConfirmPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                  </button>
+                </SettingsField>
 
                 {/* Password Strength Indicator */}
+                <div className="pt-1.5 space-y-2 select-none border-t border-white/5">
+                  <div className="text-[11px] text-text-mute font-semibold">Minimum requirements:</div>
+                  <ul className="space-y-1.5 pl-1">
+                    <li className="flex items-center gap-2 transition-colors duration-200">
+                      {newPassword.length >= 8 ? (
+                        <span className="text-emerald-400 flex items-center justify-center shrink-0">
+                          <Icons.IconCheck size={10} />
+                        </span>
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0" />
+                      )}
+                      <span className={newPassword.length >= 8 ? "text-emerald-400 font-semibold" : "text-text-dim text-[11px]"}>At least 8 characters</span>
+                    </li>
+                    <li className="flex items-center gap-2 transition-colors duration-200">
+                      {/[A-Z]/.test(newPassword) ? (
+                        <span className="text-emerald-400 flex items-center justify-center shrink-0">
+                          <Icons.IconCheck size={10} />
+                        </span>
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0" />
+                      )}
+                      <span className={/[A-Z]/.test(newPassword) ? "text-emerald-400 font-semibold" : "text-text-dim text-[11px]"}>One uppercase letter</span>
+                    </li>
+                    <li className="flex items-center gap-2 transition-colors duration-200">
+                      {/[0-9]/.test(newPassword) ? (
+                        <span className="text-emerald-400 flex items-center justify-center shrink-0">
+                          <Icons.IconCheck size={10} />
+                        </span>
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0" />
+                      )}
+                      <span className={/[0-9]/.test(newPassword) ? "text-emerald-400 font-semibold" : "text-text-dim text-[11px]"}>One number</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Password Strength Indicator Visual Bar */}
                 {pwStrength && (
-                  <div className="pt-2 space-y-1.5 animate-fadeIn">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-text-mute">Password Security:</span>
+                  <div className="pt-1 space-y-1.5 animate-fadeIn">
+                    <div className="flex justify-between items-center text-[10px] font-semibold text-text-mute uppercase">
+                      <span>Complexity:</span>
                       <span className={`font-bold ${pwStrength.color}`}>{pwStrength.label}</span>
                     </div>
-                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                       <div 
                         className={`h-full ${pwStrength.barColor} transition-all duration-300`} 
                         style={{ width: `${pwStrength.pct}%` }} 
@@ -1061,115 +1433,27 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   </div>
                 )}
 
-              </div>
-            </div>
-
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-white/5">
-            <button 
-              type="submit" 
-              className="btn btn-glass font-bold text-accent border border-accent/20 hover:border-accent hover:bg-accent/5 rounded-xl px-6 py-2.5 transition-all duration-200"
-              disabled={updatingCredentials}
-            >
-              {updatingCredentials ? 'Updating Credentials...' : 'Update Auth Credentials'}
-            </button>
-          </div>
-        </form>
-
-      </div>
-
-      {/* ── Avatar Picker Modal ─────────────────────────────── */}
-      {showAvatarPicker && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 animate-fadeIn">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowAvatarPicker(false)} />
-          <div 
-            className="relative w-full max-w-xl p-8 overflow-hidden max-h-[85vh] flex flex-col rounded-3xl border border-border"
-            style={{ 
-              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
-              boxShadow: '0 20px 80px rgba(0,0,0,0.5)' 
-            }}
-          >
-            
-            <header className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-xl text-text tracking-tight flex items-center gap-2">
-                <Icons.IconSparkle className="text-accent" size={18} />
-                Change Profile Picture
-              </h3>
-              <button 
-                className="p-1.5 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors" 
-                onClick={() => setShowAvatarPicker(false)}
-              >
-                <Icons.IconX size={18} />
-              </button>
-            </header>
-
-            {uploadingAvatar ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-                <div className="text-sm text-text-mute font-medium">Uploading image to storage...</div>
-              </div>
-            ) : (
-              <div className="overflow-y-auto space-y-6 pr-1 custom-scrollbar">
-                
-                {/* 1. Custom upload trigger */}
-                <div className="p-8 border-2 border-dashed border-white/10 hover:border-accent rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative group bg-white/2 hover:bg-white/4">
-                  <div className="p-3 bg-accent/10 border border-accent/20 text-accent rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                    <Icons.IconDoc size={24} />
-                  </div>
-                  <span className="font-bold text-sm text-text">Upload custom photo</span>
-                  <span className="text-xs text-text-mute mt-1.5 text-center">PNG, JPG or JPEG. Max size 5MB (auto-cropped to 200x200).</span>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleCustomAvatarUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
+                <div className="flex justify-end gap-3 pt-2">
+                  <button 
+                    type="button" 
+                    className="px-4 py-2 text-xs font-bold text-text-mute hover:text-text bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                    onClick={() => setShowPasswordModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                    disabled={updatingCredentials}
+                  >
+                    {updatingCredentials ? 'Updating...' : 'Update Password'}
+                  </button>
                 </div>
-
-                {/* 2. Presets Grid */}
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
-                    <Icons.IconSparkle size={12} />
-                    Choose Premium Preset
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                    {PRESET_AVATARS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleSelectPreset(preset.value)}
-                        className="group flex flex-col items-center p-2.5 rounded-xl bg-white/2 border border-white/5 hover:border-accent hover:bg-white/5 transition-all duration-200"
-                      >
-                        <div 
-                          className="w-12 h-12 rounded-full overflow-hidden border border-white/10 group-hover:scale-105 group-hover:border-accent transition-all duration-200"
-                          dangerouslySetInnerHTML={{ __html: preset.value.replace('data:image/svg+xml;utf8,', '') }}
-                        />
-                        <span className="text-[10px] text-text-mute mt-1.5 text-center font-medium truncate w-full group-hover:text-text transition-colors">{preset.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. Revert options */}
-                {user?.avatar_url && (
-                  <div className="pt-4 border-t border-white/5 flex justify-end">
-                    <button 
-                      type="button" 
-                      onClick={handleRemoveAvatar} 
-                      className="btn btn-ghost text-red-400 hover:text-red-300 bg-red-500/5 hover:bg-red-500/10 rounded-xl px-4 py-2 text-xs font-bold transition-all"
-                    >
-                      Delete Current Avatar
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
-
+        )}
+      </AnimatePresence>
     </div>
   );
 };
-

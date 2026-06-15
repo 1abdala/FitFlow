@@ -74,8 +74,8 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              border: '2.5px solid rgba(168, 85, 247, 0.6)',
-              boxShadow: '0 0 10px rgba(99, 102, 241, 0.6), 0 0 20px rgba(168, 85, 247, 0.2)',
+              border: '2.5px solid rgba(79, 124, 255, 0.3)',
+              boxShadow: '0 0 10px rgba(79, 124, 255, 0.25), 0 0 20px rgba(79, 124, 255, 0.15)',
               background: 'rgba(12, 18, 40, 0.8)',
               flexShrink: 0
             }}
