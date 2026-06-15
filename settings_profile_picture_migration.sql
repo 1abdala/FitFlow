@@ -10,10 +10,5 @@ ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS linkedin_url TEXT;
 ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS github_url TEXT;
 ALTER TABLE public.student_profiles ADD COLUMN IF NOT EXISTS portfolio_url TEXT;
 
--- 3. Create the 'avatars' storage bucket if it does not exist (Idempotent)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('avatars', 'avatars', true)
-ON CONFLICT (id) DO NOTHING;
-
--- 4. Notify PostgREST to reload the schema cache immediately
+-- 3. Notify PostgREST to reload the schema cache immediately
 NOTIFY pgrst, 'reload schema';
