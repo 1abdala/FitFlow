@@ -188,7 +188,14 @@ SKILL_KEYWORDS = {
     "Communication": ["communication", "interpersonal skills", "presentation skills"],
     "Problem Solving": ["problem solving", "problem-solving", "analytical skills"],
     "ITIL": ["itil", "it infrastructure library"],
-    "CRM": ["crm"]
+    "CRM": ["crm"],
+
+    # --- Software Engineering & QA ---
+    "Software Testing": ["software testing", "quality assurance", "qa", "software qa", "testing", "manual testing", "automated testing", "test automation", "test execution"],
+    "Debugging": ["debugging", "debug", "bug reporting", "error logging"],
+    "Software Engineering": ["software engineering", "software development", "software dev", "computer science", "coding"],
+    "API": ["api", "apis", "backend services", "web services"],
+    "SDLC": ["sdlc", "software development lifecycle", "software development life cycle"]
 }
 
 def normalize_text(text):
