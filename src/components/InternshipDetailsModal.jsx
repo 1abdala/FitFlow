@@ -194,6 +194,7 @@ const InternshipDetailsModal = ({ job, onClose }) => {
                   src={internships.company_logo_url} 
                   alt={internships.company_name} 
                   style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }}
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'block';

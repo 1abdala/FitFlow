@@ -175,6 +175,7 @@ const MatchRow = ({ job, onSelect, animDelay = 0 }) => {
             src={job.internships.company_logo_url} 
             alt={job.internships.company_name} 
             style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
+            referrerPolicy="no-referrer"
             onError={(e) => {
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'block';
@@ -296,6 +297,7 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
             src={job.internships.company_logo_url} 
             alt={co} 
             style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }}
+            referrerPolicy="no-referrer"
             onError={(e) => {
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
