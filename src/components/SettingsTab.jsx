@@ -40,19 +40,23 @@ const OPTIONAL_FIELD_LABELS = {
   portfolio_url: 'Portfolio'
 };
 
-// Reusable stat pill inside Profile Card
+// Reusable stat pill inside Profile Card (aligned to Skill Profile metrics)
 const StatPill = ({ label, value, color }) => (
   <div
-    className="flex flex-col items-center px-3 py-2 rounded-xl text-center w-full"
-    style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)' }}
+    className="flex flex-col items-center justify-center p-2.5 rounded-xl text-center w-full"
+    style={{ 
+      background: 'var(--surface-3)', 
+      border: '1px solid var(--border)',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+    }}
   >
     <span
-      className="text-base font-bold leading-none tracking-tight"
+      className="text-lg font-bold leading-none tracking-tight font-space-grotesk"
       style={{ fontFamily: "'Space Grotesk', sans-serif", color: color || 'var(--text)' }}
     >
       {value}
     </span>
-    <span className="text-[8px] uppercase tracking-widest mt-1 text-text-mute font-semibold">
+    <span className="text-[9px] uppercase tracking-wider mt-1.5 text-text-dim font-bold">
       {label}
     </span>
   </div>
@@ -473,14 +477,14 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const isStudent = user?.role === 'student';
 
   return (
-    <div className="space-y-8 pb-28">
+    <div className="space-y-6 pb-12">
       
       {/* ── ROW 1: PROFILE, PERSONAL & ACADEMIC GRID ─────────── */}
       <form id="settings-form" onSubmit={handleSaveProfile}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Column 1: Profile Card */}
-          <div className="p-6 flex flex-col items-center justify-between settings-premium-card text-center relative overflow-hidden select-none">
+          <div className="p-5 md:p-6 flex flex-col items-center justify-between settings-premium-card text-center relative overflow-hidden select-none">
             {/* Background decorations */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
               <div className="absolute -right-24 -top-24 w-48 h-48 rounded-full"
@@ -489,10 +493,18 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                    style={{ background: 'var(--hero-glow-b)', filter: 'blur(48px)', opacity: 0.08 }} />
             </div>
 
-            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full py-4">
-              {/* Glowing Avatar */}
-              <div className="relative shrink-0 select-none">
-                <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-surface-2 settings-avatar-glow shadow-lg">
+            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full py-2">
+              
+              {/* Profile Badge */}
+              <div className="mb-4">
+                <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent font-bold border border-accent/20 text-[9px] uppercase tracking-wider">
+                  {user?.role === 'student' ? 'Student' : 'Coordinator'}
+                </span>
+              </div>
+
+              {/* Glowing Avatar (Increased size by 33%, from w-24 to w-32) */}
+              <div className="relative shrink-0 select-none mb-4">
+                <div className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center bg-surface-2 settings-avatar-glow shadow-lg">
                   {user?.avatar_url ? (
                     <img 
                       src={user.avatar_url} 
@@ -505,32 +517,30 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                       }}
                     />
                   ) : null}
-                  <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-4xl font-bold text-accent">
+                  <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-5xl font-bold text-accent">
                     {fullName?.slice(0, 2).toUpperCase() || 'FF'}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-4">
-                <span className="px-2.5 py-0.5 rounded bg-accent/10 text-accent font-semibold border border-accent/20 text-[9px] uppercase tracking-wider">
-                  {user?.role === 'student' ? 'Student' : 'Coordinator'}
-                </span>
+              {/* Spacing optimization & information hierarchy */}
+              <div className="flex flex-col items-center gap-1">
+                <h3 className="font-extrabold text-2xl text-text tracking-tight leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  {fullName || 'Student Name'}
+                </h3>
+                
+                <p className="text-xs text-text-mute mt-1 font-medium leading-relaxed max-w-[240px]">
+                  {user?.role === 'student' ? (
+                    <>
+                      {programme || 'No Degree Selected'}
+                      {faculty && <span className="block text-[10px] text-text-dim mt-0.5 font-semibold">Faculty of {faculty}</span>}
+                      {matric && <span className="block text-[10px] text-accent/90 font-mono mt-1 font-semibold select-all">{matric}</span>}
+                    </>
+                  ) : (
+                    user?.email
+                  )}
+                </p>
               </div>
-
-              <h3 className="mt-3 font-bold text-xl text-text tracking-tight leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                {fullName || 'Student Name'}
-              </h3>
-              
-              <p className="text-xs text-text-mute mt-1.5 leading-normal max-w-[200px] font-medium">
-                {user?.role === 'student' ? (
-                  <>
-                    {programme || 'No Degree Selected'}
-                    {faculty && <div className="text-[10px] text-text-dim mt-1 font-semibold">Faculty of {faculty}</div>}
-                  </>
-                ) : (
-                  user?.email
-                )}
-              </p>
 
               <button 
                 type="button" 
@@ -540,9 +550,9 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                 <Icons.IconDoc size={14} /> Change Photo
               </button>
 
-              {/* Stats List */}
+              {/* Integrated Stats Section (visually integrated with tighter paddings) */}
               {isStudent && (
-                <div className="w-full grid grid-cols-2 gap-2.5 mt-6 pt-6 border-t border-white/5">
+                <div className="w-full grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-white/5">
                   <StatPill label="Completion" value={`${profileStatus?.percentage || 0}%`} color="var(--accent)" />
                   <StatPill label="Skills" value={user?.skills?.length || 0} color="#38bdf8" />
                   <StatPill label="Applications" value={appCount} color="#ec4899" />
@@ -553,7 +563,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
           </div>
 
           {/* Column 2: Personal Information Card */}
-          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+          <div className="p-5 md:p-6 space-y-5 settings-premium-card">
             <CardHeader 
               icon={Icons.IconUser} 
               title="Personal Information" 
@@ -616,7 +626,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
           </div>
 
           {/* Column 3: Academic Information Card */}
-          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+          <div className="p-5 md:p-6 space-y-5 settings-premium-card">
             <CardHeader 
               icon={Icons.IconCap} 
               title="Academic Information" 
@@ -626,7 +636,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
             <div className="space-y-4">
               {isStudent ? (
                 <>
-                  {/* Matric Number spanning full width of card ensures no truncation */}
+                  {/* Matric Number spans full width of card to guarantee no truncation */}
                   <SettingsField label="Matric No" icon={Icons.IconCap}>
                     <input 
                       type="text" 
@@ -736,7 +746,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           
           {/* Profile Completion Card */}
-          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+          <div className="p-5 md:p-6 space-y-6 settings-premium-card">
             <div className="flex justify-between items-center pb-4 border-b border-white/5">
               <CardHeader 
                 icon={Icons.IconSparkle} 
@@ -850,7 +860,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
           </div>
 
           {/* Notification Preferences Card */}
-          <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+          <div className="p-5 md:p-6 space-y-6 settings-premium-card">
             <CardHeader 
               icon={Icons.IconBell} 
               title="Notification Settings" 
@@ -948,7 +958,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       </form>
 
       {/* ── ROW 3: SECURITY & CREDENTIALS (FULL WIDTH) ───────── */}
-      <div className="p-6 md:p-8 space-y-6 settings-premium-card">
+      <div className="p-5 md:p-6 space-y-6 settings-premium-card">
         <CardHeader 
           icon={Icons.IconShield} 
           title="Security Summary" 
