@@ -381,14 +381,24 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* ── Grid Row 1: Profile & Progress ──────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="flex flex-col lg:flex-row gap-8 pb-12">
+      {/* Left Column - 1/3 width */}
+      <div className="w-full lg:w-1/3 space-y-6">
         
         {/* Card A: Profile Header & Avatar Selection */}
-        <div className="card flex flex-col items-center justify-center p-8 text-center lg:col-span-1">
+        <div 
+          className="flex flex-col items-center justify-center p-8 text-center rounded-3xl border border-border relative overflow-hidden" 
+          style={{ 
+            background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+            boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
+          }}
+        >
+          {/* Decorative glow in background */}
+          <div className="absolute -top-12 -left-12 w-24 h-24 rounded-full bg-accent/10 blur-xl pointer-events-none" />
+          <div className="absolute -bottom-12 -right-12 w-24 h-24 rounded-full bg-accent-2/10 blur-xl pointer-events-none" />
+
           <div className="relative group cursor-pointer" onClick={() => setShowAvatarPicker(true)}>
-            <div className="w-24 h-24 rounded-full border-2 border-accent/20 overflow-hidden flex items-center justify-center bg-surface-2 transition-all duration-300 group-hover:border-accent">
+            <div className="w-28 h-28 rounded-full border-2 border-accent/20 overflow-hidden flex items-center justify-center bg-surface-2 transition-all duration-300 group-hover:border-accent shadow-lg">
               {user?.avatar_url ? (
                 <img 
                   src={user.avatar_url} 
@@ -401,64 +411,100 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   }}
                 />
               ) : null}
-              <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-3xl font-bold text-accent">
+              <span style={{ display: user?.avatar_url ? 'none' : 'flex' }} className="text-4xl font-bold text-accent">
                 {fullName?.slice(0, 2).toUpperCase() || 'FF'}
               </span>
             </div>
             
             {/* Edit overlay */}
             <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <Icons.IconDoc size={18} className="text-white mb-1" />
-              <span className="text-[10px] font-bold text-white uppercase tracking-wider">Edit</span>
+              <Icons.IconDoc size={20} className="text-white mb-1" />
+              <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
             </div>
           </div>
           
-          <h4 className="mt-4 font-bold text-lg text-text">{fullName || 'User Profile'}</h4>
-          <p className="text-xs text-text-mute capitalize mt-1">{user?.role} · {user?.programme || 'FitFlow Member'}</p>
+          <h4 className="mt-4 font-bold text-xl text-text tracking-tight">{fullName || 'User Profile'}</h4>
+          <p className="text-xs text-text-mute capitalize mt-1.5 flex items-center gap-1.5 justify-center">
+            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent font-semibold border border-accent/20 text-[10px]">
+              {user?.role}
+            </span>
+            {user?.role === 'student' && <span className="text-text-mute">·</span>}
+            {user?.role === 'student' && <span className="text-text-mute font-medium">{programme || 'FitFlow Member'}</span>}
+          </p>
           
           <button 
             type="button" 
-            className="btn btn-ghost btn-sm mt-4" 
+            className="btn btn-glass btn-sm mt-5 shadow-sm font-semibold rounded-xl flex items-center gap-2" 
             onClick={() => setShowAvatarPicker(true)}
-            style={{ padding: '6px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
           >
-            Change Profile Picture
+            <Icons.IconDoc size={14} /> Change Photo
           </button>
         </div>
 
         {/* Card B: Profile Completion Progress Status */}
         {profileStatus && (
-          <div className="card p-6 flex flex-col justify-between lg:col-span-2">
+          <div 
+            className="p-6 flex flex-col justify-between rounded-3xl border border-border relative overflow-hidden"
+            style={{ 
+              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+              boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
+            }}
+          >
             <div>
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-bold text-text">Profile Completion</span>
-                <span className="text-sm font-bold text-accent">{profileStatus.percentage}%</span>
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-bold text-text tracking-tight text-md">Profile Completion</span>
+                
+                {/* Circular Progress from Onboarding */}
+                <div className="relative w-14 h-14 flex items-center justify-center">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(var(--accent-rgb),0.4)]">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                    <path 
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                      fill="none" 
+                      stroke="var(--accent)" 
+                      strokeWidth="3.2" 
+                      strokeDasharray="100, 100"
+                      strokeDashoffset={100 - profileStatus.percentage}
+                      style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tracking-tighter text-text">
+                    {profileStatus.percentage}%
+                  </div>
+                </div>
               </div>
               
-              {/* Progress Bar */}
-              <div className="w-full h-3 bg-surface-2 rounded-full overflow-hidden border border-border">
+              {/* Progress Line */}
+              <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 mb-6 relative">
                 <div 
-                  className="h-full bg-accent rounded-full transition-all duration-500"
+                  className="h-full bg-accent rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(var(--accent-rgb),0.8)]"
                   style={{ width: `${profileStatus.percentage}%` }}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-1 gap-4">
               {/* Required checklist */}
-              <div className="p-4 rounded-xl bg-surface-2 border border-border">
-                <div className="text-xs font-bold uppercase tracking-wider text-text-mute mb-3">Required Fields</div>
-                <div className="space-y-2">
+              <div className="p-4 rounded-2xl bg-white/2 border border-white/5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  Required Fields
+                </div>
+                <div className="space-y-2.5">
                   {['phone', 'dob', 'matric', 'faculty', 'programme', 'skills'].map((field) => {
                     const isMissing = profileStatus.requiredMissingFields.includes(field);
                     return (
-                      <div key={field} className="flex items-center gap-2 text-xs">
+                      <div key={field} className="flex items-center gap-2.5 text-xs">
                         {isMissing ? (
-                          <Icons.IconX size={12} className="text-red-500 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20">
+                            <Icons.IconX size={10} />
+                          </div>
                         ) : (
-                          <Icons.IconCheck size={12} className="text-emerald-500 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                            <Icons.IconCheck size={10} />
+                          </div>
                         )}
-                        <span className={isMissing ? 'text-text-mute' : 'text-text'}>{formatFieldLabel(field)}</span>
+                        <span className={isMissing ? 'text-text-mute font-medium' : 'text-text/90 font-medium'}>{formatFieldLabel(field)}</span>
                       </div>
                     );
                   })}
@@ -466,19 +512,26 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               </div>
 
               {/* Optional Improvements checklist */}
-              <div className="p-4 rounded-xl bg-surface-2 border border-border">
-                <div className="text-xs font-bold uppercase tracking-wider text-text-mute mb-3">Optional Improvements</div>
-                <div className="space-y-2">
+              <div className="p-4 rounded-2xl bg-white/2 border border-white/5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-text-mute mb-3 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-text-mute" />
+                  Optional Upgrades
+                </div>
+                <div className="space-y-2.5">
                   {['avatar_url', 'linkedin_url', 'github_url', 'portfolio_url'].map((field) => {
                     const isMissing = profileStatus.optionalMissingFields.includes(field);
                     return (
-                      <div key={field} className="flex items-center gap-2 text-xs">
+                      <div key={field} className="flex items-center gap-2.5 text-xs">
                         {isMissing ? (
-                          <span className="w-3 h-3 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-[9px] shrink-0">!</span>
+                          <div className="w-4 h-4 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-[10px] shrink-0 border border-amber-500/20">
+                            !
+                          </div>
                         ) : (
-                          <Icons.IconCheck size={12} className="text-emerald-500 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                            <Icons.IconCheck size={10} />
+                          </div>
                         )}
-                        <span className={isMissing ? 'text-text-mute' : 'text-text'}>{formatFieldLabel(field)}</span>
+                        <span className={isMissing ? 'text-text-mute font-medium' : 'text-text/90 font-medium'}>{formatFieldLabel(field)}</span>
                       </div>
                     );
                   })}
@@ -489,30 +542,496 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         )}
       </div>
 
+      {/* Right Column - 2/3 width */}
+      <div className="w-full lg:w-2/3 space-y-6">
+        
+        {/* Form: Profile Settings */}
+        <form onSubmit={handleSaveProfile} className="space-y-6">
+          
+          {/* Card C: Personal Details */}
+          <div 
+            className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
+            style={{ 
+              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+              boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
+            }}
+          >
+            <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
+              <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
+                <Icons.IconGear size={16} />
+              </div>
+              Personal Information
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="input-group">
+                <label className="input-label">Full Name</label>
+                <div className="ob-input-wrap">
+                  <div className="input-icon"><Icons.IconUser size={16} /></div>
+                  <input 
+                    type="text" 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your Full Name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="input-group">
+                  <label className="input-label">Phone Number</label>
+                  <div className="ob-input-wrap">
+                    <div className="input-icon"><Icons.IconPhone size={16} /></div>
+                    <input 
+                      type="text" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+601XXXXXXXX"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Date of Birth</label>
+                  <div className="ob-input-wrap">
+                    <Icons.IconCalendar size={16} className="input-icon" />
+                    <input 
+                      type="date" 
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="input-group">
+                  <label className="input-label">Gender</label>
+                  <div className="ob-input-wrap">
+                    <div className="input-icon"><Icons.IconUser size={16} /></div>
+                    <select 
+                      value={gender} 
+                      onChange={(e) => setGender(e.target.value)}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Nationality</label>
+                  <div className="ob-input-wrap">
+                    <Icons.IconMapPin size={16} className="input-icon" />
+                    <select 
+                      value={nationality} 
+                      onChange={(e) => setNationality(e.target.value)}
+                    >
+                      <option value="Malaysian">Malaysian</option>
+                      <option value="International">International</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card D: Academic Details (Students Only) */}
+          {user.role === 'student' && (
+            <div 
+              className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
+              style={{ 
+                background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+                boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
+              }}
+            >
+              <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
+                <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
+                  <Icons.IconCap size={16} />
+                </div>
+                Academic Information
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="input-group">
+                    <label className="input-label">Matric No</label>
+                    <div className="ob-input-wrap">
+                      <Icons.IconCap size={16} className="input-icon" />
+                      <input 
+                        type="text" 
+                        value={matric}
+                        onChange={(e) => setMatric(e.target.value)}
+                        placeholder="B03XXXXXXXX"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Faculty</label>
+                    <div className="ob-input-wrap">
+                      <Icons.IconBriefcase size={16} className="input-icon" />
+                      <select 
+                        value={faculty} 
+                        onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}
+                        required
+                      >
+                        <option value="">Select</option>
+                        {Object.keys(FACULTIES).map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Programme</label>
+                    <div className="ob-input-wrap">
+                      <Icons.IconBook size={16} className="input-icon" />
+                      <select 
+                        value={programme} 
+                        onChange={(e) => setProgramme(e.target.value)}
+                        disabled={!faculty}
+                        required
+                      >
+                        <option value="">Select</option>
+                        {faculty && FACULTIES[faculty]?.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="input-group">
+                    <label className="input-label">Year of Study</label>
+                    <div className="ob-input-wrap">
+                      <Icons.IconCalendar size={16} className="input-icon" />
+                      <select 
+                        value={yearOfStudy} 
+                        onChange={(e) => setYearOfStudy(e.target.value)}
+                      >
+                        <option value="">Select Year</option>
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4">Year 4</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Semester</label>
+                    <div className="ob-input-wrap">
+                      <Icons.IconClock size={16} className="input-icon" />
+                      <select 
+                        value={semester} 
+                        onChange={(e) => setSemester(e.target.value)}
+                      >
+                        <option value="">Select Sem</option>
+                        <option value="1">Semester 1</option>
+                        <option value="2">Semester 2</option>
+                        <option value="3">Short Semester</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                <div className="pt-4 border-t border-white/5 space-y-3">
+                  <div className="text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-1.5 mb-1">
+                    <Icons.IconExternalLink size={12} />
+                    Professional Portals (Optional)
+                  </div>
+                  <div className="space-y-3">
+                    <div className="input-group">
+                      <div className="ob-input-wrap">
+                        <div className="input-icon"><Icons.IconTarget size={16} /></div>
+                        <input 
+                          type="url" 
+                          placeholder="LinkedIn Profile URL (https://...)" 
+                          value={linkedinUrl} 
+                          onChange={(e) => setLinkedinUrl(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="input-group">
+                      <div className="ob-input-wrap">
+                        <div className="input-icon"><Icons.IconBook size={16} /></div>
+                        <input 
+                          type="url" 
+                          placeholder="GitHub Profile URL (https://...)" 
+                          value={githubUrl} 
+                          onChange={(e) => setGithubUrl(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="input-group">
+                      <div className="ob-input-wrap">
+                        <div className="input-icon"><Icons.IconDoc size={16} /></div>
+                        <input 
+                          type="url" 
+                          placeholder="Personal Portfolio URL (https://...)" 
+                          value={portfolioUrl} 
+                          onChange={(e) => setPortfolioUrl(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* Card E: Notification Preferences JSONB */}
+          <div 
+            className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
+            style={{ 
+              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+              boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
+            }}
+          >
+            <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
+              <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
+                <Icons.IconBell size={16} />
+              </div>
+              Notification Preferences
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
+                    <Icons.IconSparkle size={16} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-text">Internship Match Updates</div>
+                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Score change alerts for targeted positions</div>
+                  </div>
+                </div>
+                <div 
+                  className="ob-toggle shrink-0" 
+                  role="switch" 
+                  aria-checked={!!notifications.match_updates}
+                  onClick={() => handleNotificationChange('match_updates')}
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
+                    <Icons.IconSearch size={16} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-text">New Internships</div>
+                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Notifies when fresh matched postings are scraped</div>
+                  </div>
+                </div>
+                <div 
+                  className="ob-toggle shrink-0" 
+                  role="switch" 
+                  aria-checked={!!notifications.new_internships}
+                  onClick={() => handleNotificationChange('new_internships')}
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
+                    <Icons.IconCheckCircle size={16} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-text">Application Status Changes</div>
+                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Alerts when internship status moves in the tracker</div>
+                  </div>
+                </div>
+                <div 
+                  className="ob-toggle shrink-0" 
+                  role="switch" 
+                  aria-checked={!!notifications.application_status}
+                  onClick={() => handleNotificationChange('application_status')}
+                />
+              </label>
+
+              <label className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5 cursor-pointer select-none hover:bg-white/5 transition-all duration-200 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0">
+                    <Icons.IconFileText size={16} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-text">Weekly Summary Digest</div>
+                    <div className="text-[11px] text-text-mute mt-0.5 leading-normal">Condensed weekend report of matches & stats</div>
+                  </div>
+                </div>
+                <div 
+                  className="ob-toggle shrink-0" 
+                  role="switch" 
+                  aria-checked={!!notifications.weekly_summary}
+                  onClick={() => handleNotificationChange('weekly_summary')}
+                />
+              </label>
+
+            </div>
+          </div>
+
+          {/* Form Action Save */}
+          <div className="flex justify-end">
+            <button 
+              type="submit" 
+              className="btn btn-primary font-bold shadow-md shadow-accent/20 px-8 py-3 rounded-xl transition-all duration-300 hover:shadow-accent/40"
+              disabled={savingProfile}
+            >
+              {savingProfile ? 'Saving Changes...' : 'Save Profile Settings'}
+            </button>
+          </div>
+        </form>
+
+        {/* ── Form: Account Credentials ────────────────────── */}
+        <form 
+          onSubmit={handleUpdateCredentials} 
+          className="p-6 space-y-5 rounded-3xl border border-border relative overflow-hidden"
+          style={{ 
+            background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+            boxShadow: '0 10px 40px rgba(0,0,0,0.35)' 
+          }}
+        >
+          <h3 className="font-bold text-md border-b border-white/5 pb-3.5 flex items-center gap-2.5 text-text tracking-tight">
+            <div className="bg-accent/10 text-accent p-1.5 rounded-lg border border-accent/20 shrink-0">
+              <Icons.IconShield size={16} />
+            </div>
+            Security & Credentials
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Email Update section */}
+            <div className="space-y-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
+                <Icons.IconMail size={12} />
+                Change Email Address
+              </div>
+              <div className="input-group">
+                <label className="input-label">New Email Address</label>
+                <div className="ob-input-wrap">
+                  <div className="input-icon"><Icons.IconMail size={16} /></div>
+                  <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@student.utem.edu.my"
+                    required
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-text-mute leading-relaxed">
+                Updating your email will trigger a confirmation link sent to the new address. Your account email won't change until verified.
+              </p>
+            </div>
+
+            {/* Password Update section */}
+            <div className="space-y-4 border-t md:border-t-0 md:border-l border-white/5 pt-5 md:pt-0 md:pl-6">
+              <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
+                <Icons.IconLock size={12} />
+                Update Password
+              </div>
+              
+              <div className="space-y-4">
+                <div className="input-group">
+                  <label className="input-label">Current Password (Required for changes)</label>
+                  <div className="ob-input-wrap">
+                    <div className="input-icon"><Icons.IconLock size={16} /></div>
+                    <input 
+                      type="password" 
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="input-group">
+                    <label className="input-label">New Password</label>
+                    <div className="ob-input-wrap">
+                      <div className="input-icon"><Icons.IconLock size={16} /></div>
+                      <input 
+                        type="password" 
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Min 6 chars"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label className="input-label">Confirm New Password</label>
+                    <div className="ob-input-wrap">
+                      <div className="input-icon"><Icons.IconLock size={16} /></div>
+                      <input 
+                        type="password" 
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm password"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-white/5">
+            <button 
+              type="submit" 
+              className="btn btn-glass font-bold text-accent border border-accent/20 hover:border-accent hover:bg-accent/5 rounded-xl px-6 py-2.5 transition-all duration-200"
+              disabled={updatingCredentials}
+            >
+              {updatingCredentials ? 'Updating Credentials...' : 'Update Auth Credentials'}
+            </button>
+          </div>
+        </form>
+
+      </div>
+
       {/* ── Avatar Picker Modal ─────────────────────────────── */}
       {showAvatarPicker && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => setShowAvatarPicker(false)} />
-          <div className="relative card w-full max-w-xl p-6 overflow-hidden max-h-[85vh] flex flex-col">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowAvatarPicker(false)} />
+          <div 
+            className="relative w-full max-w-xl p-8 overflow-hidden max-h-[85vh] flex flex-col rounded-3xl border border-border"
+            style={{ 
+              background: 'linear-gradient(180deg, #0B1220 0%, #111A33 100%)', 
+              boxShadow: '0 20px 80px rgba(0,0,0,0.5)' 
+            }}
+          >
             
             <header className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg">Change Profile Picture</h3>
-              <button className="icon-btn" onClick={() => setShowAvatarPicker(false)}><Icons.IconX size={18} /></button>
+              <h3 className="font-bold text-xl text-text tracking-tight flex items-center gap-2">
+                <Icons.IconSparkle className="text-accent" size={18} />
+                Change Profile Picture
+              </h3>
+              <button 
+                className="p-1.5 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors" 
+                onClick={() => setShowAvatarPicker(false)}
+              >
+                <Icons.IconX size={18} />
+              </button>
             </header>
 
             {uploadingAvatar ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="flex flex-col items-center justify-center py-16 space-y-4">
                 <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-                <div className="text-sm text-text-mute">Uploading image to storage...</div>
+                <div className="text-sm text-text-mute font-medium">Uploading image to storage...</div>
               </div>
             ) : (
-              <div className="overflow-y-auto space-y-6 pr-1">
+              <div className="overflow-y-auto space-y-6 pr-1 custom-scrollbar">
                 
                 {/* 1. Custom upload trigger */}
-                <div className="p-6 border-2 border-dashed border-border hover:border-accent rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors relative">
-                  <Icons.IconDoc size={24} className="text-text-mute mb-2" />
-                  <span className="font-bold text-sm">Upload custom photo</span>
-                  <span className="text-xs text-text-mute mt-1">PNG, JPG or JPEG. Max size 5MB.</span>
+                <div className="p-8 border-2 border-dashed border-white/10 hover:border-accent rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative group bg-white/2 hover:bg-white/4">
+                  <div className="p-3 bg-accent/10 border border-accent/20 text-accent rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                    <Icons.IconDoc size={24} />
+                  </div>
+                  <span className="font-bold text-sm text-text">Upload custom photo</span>
+                  <span className="text-xs text-text-mute mt-1.5 text-center">PNG, JPG or JPEG. Max size 5MB (auto-cropped to 200x200).</span>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -523,20 +1042,23 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
                 {/* 2. Presets Grid */}
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-text-mute mb-3">Choose Premium Preset</div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-accent mb-3 flex items-center gap-1.5">
+                    <Icons.IconSparkle size={12} />
+                    Choose Premium Preset
+                  </div>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                     {PRESET_AVATARS.map((preset) => (
                       <button
                         key={preset.id}
                         type="button"
                         onClick={() => handleSelectPreset(preset.value)}
-                        className="group flex flex-col items-center p-2 rounded-xl bg-surface-2 border border-border hover:border-accent hover:bg-surface-3 transition-all"
+                        className="group flex flex-col items-center p-2.5 rounded-xl bg-white/2 border border-white/5 hover:border-accent hover:bg-white/5 transition-all duration-200"
                       >
                         <div 
-                          className="w-12 h-12 rounded-full overflow-hidden border border-border group-hover:scale-105 transition-transform"
+                          className="w-12 h-12 rounded-full overflow-hidden border border-white/10 group-hover:scale-105 group-hover:border-accent transition-all duration-200"
                           dangerouslySetInnerHTML={{ __html: preset.value.replace('data:image/svg+xml;utf8,', '') }}
                         />
-                        <span className="text-[10px] text-text-mute mt-1 text-center font-medium truncate w-full">{preset.name}</span>
+                        <span className="text-[10px] text-text-mute mt-1.5 text-center font-medium truncate w-full group-hover:text-text transition-colors">{preset.name}</span>
                       </button>
                     ))}
                   </div>
@@ -544,11 +1066,11 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
                 {/* 3. Revert options */}
                 {user?.avatar_url && (
-                  <div className="pt-4 border-t border-border flex justify-end">
+                  <div className="pt-4 border-t border-white/5 flex justify-end">
                     <button 
                       type="button" 
                       onClick={handleRemoveAvatar} 
-                      className="btn btn-ghost text-red-400 hover:text-red-300 bg-red-500/5 hover:bg-red-500/10"
+                      className="btn btn-ghost text-red-400 hover:text-red-300 bg-red-500/5 hover:bg-red-500/10 rounded-xl px-4 py-2 text-xs font-bold transition-all"
                     >
                       Delete Current Avatar
                     </button>
@@ -560,345 +1082,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         </div>
       )}
 
-      {/* ── Form: Profile Settings ────────────────────────── */}
-      <form onSubmit={handleSaveProfile} className="space-y-6">
-        
-        {/* Grid: Personal & Academic Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* Card C: Personal Details */}
-          <div className="card p-6 space-y-4">
-            <h3 className="font-bold text-md border-b border-border pb-3 flex items-center gap-2"><Icons.IconGear size={16} className="text-accent" />Personal Information</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Full Name</label>
-                <input 
-                  type="text" 
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="input w-full"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Phone Number</label>
-                  <input 
-                    type="text" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+601XXXXXXXX"
-                    className="input w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Date of Birth</label>
-                  <input 
-                    type="date" 
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    className="input w-full"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Gender</label>
-                  <select 
-                    value={gender} 
-                    onChange={(e) => setGender(e.target.value)}
-                    className="input w-full"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Nationality</label>
-                  <select 
-                    value={nationality} 
-                    onChange={(e) => setNationality(e.target.value)}
-                    className="input w-full"
-                  >
-                    <option value="Malaysian">Malaysian</option>
-                    <option value="International">International</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card D: Academic Details (Students Only) */}
-          {user.role === 'student' && (
-            <div className="card p-6 space-y-4">
-              <h3 className="font-bold text-md border-b border-border pb-3 flex items-center gap-2"><Icons.IconCap size={16} className="text-accent" />Academic Information</h3>
-              
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-1">
-                    <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Matric No</label>
-                    <input 
-                      type="text" 
-                      value={matric}
-                      onChange={(e) => setMatric(e.target.value)}
-                      placeholder="B03XXXXXXXX"
-                      className="input w-full"
-                      required
-                    />
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Faculty</label>
-                    <select 
-                      value={faculty} 
-                      onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}
-                      className="input w-full"
-                      required
-                    >
-                      <option value="">Select</option>
-                      {Object.keys(FACULTIES).map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Programme</label>
-                    <select 
-                      value={programme} 
-                      onChange={(e) => setProgramme(e.target.value)}
-                      className="input w-full"
-                      disabled={!faculty}
-                      required
-                    >
-                      <option value="">Select</option>
-                      {faculty && FACULTIES[faculty]?.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Year of Study</label>
-                    <select 
-                      value={yearOfStudy} 
-                      onChange={(e) => setYearOfStudy(e.target.value)}
-                      className="input w-full"
-                    >
-                      <option value="">Select Year</option>
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-text-mute uppercase tracking-wider mb-1">Semester</label>
-                    <select 
-                      value={semester} 
-                      onChange={(e) => setSemester(e.target.value)}
-                      className="input w-full"
-                    >
-                      <option value="">Select Sem</option>
-                      <option value="1">Semester 1</option>
-                      <option value="2">Semester 2</option>
-                      <option value="3">Short Semester</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Social Links */}
-                <div className="pt-2 border-t border-border space-y-2">
-                  <div className="text-xs font-bold uppercase tracking-wider text-text-mute">Professional Portals</div>
-                  <div className="space-y-2">
-                    <div className="flex items-center bg-surface-2 border border-border rounded-xl px-3 py-1">
-                      <Icons.IconTarget size={14} className="text-text-mute mr-2 shrink-0" />
-                      <input 
-                        type="url" 
-                        placeholder="LinkedIn Profile URL" 
-                        value={linkedinUrl} 
-                        onChange={(e) => setLinkedinUrl(e.target.value)}
-                        className="bg-transparent border-none outline-none text-xs w-full py-1 text-text"
-                      />
-                    </div>
-                    <div className="flex items-center bg-surface-2 border border-border rounded-xl px-3 py-1">
-                      <Icons.IconBook size={14} className="text-text-mute mr-2 shrink-0" />
-                      <input 
-                        type="url" 
-                        placeholder="GitHub Profile URL" 
-                        value={githubUrl} 
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        className="bg-transparent border-none outline-none text-xs w-full py-1 text-text"
-                      />
-                    </div>
-                    <div className="flex items-center bg-surface-2 border border-border rounded-xl px-3 py-1">
-                      <Icons.IconDoc size={14} className="text-text-mute mr-2 shrink-0" />
-                      <input 
-                        type="url" 
-                        placeholder="Personal Portfolio Website URL" 
-                        value={portfolioUrl} 
-                        onChange={(e) => setPortfolioUrl(e.target.value)}
-                        className="bg-transparent border-none outline-none text-xs w-full py-1 text-text"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Card E: Notification Preferences JSONB */}
-        <div className="card p-6 space-y-4">
-          <h3 className="font-bold text-md border-b border-border pb-3 flex items-center gap-2"><Icons.IconBell size={16} className="text-accent" />Notification Preferences</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            <label className="flex items-start gap-3 p-4 bg-surface-2 rounded-xl border border-border cursor-pointer select-none hover:bg-surface-3 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={!!notifications.match_updates}
-                onChange={() => handleNotificationChange('match_updates')}
-                className="mt-1 accent-accent"
-              />
-              <div>
-                <div className="font-bold text-sm">Internship Match Updates</div>
-                <div className="text-xs text-text-mute mt-0.5">Get notified when your skill matching score updates for key jobs</div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-4 bg-surface-2 rounded-xl border border-border cursor-pointer select-none hover:bg-surface-3 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={!!notifications.new_internships}
-                onChange={() => handleNotificationChange('new_internships')}
-                className="mt-1 accent-accent"
-              />
-              <div>
-                <div className="font-bold text-sm">New Internships</div>
-                <div className="text-xs text-text-mute mt-0.5">Get notified when new tech listings matching your filters are scraped</div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-4 bg-surface-2 rounded-xl border border-border cursor-pointer select-none hover:bg-surface-3 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={!!notifications.application_status}
-                onChange={() => handleNotificationChange('application_status')}
-                className="mt-1 accent-accent"
-              />
-              <div>
-                <div className="font-bold text-sm">Application Status Changes</div>
-                <div className="text-xs text-text-mute mt-0.5">Alerts when coordinator moves your applications on the tracker</div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-4 bg-surface-2 rounded-xl border border-border cursor-pointer select-none hover:bg-surface-3 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={!!notifications.weekly_summary}
-                onChange={() => handleNotificationChange('weekly_summary')}
-                className="mt-1 accent-accent"
-              />
-              <div>
-                <div className="font-bold text-sm">Weekly Summary Digest</div>
-                <div className="text-xs text-text-mute mt-0.5">A condensed weekend email outlining matches and tracker highlights</div>
-              </div>
-            </label>
-
-          </div>
-        </div>
-
-        {/* Form Action Save */}
-        <div className="flex justify-end">
-          <button 
-            type="submit" 
-            className="btn btn-primary font-bold shadow-md shadow-accent/20 px-8 py-3"
-            disabled={savingProfile}
-          >
-            {savingProfile ? 'Saving Changes...' : 'Save Profile Settings'}
-          </button>
-        </div>
-      </form>
-
-      {/* ── Form: Account Credentials ────────────────────── */}
-      <form onSubmit={handleUpdateCredentials} className="card p-6 space-y-4">
-        <h3 className="font-bold text-md border-b border-border pb-3 flex items-center gap-2"><Icons.IconShield size={16} className="text-accent" />Security & Credentials</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          {/* Email Update section */}
-          <div className="space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-text-mute">Change Email Address</div>
-            <div>
-              <label className="block text-xs text-text-mute mb-1">New Email</label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input w-full"
-                required
-              />
-            </div>
-            <div className="text-[11px] text-text-mute leading-relaxed">
-              Updating your email will trigger a confirmation link sent to the new address. Your account email won't change until verified.
-            </div>
-          </div>
-
-          {/* Password Update section */}
-          <div className="space-y-3 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-text-mute">Update Password</div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-text-mute mb-1">Current Password (Required for password changes)</label>
-                <input 
-                  type="password" 
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="input w-full"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-text-mute mb-1">New Password</label>
-                <input 
-                  type="password" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="input w-full"
-                  placeholder="Min 6 characters"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-text-mute mb-1">Confirm New Password</label>
-                <input 
-                  type="password" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input w-full"
-                  placeholder="Confirm password"
-                />
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <div className="flex justify-end pt-4 border-t border-border">
-          <button 
-            type="submit" 
-            className="btn btn-ghost font-bold text-accent border border-accent/20 hover:border-accent"
-            disabled={updatingCredentials}
-          >
-            {updatingCredentials ? 'Updating credentials...' : 'Update Auth Credentials'}
-          </button>
-        </div>
-      </form>
     </div>
   );
 };
+
