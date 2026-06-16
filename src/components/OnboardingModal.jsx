@@ -408,7 +408,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                              <div>
                                <p className="text-sm font-bold text-text mb-1 tracking-tight">Skip manual entry?</p>
                                <p className="text-xs text-text-mute leading-relaxed">
-                                 You can skip typing your skills here! Just finish this profile, then upload your resume in the <span className="font-bold text-accent">CV Analyzer</span> to extract them automatically.
+                                 You can skip typing your skills here! Just finish this profile, then upload your resume in the <span className="font-bold text-accent">CV Analyzer</span> to extract them automatically, or manually add them later in the <span className="font-bold text-accent">Skill Profile</span> tab.
                                </p>
                              </div>
                            </div>
