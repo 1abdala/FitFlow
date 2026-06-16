@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { sendNotification } from '../lib/notificationService';
 
 const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
+  const dateInputRef = React.useRef(null);
   const [step, setStep] = useState(() => {
     const hasStep2 = user?.phone && user?.dob;
     return hasStep2 ? 3 : 2;
@@ -340,8 +341,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                        <div className="input-group">
                          <label className="input-label">Date of Birth *</label>
                          <div className="ob-input-wrap">
-                           <Icons.IconCalendar size={16} className="input-icon" />
-                           <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+                           <Icons.IconCalendar size={16} className="input-icon" onClick={() => dateInputRef.current?.showPicker()} style={{ cursor: 'pointer' }} />
+                           <input type="date" ref={dateInputRef} value={dob} onChange={(e) => setDob(e.target.value)} />
                          </div>
                        </div>
                        <div className="input-group">

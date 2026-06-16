@@ -81,7 +81,7 @@ const CardHeader = ({ icon: IconComponent, title, subtitle }) => (
 );
 
 // Reusable glassmorphism input wrapper with dropdown chevron support
-const SettingsField = ({ label, icon: IconComponent, error, children }) => {
+const SettingsField = ({ label, icon: IconComponent, error, onIconClick, children }) => {
   const isSelect = React.Children.toArray(children).some(
     child => child.type === 'select'
   );
@@ -91,7 +91,10 @@ const SettingsField = ({ label, icon: IconComponent, error, children }) => {
       {label && <label className="text-xs font-semibold text-text-mute tracking-tight">{label}</label>}
       <div className="settings-glass-input relative flex items-center w-full">
         {IconComponent && (
-          <div className="input-icon absolute left-4 text-text-dim pointer-events-none flex items-center justify-center">
+          <div 
+            className={`input-icon absolute left-4 text-text-dim flex items-center justify-center ${onIconClick ? 'cursor-pointer' : 'pointer-events-none'}`}
+            onClick={onIconClick}
+          >
             <IconComponent size={16} />
           </div>
         )}
@@ -110,6 +113,7 @@ const SettingsField = ({ label, icon: IconComponent, error, children }) => {
 };
 
 export const SettingsTab = ({ user, onUserUpdate }) => {
+  const settingsDateRef = React.useRef(null);
   const [profileStatus, setProfileStatus] = useState(null);
   const [appCount, setAppCount] = useState(0);
   const [matchScore, setMatchScore] = useState(0);
@@ -626,9 +630,14 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                 />
               </SettingsField>
 
-              <SettingsField label="Date of Birth" icon={Icons.IconCalendar}>
+              <SettingsField 
+                label="Date of Birth" 
+                icon={Icons.IconCalendar}
+                onIconClick={() => settingsDateRef.current?.showPicker()}
+              >
                 <input 
                   type="date" 
+                  ref={settingsDateRef}
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                   required

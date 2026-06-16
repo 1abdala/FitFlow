@@ -3764,3 +3764,9 @@
   box-shadow: 0 0 16px rgba(79, 124, 255, 0.35), 0 0 30px rgba(79, 124, 255, 0.12);
   border-color: rgba(79, 124, 255, 0.4);
 }
+
+/* Hide browser-native calendar picker indicator on type="date" inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none;
+}
