@@ -102,9 +102,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [position, setPosition] = useState('');
 
   const faculties = {
-    'FTMK': ['Software Engineering', 'Artificial Intelligence', 'Game Technology', 'Data Science', 'Cybersecurity', 'Computer Networking', 'Interactive Media'],
-    'FKEKK': ['Electrical Engineering', 'Mechatronics', 'Computer Engineering'],
-    'FkP': ['Manufacturing Engineering', 'Robotics']
+    'FTMK': ['Software Engineering', 'Game Technology', 'Data Science', 'Computer Networking', 'Interactive Media'],
+    'FAIX': ['Artificial Intelligence', 'Cybersecurity']
   };
 
   const malaysianStates = ['Remote (Work from Home)', 'Johor', 'Kedah', 'Kelantan', 'Malacca', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur', 'Putrajaya', 'Labuan'];

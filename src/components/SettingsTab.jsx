@@ -20,9 +20,8 @@ const PRESET_AVATARS = [
 ];
 
 const FACULTIES = {
-  'FTMK': ['Software Engineering', 'Artificial Intelligence', 'Game Technology', 'Data Science', 'Cybersecurity', 'Computer Networking', 'Interactive Media'],
-  'FKEKK': ['Electrical Engineering', 'Mechatronics', 'Computer Engineering'],
-  'FkP': ['Manufacturing Engineering', 'Robotics']
+  'FTMK': ['Software Engineering', 'Game Technology', 'Data Science', 'Computer Networking', 'Interactive Media'],
+  'FAIX': ['Artificial Intelligence', 'Cybersecurity']
 };
 
 const REQUIRED_FIELD_LABELS = {
