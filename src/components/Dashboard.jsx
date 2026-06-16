@@ -574,6 +574,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -608,6 +609,13 @@ const Dashboard = () => {
   useEffect(() => {
     fetchUserProfile();
   }, [fetchUserProfile]);
+
+  useEffect(() => {
+    if (user && !user.profile_completed && user.role === 'student' && !hasAutoOpened) {
+      setShowOnboarding(true);
+      setHasAutoOpened(true);
+    }
+  }, [user, hasAutoOpened]);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -1009,7 +1017,19 @@ const Dashboard = () => {
   const savedDelta = newSavedThisWeek > 0 ? `▲ ${newSavedThisWeek} new` : null;
   const savedDeltaTone = newSavedThisWeek > 0 ? 'up' : 'neutral';
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center z-[9999]" style={{ background: 'var(--bg)' }}>
+        <div className="relative w-16 h-16 mb-4">
+          <div className="absolute inset-0 rounded-full border-4 border-accent-soft animate-pulse" style={{ borderTopColor: 'var(--accent)' }} />
+          <div className="absolute inset-0 rounded-full border-4 border-transparent animate-spin" style={{ borderTopColor: 'var(--accent)', animationDuration: '0.8s' }} />
+        </div>
+        <h3 className="text-sm font-semibold tracking-wide animate-pulse" style={{ color: 'var(--text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+          Loading your FitFlow workspace...
+        </h3>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">

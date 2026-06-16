@@ -45,7 +45,7 @@ const AuthPage = () => {
         setLoading(true);
         const userEmail = session.user.email;
         const userName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
-        let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         
         if (!existingUser) {
           // Auto-create base profile if it doesn't exist for OAuth
@@ -56,6 +56,8 @@ const AuthPage = () => {
           };
           // Try to insert it so it persists
           await supabase.from('profiles').insert([existingUser]);
+          // Also create student_profiles record for OAuth student user
+          await supabase.from('student_profiles').insert([{ id: session.user.id }]);
         }
         
         navigate('/dashboard');
@@ -91,6 +93,9 @@ const AuthPage = () => {
       if (error) throw error;
       if (isForgotPassword) { setIsVerifying(false); setForgotStep(3); setOtp(['', '', '', '', '', '', '', '']); return; }
       await supabase.from('profiles').insert([{ id: data.user.id, full_name: name, role }]);
+      // Create sub-profile record
+      const subTable = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+      await supabase.from(subTable).insert([{ id: data.user.id }]);
       navigate('/dashboard');
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
@@ -104,7 +109,7 @@ const AuthPage = () => {
         const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
         if (authErr) throw authErr;
         
-        let { data, error } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
+        let { data, error } = await supabase.from('profiles').select('*').eq('id', authData.user.id).maybeSingle();
         
         // Fallback if base profile in table is missing but auth succeeded
         if (!data) {
@@ -114,6 +119,9 @@ const AuthPage = () => {
             full_name: authData.user.user_metadata?.full_name || email.split('@')[0]
           };
           await supabase.from('profiles').insert([data]);
+          // Create sub-profile record
+          const subTable = data.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+          await supabase.from(subTable).insert([{ id: authData.user.id }]);
         }
         
         navigate('/dashboard');

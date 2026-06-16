@@ -110,7 +110,7 @@ export async function fetchFullProfile(userId) {
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
   if (baseErr || !baseProfile) {
     throw new Error(baseErr?.message || "Base profile not found");
@@ -120,11 +120,23 @@ export async function fetchFullProfile(userId) {
   const subTable = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
 
   // 2. Fetch sub-profile
-  const { data: subProfile, error: subErr } = await supabase
+  let { data: subProfile, error: subErr } = await supabase
     .from(subTable)
     .select('*')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
+
+  // Self-healing fallback: insert a placeholder sub-profile if missing
+  if (!subProfile && !subErr) {
+    const { data: newSubProfile, error: createErr } = await supabase
+      .from(subTable)
+      .insert([{ id: userId }])
+      .select('*')
+      .maybeSingle();
+    if (!createErr && newSubProfile) {
+      subProfile = newSubProfile;
+    }
+  }
 
   // 3. Fetch skills if student
   let skills = [];

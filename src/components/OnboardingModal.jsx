@@ -36,7 +36,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         if (!authUser) return;
 
         const table = user?.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
-        const { data } = await supabase.from(table).select('*').eq('id', authUser.id).single();
+        const { data } = await supabase.from(table).select('*').eq('id', authUser.id).maybeSingle();
 
         if (data) {
           if (data.phone) setPhone(data.phone);
