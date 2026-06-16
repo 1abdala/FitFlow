@@ -75,10 +75,10 @@ const AuthPage = () => {
       }
     };
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session && !isVerifying) handleOAuthSession(session);
+      if (event === 'SIGNED_IN' && session) handleOAuthSession(session);
     });
     return () => subscription?.unsubscribe();
-  }, [navigate, isVerifying]);
+  }, [navigate]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -99,11 +99,7 @@ const AuthPage = () => {
       const { data, error } = await supabase.auth.verifyOtp({ email, token, type: isForgotPassword ? 'recovery' : 'signup' });
       if (error) throw error;
       if (isForgotPassword) { setIsVerifying(false); setForgotStep(3); setOtp(['', '', '', '', '', '', '', '']); return; }
-      await supabase.from('profiles').insert([{ id: data.user.id, full_name: name, role }]);
-      // Create sub-profile record
-      const subTable = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
-      await supabase.from(subTable).insert([{ id: data.user.id }]);
-      navigate('/dashboard');
+      // Profile creation and navigation is handled by onAuthStateChange
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -113,42 +109,15 @@ const AuthPage = () => {
     setError(null);
     try {
       if (isLogin) {
-        const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+        const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
         if (authErr) throw authErr;
-        
-        let { data, error } = await supabase.from('profiles').select('*').eq('id', authData.user.id).maybeSingle();
-        
-        // Fallback if base profile in table is missing but auth succeeded
-        if (!data) {
-          data = {
-            id: authData.user.id,
-            role: authData.user.user_metadata?.role || 'student',
-            full_name: authData.user.user_metadata?.full_name || email.split('@')[0]
-          };
-          await supabase.from('profiles').insert([data]);
-          // Create sub-profile record
-          const subTable = data.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
-          await supabase.from(subTable).insert([{ id: authData.user.id }]);
-        }
-        
-        navigate('/dashboard');
+        // Navigation and profile checks are handled by onAuthStateChange
       } else {
         const { data: signUpData, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: role } } });
         if (error) throw error;
         
         if (signUpData?.session) {
-          // If auto-logged in, ensure both base and sub-profile records exist
-          let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', signUpData.user.id).maybeSingle();
-          if (!existingUser) {
-            existingUser = { id: signUpData.user.id, full_name: name, role };
-            await supabase.from('profiles').insert([existingUser]);
-          }
-          const subTable = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
-          const { data: subProfile } = await supabase.from(subTable).select('id').eq('id', signUpData.user.id).maybeSingle();
-          if (!subProfile) {
-            await supabase.from(subTable).insert([{ id: signUpData.user.id }]);
-          }
-          navigate('/dashboard');
+          // Auto-logged in (no verification needed) -> handled by onAuthStateChange
         } else {
           setIsVerifying(true);
         }
