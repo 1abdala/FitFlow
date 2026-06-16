@@ -45,19 +45,26 @@ const AuthPage = () => {
         setLoading(true);
         const userEmail = session.user.email;
         const userName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
+        const userRole = session.user.user_metadata?.role || 'student';
         let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         
         if (!existingUser) {
-          // Auto-create base profile if it doesn't exist for OAuth
+          // Auto-create base profile if it doesn't exist
           existingUser = {
             id: session.user.id,
-            role: 'student',
+            role: userRole,
             full_name: userName
           };
           // Try to insert it so it persists
           await supabase.from('profiles').insert([existingUser]);
-          // Also create student_profiles record for OAuth student user
-          await supabase.from('student_profiles').insert([{ id: session.user.id }]);
+        }
+
+        // Ensure sub-profile exists (self-healing for trigger-created profiles)
+        const finalRole = existingUser?.role || userRole;
+        const subTable = finalRole === 'student' ? 'student_profiles' : 'coordinator_profiles';
+        const { data: subProfile } = await supabase.from(subTable).select('id').eq('id', session.user.id).maybeSingle();
+        if (!subProfile) {
+          await supabase.from(subTable).insert([{ id: session.user.id }]);
         }
         
         navigate('/dashboard');
@@ -68,10 +75,10 @@ const AuthPage = () => {
       }
     };
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) handleOAuthSession(session);
+      if (event === 'SIGNED_IN' && session && !isVerifying) handleOAuthSession(session);
     });
     return () => subscription?.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isVerifying]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -126,9 +133,25 @@ const AuthPage = () => {
         
         navigate('/dashboard');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: role } } });
+        const { data: signUpData, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: role } } });
         if (error) throw error;
-        setIsVerifying(true);
+        
+        if (signUpData?.session) {
+          // If auto-logged in, ensure both base and sub-profile records exist
+          let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', signUpData.user.id).maybeSingle();
+          if (!existingUser) {
+            existingUser = { id: signUpData.user.id, full_name: name, role };
+            await supabase.from('profiles').insert([existingUser]);
+          }
+          const subTable = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+          const { data: subProfile } = await supabase.from(subTable).select('id').eq('id', signUpData.user.id).maybeSingle();
+          if (!subProfile) {
+            await supabase.from(subTable).insert([{ id: signUpData.user.id }]);
+          }
+          navigate('/dashboard');
+        } else {
+          setIsVerifying(true);
+        }
       }
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
