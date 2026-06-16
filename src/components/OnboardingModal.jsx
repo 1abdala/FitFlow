@@ -341,7 +341,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                        <div className="input-group">
                          <label className="input-label">Date of Birth *</label>
                          <div className="ob-input-wrap">
-                           <Icons.IconCalendar size={16} className="input-icon" onClick={() => dateInputRef.current?.showPicker()} style={{ cursor: 'pointer' }} />
+                           <Icons.IconCalendar size={16} className="input-icon" onClick={() => dateInputRef.current?.showPicker()} style={{ cursor: 'pointer', pointerEvents: 'auto' }} />
                            <input type="date" ref={dateInputRef} value={dob} onChange={(e) => setDob(e.target.value)} />
                          </div>
                        </div>

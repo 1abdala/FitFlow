@@ -94,6 +94,7 @@ const SettingsField = ({ label, icon: IconComponent, error, onIconClick, childre
           <div 
             className={`input-icon absolute left-4 text-text-dim flex items-center justify-center ${onIconClick ? 'cursor-pointer' : 'pointer-events-none'}`}
             onClick={onIconClick}
+            style={onIconClick ? { pointerEvents: 'auto' } : undefined}
           >
             <IconComponent size={16} />
           </div>
