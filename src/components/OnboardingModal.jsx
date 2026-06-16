@@ -45,7 +45,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
           if (data.dob) setDob(data.dob);
           if (data.gender) setGender(data.gender);
           if (data.address) { setAddress(data.address); setShowAddress(true); }
-          if (data.oku_status && data.oku_status !== 'None') { setHasOku(true); setOkuCategory(data.oku_status); }
           
           if (user?.role === 'student') {
             if (data.matric) setMatric(data.matric);
@@ -86,8 +85,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [gender, setGender] = useState('');
   const [address, setAddress] = useState('');
   const [showAddress, setShowAddress] = useState(false);
-  const [hasOku, setHasOku] = useState(false);
-  const [okuCategory, setOkuCategory] = useState('');
 
   // Step 3 Fields
   const [matric, setMatric] = useState('');
@@ -142,7 +139,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
       setLoading(true);
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        const profileData = { id: authUser.id, phone, nationality, dob: dob || null, gender, address, oku_status: hasOku ? okuCategory : 'None' };
+        const profileData = { id: authUser.id, phone, nationality, dob: dob || null, gender, address, oku_status: 'None' };
         
         await supabase.from('profiles').upsert({ id: authUser.id, role: user.role, full_name: user.name });
         const table = user.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
@@ -367,34 +364,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                          </div>
                        </div>
                      </div>
-                     
-                     {/* Selectable Info Card with Toggle */}
-                     <label className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-surface-2 hover:bg-white/5 cursor-pointer transition-colors mt-6 shadow-sm">
-                       <div className="flex items-center gap-4">
-                          <div className="bg-accent/10 text-accent p-2.5 rounded-lg border border-accent/20"><Icons.IconUsers size={20} /></div>
-                          <div>
-                             <span className="block text-sm font-bold text-text mb-0.5">Register as OKU (Optional)</span>
-                             <span className="block text-xs text-text-mute">Help us provide better accessibility support.</span>
-                          </div>
-                       </div>
-                       <div className="ob-toggle" role="switch" aria-checked={hasOku} onClick={() => setHasOku(!hasOku)} />
-                     </label>
-                     
-                     <AnimatePresence>
-                       {hasOku && (
-                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                           <div className="ob-input-wrap mt-4">
-                             <Icons.IconUsers size={16} className="input-icon" />
-                             <select value={okuCategory} onChange={(e) => setOkuCategory(e.target.value)}>
-                               <option value="">Select OKU Category</option>
-                               <option value="Visual">Visual</option>
-                               <option value="Hearing">Hearing</option>
-                               <option value="Physical">Physical</option>
-                             </select>
-                           </div>
-                         </motion.div>
-                       )}
-                     </AnimatePresence>
                    </motion.div>
                  )}
 
