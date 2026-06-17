@@ -1145,10 +1145,10 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       <AnimatePresence>
         {hasChanges && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-6 left-[50%] -translate-x-[50%] lg:left-[calc(50%+124px)] z-[200] flex items-center justify-between gap-4 p-4 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-lg w-[calc(100%-2.5rem)] max-w-3xl"
+            initial={{ opacity: 0, y: 50, scale: 0.95, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+            exit={{ opacity: 0, y: 50, scale: 0.95, x: "-50%" }}
+            className="fixed bottom-6 left-[50%] lg:left-[calc(50%+124px)] z-[200] flex items-center justify-between gap-4 p-4 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-lg w-[calc(100%-2.5rem)] max-w-3xl"
             style={{
               background: 'rgba(10, 15, 30, 0.9)',
               boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(79, 124, 255, 0.15)',
