@@ -54,6 +54,18 @@ const InternshipDetailsModal = ({ job, onClose }) => {
       window.open(internships.apply_url, '_blank', 'noopener,noreferrer');
     }
 
+    // Skip showing the Log Application popup if this internship is already logged in the tracker
+    const company = internships?.company_name;
+    const title = internships?.title;
+    const existing = trackerApps.find(a =>
+      a.company_name?.toLowerCase().trim() === company?.toLowerCase().trim() &&
+      a.role_title?.toLowerCase().trim() === title?.toLowerCase().trim()
+    );
+
+    if (existing && existing.stage !== 'saved') {
+      return;
+    }
+
     let shown = false;
 
     const show = () => {
