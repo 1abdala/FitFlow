@@ -1162,7 +1162,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               <button
                 type="button"
                 onClick={handleCancelChanges}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-text-mute hover:text-text hover:bg-white/5 transition-all"
+                className="btn btn-glass btn-sm px-4"
               >
                 Cancel
               </button>
@@ -1170,7 +1170,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                 type="submit"
                 form="settings-form"
                 disabled={savingProfile}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-accent hover:bg-accent-2 text-white shadow-lg shadow-accent/20 hover:shadow-accent/40 transition-all flex items-center gap-2"
+                className="btn btn-primary btn-sm px-5 flex items-center gap-2 shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]"
               >
                 {savingProfile ? 'Saving...' : 'Save Changes'}
               </button>
