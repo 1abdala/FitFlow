@@ -54,7 +54,6 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
     { id: "overview", icon: <Icons.IconGrid size={18} />, label: "Overview" },
     { id: "matches", icon: <Icons.IconTarget size={18} />, label: "My Matches", badge: null }, // Badge will be updated via props if needed
     { id: "applications", icon: <Icons.IconBriefcase size={18} />, label: "Applications" },
-    { id: "cv", icon: <Icons.IconDoc size={18} />, label: "CV Analyzing" },
     { id: "skills", icon: <Icons.IconCap size={18} />, label: "Skill Profile" },
     { id: "learning", icon: <Icons.IconBook size={18} />, label: "Learning Hub" },
   ];
