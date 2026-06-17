@@ -41,12 +41,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
     }
   });
 
-  useEffect(() => {
-    const hasStep2 = user?.phone && user?.dob;
-    if (hasStep2 && step < 3) {
-      setStep(3);
-    }
-  }, [user?.phone, user?.dob, step]);
+
 
   useEffect(() => {
     const loadProfile = async () => {
