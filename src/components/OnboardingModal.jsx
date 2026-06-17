@@ -4,6 +4,24 @@ import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
 import { sendNotification } from '../lib/notificationService';
 
+const CAREER_INTERESTS = [
+  'Software Engineer',
+  'Frontend Developer',
+  'Backend Developer',
+  'Full Stack Developer',
+  'Mobile App Developer',
+  'Data Scientist',
+  'Data Analyst',
+  'AI / Machine Learning',
+  'Cybersecurity',
+  'DevOps Engineer',
+  'Cloud Computing',
+  'Networking',
+  'UI / UX Designer',
+  'QA Tester',
+  'Business Analyst'
+];
+
 const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const dateInputRef = React.useRef(null);
   const [step, setStep] = useState(() => {
@@ -54,6 +72,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
             if (data.semester) setSemester(data.semester);
             if (data.preferred_location) setPreferredLocation(data.preferred_location);
             if (data.preferred_industry) setPreferredIndustry(data.preferred_industry);
+            if (data.preferred_roles) setPreferredRoles(data.preferred_roles);
 
             const { data: skData } = await supabase.from('user_skills')
               .select(`skills (name)`)
@@ -96,6 +115,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [skillInput, setSkillInput] = useState('');
   const [preferredLocation, setPreferredLocation] = useState('');
   const [preferredIndustry, setPreferredIndustry] = useState('');
+  const [preferredRoles, setPreferredRoles] = useState([]);
 
   const [staffId, setStaffId] = useState('');
   const [department, setDepartment] = useState('');
@@ -145,7 +165,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         await supabase.from(table).upsert(profileData);
         
         const { id: _, ...safeData } = profileData;
-        const updatedUser = { ...user, ...safeData, completion_percentage: 66 };
+        const updatedUser = { ...user, ...safeData, completion_percentage: 33 };
         
         onComplete(updatedUser, false);
         setStep(3);
@@ -157,34 +177,65 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
     }
   };
 
-  const wrapUpComplete = async () => {
+  const handleAcademicNext = async () => {
     setError(null);
-    if (user.role === 'student' && (!matric || !faculty || !programme)) return setError('Academic fields required.');
+    if (!matric || !faculty || !programme) return setError('Academic fields required.');
     setLoading(true);
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (user.role === 'student') {
-        await supabase.from('student_profiles').upsert({ id: authUser.id, matric, faculty, programme, year_of_study: parseInt(yearOfStudy) || null, semester: parseInt(semester) || null, preferred_location: preferredLocation, preferred_industry: preferredIndustry });
-        for (const s of skills) {
-          const { data: sid } = await supabase.rpc('get_or_create_skill', { p_name: s });
-          await supabase.from('user_skills').upsert({ user_id: authUser.id, skill_id: sid }, { onConflict: 'user_id,skill_id' });
-        }
-      } else {
-        await supabase.from('coordinator_profiles').upsert({ id: authUser.id, staff_id: staffId, department, position, company_name: faculty });
+      await supabase.from('student_profiles').upsert({ id: authUser.id, matric, faculty, programme, year_of_study: parseInt(yearOfStudy) || null, semester: parseInt(semester) || null, preferred_location: preferredLocation, preferred_industry: preferredIndustry });
+      for (const s of skills) {
+        const { data: sid } = await supabase.rpc('get_or_create_skill', { p_name: s });
+        await supabase.from('user_skills').upsert({ user_id: authUser.id, skill_id: sid }, { onConflict: 'user_id,skill_id' });
       }
 
-      if (user.role === 'student') {
-        await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
-        try {
-          await sendNotification(authUser.id, {
-            type: 'system',
-            title: 'Profile initialized! Welcome to FitFlow, start exploring matches.',
-            priority: 'low'
-          });
-        } catch (notifErr) {
-          console.error("Failed to insert onboarding notification:", notifErr);
-        }
+      const updatedUser = { ...user, completion_percentage: 66 };
+      onComplete(updatedUser, false);
+      setStep(4);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePreferredRolesComplete = async (skip = false) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const rolesToSave = skip ? [] : preferredRoles;
+      
+      await supabase.from('student_profiles').update({ preferred_roles: rolesToSave }).eq('id', authUser.id);
+      await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
+      
+      try {
+        await sendNotification(authUser.id, {
+          type: 'system',
+          title: 'Profile initialized! Welcome to FitFlow, start exploring matches.',
+          priority: 'low'
+        });
+      } catch (notifErr) {
+        console.error("Failed to insert onboarding notification:", notifErr);
       }
+
+      const updatedUser = { ...user, preferred_roles: rolesToSave, completion_percentage: 100, profile_completed: true };
+      onComplete(updatedUser, false);
+      setStep(5);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const wrapUpComplete = async () => {
+    setError(null);
+    if (user.role === 'student') return; // Handled by handleAcademicNext + handlePreferredRolesComplete
+    setLoading(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase.from('coordinator_profiles').upsert({ id: authUser.id, staff_id: staffId, department, position, company_name: faculty });
 
       const updatedUser = { ...user, completion_percentage: 100, profile_completed: true };
       onComplete(updatedUser, false);
@@ -195,6 +246,12 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
       setLoading(false);
     }
   };
+
+  const isStudent = user?.role === 'student';
+  const totalSteps = isStudent ? 3 : 2;
+  const currentStepNum = step - 1;
+  const isSuccessStep = step === (isStudent ? 5 : 4);
+  const progressPercent = isSuccessStep ? 100 : Math.round((currentStepNum / totalSteps) * 100);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
@@ -222,7 +279,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
            {/* Floating Particles */}
            <motion.div animate={{ y: [0, -20, 0], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-accent z-0" />
            <motion.div animate={{ y: [0, 20, 0], opacity: [0.2, 0.5, 0.2] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-1/2 right-1/4 w-3 h-3 rounded-full bg-accent-2 z-0" />
-
+ 
            <div className="relative z-10 flex-1 flex flex-col">
               <div className="flex items-center gap-2 mb-6">
                  <div className="bg-accent/10 p-2 rounded-lg backdrop-blur-md border border-accent/20"><Icons.IconSparkle className="text-accent" size={20}/></div>
@@ -232,7 +289,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
               <p className="text-text-mute text-sm leading-relaxed mb-10">
                 Complete your profile to calibrate the AI match engine and unlock personalized internships.
               </p>
-
+ 
               <div className="space-y-6">
                 <div className={`flex items-start gap-4 transition-all duration-300 ${step >= 2 ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-2'}`}>
                    <div className={`mt-0.5 rounded-full p-2 ${step >= 2 ? 'bg-accent/20 text-accent border border-accent/30 shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]' : 'bg-surface-2 text-text-mute'}`}>
@@ -248,12 +305,23 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                       <Icons.IconCheck size={14} />
                    </div>
                    <div>
-                      <p className="text-sm font-bold">Academic & Skills</p>
-                      <p className="text-xs text-text-mute mt-1">Faculty, programme, and tech stack</p>
+                      <p className="text-sm font-bold">{isStudent ? 'Academic & Skills' : 'Professional Details'}</p>
+                      <p className="text-xs text-text-mute mt-1">{isStudent ? 'Faculty, programme, and tech stack' : 'Staff details and position'}</p>
                    </div>
                 </div>
-                <div className={`flex items-start gap-4 transition-all duration-300 ${step >= 4 ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-2'}`}>
-                   <div className={`mt-0.5 rounded-full p-2 ${step >= 4 ? 'bg-accent/20 text-accent border border-accent/30 shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]' : 'bg-surface-2 text-text-mute'}`}>
+                {isStudent && (
+                  <div className={`flex items-start gap-4 transition-all duration-300 ${step >= 4 ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-2'}`}>
+                     <div className={`mt-0.5 rounded-full p-2 ${step >= 4 ? 'bg-accent/20 text-accent border border-accent/30 shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]' : 'bg-surface-2 text-text-mute'}`}>
+                        <Icons.IconCheck size={14} />
+                     </div>
+                     <div>
+                        <p className="text-sm font-bold">Career Interests</p>
+                        <p className="text-xs text-text-mute mt-1">Select preferred roles</p>
+                     </div>
+                  </div>
+                )}
+                <div className={`flex items-start gap-4 transition-all duration-300 ${isSuccessStep ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-2'}`}>
+                   <div className={`mt-0.5 rounded-full p-2 ${isSuccessStep ? 'bg-accent/20 text-accent border border-accent/30 shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]' : 'bg-surface-2 text-text-mute'}`}>
                       <Icons.IconCheck size={14} />
                    </div>
                    <div>
@@ -262,13 +330,13 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                    </div>
                 </div>
               </div>
-
+ 
               {/* ATS-Style Match Potential Ring */}
               <div className="mt-auto pt-6 border-t border-white/5 relative z-10 flex items-center justify-between">
                  <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-accent mb-1">AI Match Potential</p>
                     <p className="text-xs text-text-mute">
-                      {step < 4 ? `+${step === 2 ? '33%' : '34%'} expected boost` : 'Maximum accuracy reached!'}
+                      {!isSuccessStep ? `+${Math.round(100 / totalSteps)}% expected boost` : 'Maximum accuracy reached!'}
                     </p>
                  </div>
                  <div className="relative w-14 h-14 flex items-center justify-center">
@@ -281,18 +349,18 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                           strokeWidth="3" 
                           strokeDasharray="100, 100"
                           initial={{ strokeDashoffset: 100 }}
-                          animate={{ strokeDashoffset: 100 - (step === 2 ? 33 : step === 3 ? 66 : 100) }}
+                          animate={{ strokeDashoffset: 100 - progressPercent }}
                           transition={{ duration: 1, ease: "easeOut" }}
                        />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tracking-tighter">
-                       {step === 2 ? '33%' : step === 3 ? '66%' : '100%'}
+                       {progressPercent}%
                     </div>
                  </div>
               </div>
            </div>
         </div>
-
+ 
         {/* RIGHT SIDE - FORM CONTENT */}
         <div className="w-full md:w-2/3 flex flex-col bg-transparent relative">
            
@@ -300,26 +368,26 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
            <div className="p-6 sm:px-10 sm:py-6 border-b border-white/5 flex flex-col gap-4 bg-transparent sticky top-0 z-30 backdrop-blur-sm">
               <div className="flex justify-between items-center">
                  <h3 className="text-xl font-bold tracking-tight">
-                   {step === 2 ? 'Personal Information' : step === 3 ? 'Academic Information' : 'Profile Complete'}
+                   {step === 2 ? 'Personal Information' : step === 3 ? (isStudent ? 'Academic Information' : 'Professional Details') : step === 4 && isStudent ? 'Career Interests' : 'Profile Complete'}
                  </h3>
-                 {step !== 4 && <button onClick={onClose} className="p-2 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors"><Icons.IconX size={20} /></button>}
+                 {!isSuccessStep && <button onClick={onClose} className="p-2 hover:bg-white/5 text-text-mute hover:text-text rounded-full transition-colors"><Icons.IconX size={20} /></button>}
               </div>
               <div className="flex items-center gap-4">
                  <span className="text-xs font-bold text-accent uppercase tracking-widest whitespace-nowrap">
-                    Step {step === 2 ? '1' : step === 3 ? '2' : '3'} of 3
+                    {isSuccessStep ? 'Finished' : `Step ${currentStepNum} of ${totalSteps}`}
                  </span>
                  <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden relative">
                     <motion.div 
                       className="absolute inset-y-0 left-0 bg-accent shadow-[0_0_12px_rgba(var(--accent-rgb),0.8)] rounded-full" 
                       initial={{ width: 0 }}
-                      animate={{ width: step === 2 ? '33%' : step === 3 ? '66%' : '100%' }}
+                      animate={{ width: `${progressPercent}%` }}
                       transition={{ duration: 0.6, ease: 'easeInOut' }}
                     />
-                 </div>
-                 <span className="text-xs font-bold text-text-mute w-8 text-right">{step === 2 ? '33%' : step === 3 ? '66%' : '100%'}</span>
+                  </div>
+                  <span className="text-xs font-bold text-text-mute w-8 text-right">{progressPercent}%</span>
               </div>
            </div>
-
+ 
            <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar relative">
               {error && <div className="auth-err mb-6 shadow-lg">{error}</div>}
               
@@ -337,8 +405,20 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                        <div className="input-group">
                          <label className="input-label">Date of Birth *</label>
                          <div className="ob-input-wrap">
-                           <Icons.IconCalendar size={16} className="input-icon" onClick={() => dateInputRef.current?.showPicker()} style={{ cursor: 'pointer', pointerEvents: 'auto' }} />
-                           <input type="date" ref={dateInputRef} value={dob} onChange={(e) => setDob(e.target.value)} />
+                           <Icons.IconCalendar 
+                             size={16} 
+                             className="input-icon" 
+                             onClick={() => dateInputRef.current?.showPicker()} 
+                             style={{ cursor: 'pointer', pointerEvents: 'auto', zIndex: 10 }} 
+                           />
+                           <input 
+                             type="date" 
+                             ref={dateInputRef} 
+                             value={dob} 
+                             onChange={(e) => setDob(e.target.value)} 
+                             onClick={() => dateInputRef.current?.showPicker()}
+                             style={{ cursor: 'pointer' }}
+                           />
                          </div>
                        </div>
                        <div className="input-group">
@@ -365,10 +445,10 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                      </div>
                    </motion.div>
                  )}
-
+ 
                  {step === 3 && (
                    <motion.div key="step3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-                     {user.role === 'student' ? (
+                     {isStudent ? (
                        <>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                            <div className="input-group">
@@ -412,7 +492,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                                </p>
                              </div>
                            </div>
-
+ 
                            <div className="flex flex-wrap gap-2 mb-3">
                              {skills.map(s => (
                                 <span key={s} className="bg-surface-2 text-text text-xs px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10 shadow-sm transition-colors hover:border-white/20">
@@ -459,9 +539,53 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                      )}
                    </motion.div>
                  )}
-
-                 {step === 4 && (
-                   <motion.div key="step4" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6 sm:py-10 space-y-8 flex flex-col items-center justify-center">
+ 
+                 {step === 4 && isStudent && (
+                   <motion.div key="step4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+                     <div>
+                       <h4 className="text-lg font-semibold text-text mb-2">Select Preferred Roles (Optional)</h4>
+                       <p className="text-xs text-text-mute leading-relaxed mb-6">
+                         Choose the roles you are interested in. We'll use these to prioritize matching internships. You can skip this step if you're not sure yet, and we'll match based purely on your skills.
+                       </p>
+                     </div>
+                     
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {CAREER_INTERESTS.map((interest) => {
+                         const isSelected = preferredRoles.includes(interest);
+                         return (
+                           <button
+                             key={interest}
+                             type="button"
+                             onClick={() => {
+                               setPreferredRoles(prev => 
+                                 isSelected 
+                                   ? prev.filter(r => r !== interest) 
+                                   : [...prev, interest]
+                               );
+                             }}
+                             className={`flex items-center gap-3 p-4 rounded-2xl border text-left transition-all duration-200 hover:scale-[1.02] ${
+                               isSelected
+                                 ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(var(--accent-rgb),0.15)] text-text'
+                                 : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 text-text-mute'
+                             }`}
+                           >
+                             <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all duration-200 ${
+                               isSelected 
+                                 ? 'border-accent bg-accent text-dark' 
+                                 : 'border-white/20 bg-transparent'
+                             }`}>
+                               {isSelected && <Icons.IconCheck size={14} className="stroke-[3]" />}
+                             </div>
+                             <span className="text-sm font-medium">{interest}</span>
+                           </button>
+                         );
+                       })}
+                     </div>
+                   </motion.div>
+                 )}
+ 
+                 {isSuccessStep && (
+                   <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6 sm:py-10 space-y-8 flex flex-col items-center justify-center">
                      
                      <motion.div 
                        initial={{ scale: 0 }} 
@@ -480,8 +604,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                           {wasCompleted ? 'Your profile changes have been saved successfully.' : 'Your internship recommendations are now personalized to your profile.'}
                         </motion.p>
                      </div>
-
-                     {!wasCompleted && (
+ 
+                     {!wasCompleted && isStudent && (
                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="w-full max-w-sm text-left bg-surface-2 border border-white/5 rounded-2xl p-5 space-y-4 shadow-xl">
                           <div className="flex items-center gap-3">
                              <div className="bg-accent/20 text-accent p-1.5 rounded-md border border-accent/20"><Icons.IconSparkle size={16} /></div>
@@ -497,7 +621,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                           </div>
                        </motion.div>
                      )}
-
+ 
                      {wasCompleted ? (
                        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} onClick={onClose} className="btn btn-primary btn-lg w-full max-w-sm justify-center shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)] mt-4">
                          Close Settings
@@ -511,15 +635,41 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                  )}
               </AnimatePresence>
            </div>
-
+ 
            {/* Bottom Bar for Navigation */}
-           {step !== 4 && (
+           {!isSuccessStep && (
              <div className="px-6 py-5 sm:px-10 border-t border-white/5 bg-transparent flex justify-between items-center sticky bottom-0 z-30 backdrop-blur-sm">
                <button onClick={onClose} className="btn btn-glass btn-sm px-4">I'll do this later</button>
                <div className="flex gap-3">
                  {step > 2 && <button onClick={() => setStep(step - 1)} className="btn btn-glass btn-sm px-4">Back</button>}
-                 <button onClick={step === 3 ? wrapUpComplete : handleNext} disabled={loading} className="btn btn-primary px-8 shadow-[0_0_20px_rgba(var(--accent-rgb),0.4)]">
-                   {loading ? 'Saving...' : (step === 3 ? 'Complete Profile' : 'Next Step')}
+                 
+                 {step === 4 && isStudent && (
+                   <button 
+                     onClick={() => handlePreferredRolesComplete(true)} 
+                     disabled={loading} 
+                     className="btn btn-glass btn-sm px-6"
+                   >
+                     Skip for now
+                   </button>
+                 )}
+                 
+                 <button 
+                   onClick={
+                     step === 2 
+                       ? handleNext 
+                       : step === 3 
+                         ? (isStudent ? handleAcademicNext : wrapUpComplete) 
+                         : handlePreferredRolesComplete.bind(null, false)
+                   } 
+                   disabled={loading} 
+                   className="btn btn-primary px-8 shadow-[0_0_20px_rgba(var(--accent-rgb),0.4)]"
+                 >
+                   {loading 
+                     ? 'Saving...' 
+                     : (step === (isStudent ? 4 : 3) 
+                         ? 'Complete Profile' 
+                         : 'Next Step')
+                   }
                  </button>
                </div>
              </div>

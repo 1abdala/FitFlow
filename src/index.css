@@ -3375,6 +3375,11 @@
   appearance: none;
 }
 
+.ob-input-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
 .ob-input-wrap select option {
   background: var(--surface);
   color: var(--text);
@@ -3769,4 +3774,28 @@
 input[type="date"]::-webkit-calendar-picker-indicator {
   display: none !important;
   -webkit-appearance: none;
+}
+
+/* Category filter select style */
+.category-filter-select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-filter-select:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.category-filter-select option {
+  background: var(--surface-2);
+  color: var(--text);
 }

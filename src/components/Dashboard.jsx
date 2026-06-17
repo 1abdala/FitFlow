@@ -15,6 +15,25 @@ import { useApplications } from '../hooks/useApplications';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
 import { fetchFullProfile } from '../lib/profileHelpers';
 import { getRelativeTimeString } from '../lib/dateUtils';
+
+const CAREER_INTERESTS = [
+  'Software Engineer',
+  'Frontend Developer',
+  'Backend Developer',
+  'Full Stack Developer',
+  'Mobile App Developer',
+  'Data Scientist',
+  'Data Analyst',
+  'AI / Machine Learning',
+  'Cybersecurity',
+  'DevOps Engineer',
+  'Cloud Computing',
+  'Networking',
+  'UI / UX Designer',
+  'QA Tester',
+  'Business Analyst'
+];
+
 const DashLogo = () => (
   <div className="ff-logo ff-logo-dash">
     <span className="ff-logo-mark"><Icons.IconLogo size={16} /></span>
@@ -587,6 +606,22 @@ const Dashboard = () => {
   const [filter, setFilter] = useState('All');
   const [matchFilter, setMatchFilter] = useState('all');
   const [sortBy, setSortBy] = useState('Best match');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showPreferredOnly, setShowPreferredOnly] = useState(false);
+  const prevPreferredRolesRef = useRef();
+
+  useEffect(() => {
+    const currentRoles = user?.preferred_roles || [];
+    if (JSON.stringify(prevPreferredRolesRef.current) !== JSON.stringify(currentRoles)) {
+      if (currentRoles.length > 0) {
+        setShowPreferredOnly(true);
+      } else {
+        setShowPreferredOnly(false);
+      }
+      prevPreferredRolesRef.current = currentRoles;
+    }
+  }, [user?.preferred_roles]);
+
   const { applications: trackerApps } = useApplications();
   const { createApplication: createTrackerApp, deleteApplication: deleteTrackerApp } = useUpdateApplication();
 
@@ -857,7 +892,7 @@ const Dashboard = () => {
         .select(`
           id,
           match_score,
-          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, company_logo_url, internship_skills ( skills ( name ) ) ),
+          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, company_logo_url, category, internship_skills ( skills ( name ) ) ),
           skill_gaps ( skills ( name ) )
         `)
         .eq('student_id', authUser.id)
@@ -998,10 +1033,86 @@ const Dashboard = () => {
     return found?.stage || null;
   }, [trackerApps]);
 
-  const countByFilter = (f) => {
-    if (f === 'all') return matches.length;
-    return matches.filter(m => {
+  const processedMatches = useMemo(() => {
+    let result = matches.filter(m => {
+      // Category Filter
+      if (selectedCategory !== 'All') {
+        const jobCat = m.internships?.category;
+        if (!jobCat || jobCat.toLowerCase() !== selectedCategory.toLowerCase()) {
+          return false;
+        }
+      }
+      
+      // Preferred Roles Filter
+      if (showPreferredOnly && user?.preferred_roles && user.preferred_roles.length > 0) {
+        const title = m.internships?.title?.toLowerCase() || '';
+        const category = m.internships?.category?.toLowerCase() || '';
+        const matchesPref = user.preferred_roles.some(role => {
+          const r = role.toLowerCase();
+          return title.includes(r) || category === r;
+        });
+        if (!matchesPref) {
+          return false;
+        }
+      }
+      
+      // Status Filter
       const s = getApplicationStatus(m);
+      if (matchFilter === 'all') return true;
+      if (matchFilter === 'not_applied') return !s || s === 'saved';
+      if (matchFilter === 'applied') return s === 'applied';
+      if (matchFilter === 'interviewing') return s === 'interview';
+      if (matchFilter === 'offers') return s === 'offer';
+      return true;
+    });
+
+    // Apply Sorting
+    if (sortBy === 'Best match') {
+      result = [...result].sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+    } else if (sortBy === 'Newest') {
+      result = [...result].sort((a, b) => new Date(b.internships?.created_at || 0) - new Date(a.internships?.created_at || 0));
+    } else if (sortBy === 'Stipend') {
+      const extractStipend = (desc) => {
+        if (!desc) return 0;
+        const match = desc.match(/RM\s*([\d,]+)/i) || desc.match(/\$\s*([\d,]+)/i);
+        return match ? (parseFloat(match[1].replace(/,/g, '')) || 0) : 0;
+      };
+      result = [...result].sort((a, b) => extractStipend(b.internships?.description) - extractStipend(a.internships?.description));
+    }
+    return result;
+  }, [matches, selectedCategory, matchFilter, sortBy, getApplicationStatus, showPreferredOnly, user?.preferred_roles]);
+
+  const processedAvgScore = useMemo(() => {
+    if (processedMatches.length === 0) return 0;
+    const sum = processedMatches.reduce((acc, curr) => acc + Number(curr.match_score), 0);
+    return Math.round(sum / processedMatches.length);
+  }, [processedMatches]);
+
+  const countByFilter = (f) => {
+    return matches.filter(m => {
+      // Category Filter
+      if (selectedCategory !== 'All') {
+        const jobCat = m.internships?.category;
+        if (!jobCat || jobCat.toLowerCase() !== selectedCategory.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // Preferred Roles Filter
+      if (showPreferredOnly && user?.preferred_roles && user.preferred_roles.length > 0) {
+        const title = m.internships?.title?.toLowerCase() || '';
+        const category = m.internships?.category?.toLowerCase() || '';
+        const matchesPref = user.preferred_roles.some(role => {
+          const r = role.toLowerCase();
+          return title.includes(r) || category === r;
+        });
+        if (!matchesPref) {
+          return false;
+        }
+      }
+      
+      const s = getApplicationStatus(m);
+      if (f === 'all') return true;
       if (f === 'not_applied') return !s || s === 'saved';
       if (f === 'applied') return s === 'applied';
       if (f === 'interviewing') return s === 'interview';
@@ -1213,30 +1324,48 @@ const Dashboard = () => {
             <div className="matches-view">
               <div className="m-stats">
                 <div className="m-stat">
-                  <div className="m-stat-num">{matches.length}</div>
+                  <div className="m-stat-num">{processedMatches.length}</div>
                   <div className="m-stat-lbl">Total Matches</div>
                 </div>
                 <div className="m-stat-sep" />
                 <div className="m-stat">
-                  <div className="m-stat-num">{avgScore}<i>%</i></div>
+                  <div className="m-stat-num">{processedAvgScore}<i>%</i></div>
                   <div className="m-stat-lbl">Avg Score</div>
                 </div>
                 <div className="m-stat-sep" />
                 <div className="m-stat">
-                  <div className="m-stat-num">{matches.filter(m => m.match_score >= 85).length}</div>
+                  <div className="m-stat-num">{processedMatches.filter(m => m.match_score >= 85).length}</div>
                   <div className="m-stat-lbl">High Potential</div>
                 </div>
                 <div className="m-stat-sep" />
                 <div className="m-stat">
-                  <div className="m-stat-num">{matches.filter(m => m.applications && m.applications.length > 0).length}</div>
+                  <div className="m-stat-num">{processedMatches.filter(m => m.applications && m.applications.length > 0).length}</div>
                   <div className="m-stat-lbl">Saved</div>
                 </div>
               </div>
 
               <div className="m-toolbar">
-                <div className="m-filters">
+                <div className="m-filters items-center flex-wrap">
+                  {user?.preferred_roles && user.preferred_roles.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowPreferredOnly(true)}
+                        className={`m-filter ${showPreferredOnly ? 'm-filter-on' : ''}`}
+                      >
+                        🎯 Preferred Roles
+                      </button>
+                      <button
+                        onClick={() => setShowPreferredOnly(false)}
+                        className={`m-filter ${!showPreferredOnly ? 'm-filter-on' : ''}`}
+                      >
+                        All Matches
+                      </button>
+                      <div className="w-[1px] h-5 bg-white/10 mx-2 self-center" />
+                    </>
+                  )}
+
                   {[
-                    { id: 'all',         label: 'All Matches' },
+                    { id: 'all',         label: user?.preferred_roles && user.preferred_roles.length > 0 ? 'All' : 'All Matches' },
                     { id: 'not_applied', label: 'Not Applied' },
                     { id: 'applied',     label: 'Applied' },
                     { id: 'interviewing',label: 'Interviewing' },
@@ -1252,14 +1381,31 @@ const Dashboard = () => {
                     </button>
                   ))}
                 </div>
-                <div className="m-sort">
-                  <span className="m-sort-lbl">Sort by</span>
-                  <div className="sort-btns">
-                    {['Best match', 'Stipend', 'Newest'].map(s => (
-                      <button key={s} onClick={() => setSortBy(s)} className={`sort-btn ${sortBy === s ? 'active' : ''}`}>
-                        {s}
-                      </button>
-                    ))}
+                
+                <div className="m-sort flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="m-sort-lbl">Category</span>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="category-filter-select"
+                    >
+                      <option value="All">All Categories</option>
+                      {CAREER_INTERESTS.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="m-sort-lbl">Sort by</span>
+                    <div className="sort-btns">
+                      {['Best match', 'Stipend', 'Newest'].map(s => (
+                        <button key={s} onClick={() => setSortBy(s)} className={`sort-btn ${sortBy === s ? 'active' : ''}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1274,28 +1420,24 @@ const Dashboard = () => {
                   <h3 className="text-xl font-bold">No matches yet</h3>
                   <p className="text-text-mute">Complete your profile to generate matches.</p>
                 </div>
+              ) : processedMatches.length === 0 ? (
+                <div className="card text-center py-24">
+                  <Icons.IconTarget size={48} className="mx-auto mb-4 text-text-dim" />
+                  <h3 className="text-xl font-bold">No results found</h3>
+                  <p className="text-text-mute">Try adjusting your filters or category selection.</p>
+                </div>
               ) : (
                 <div className="m-list">
-                  {matches
-                    .filter(m => {
-                      const s = getApplicationStatus(m);
-                      if (matchFilter === 'all') return true;
-                      if (matchFilter === 'not_applied') return !s || s === 'saved';
-                      if (matchFilter === 'applied') return s === 'applied';
-                      if (matchFilter === 'interviewing') return s === 'interview';
-                      if (matchFilter === 'offers') return s === 'offer';
-                      return true;
-                    })
-                    .map((job, idx) => (
-                      <MatchCard
-                        key={idx}
-                        job={job}
-                        onSelect={setSelectedJob}
-                        onToggleSave={toggleSave}
-                        animDelay={idx * 0.045}
-                        trackerStatus={getApplicationStatus(job)}
-                      />
-                    ))}
+                  {processedMatches.map((job, idx) => (
+                    <MatchCard
+                      key={idx}
+                      job={job}
+                      onSelect={setSelectedJob}
+                      onToggleSave={toggleSave}
+                      animDelay={idx * 0.045}
+                      trackerStatus={getApplicationStatus(job)}
+                    />
+                  ))}
                 </div>
               )}
             </div>

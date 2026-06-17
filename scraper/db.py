@@ -176,6 +176,10 @@ def regenerate_all_matches() -> int:
             prof_res = supabase.table("profiles").select("notification_preferences").eq("id", student_id).single().execute()
             prefs = (prof_res.data or {}).get("notification_preferences") or {}
             
+            # Fetch preferred roles
+            sp_res = supabase.table("student_profiles").select("preferred_roles").eq("id", student_id).execute()
+            preferred_roles = (sp_res.data[0] if sp_res.data else {}).get("preferred_roles") or []
+
             match_enabled = prefs.get("match_updates") != False
             new_internships_enabled = prefs.get("new_internships") != False
             
@@ -193,7 +197,7 @@ def regenerate_all_matches() -> int:
             count += 1
 
             # Fetch new matches
-            new_matches_res = supabase.table("matching_results").select("internship_id, match_score, internships(title, company_name)").eq("student_id", student_id).execute()
+            new_matches_res = supabase.table("matching_results").select("internship_id, match_score, internships(title, company_name, category)").eq("student_id", student_id).execute()
 
             # Fetch recent notifications to prevent duplicate inserts
             recent_res = supabase.table("notifications").select("type, action_target, title").eq("student_id", student_id).in_("type", ["match", "internship"]).execute()
@@ -228,15 +232,40 @@ def regenerate_all_matches() -> int:
                 # Scenario A: Newly Scraped Match (High Score) -> type: 'internship'
                 is_new = internship_id not in old_matches
                 if is_new and new_score >= 80 and internship_id not in notified_new_internships and new_internships_enabled:
-                    supabase.table("notifications").insert({
-                        "student_id": student_id,
-                        "type": "internship",
-                        "title": f"New internship opportunity matches your skills: {title} at ${company} ({new_score}% Match)",
-                        "priority": "medium",
-                        "action_type": "open_internship",
-                        "action_target": internship_id,
-                        "is_read": False
-                    }).execute()
+                    # Check if it's a High-Match Opportunity based on preferred roles
+                    is_pref_high_match = False
+                    matched_pref_role = None
+                    if preferred_roles and new_score >= 85:
+                        category = internship.get("category")
+                        for r_pref in preferred_roles:
+                            r_pref_l = r_pref.lower()
+                            if r_pref_l in title.lower() or (category and r_pref_l == category.lower()):
+                                is_pref_high_match = True
+                                matched_pref_role = r_pref
+                                break
+
+                    if is_pref_high_match:
+                        supabase.table("notifications").insert({
+                            "student_id": student_id,
+                            "type": "internship",
+                            "title": f"🔥 High-Match: {title} at {company} ({new_score}% Match in {matched_pref_role})",
+                            "priority": "high",
+                            "action_type": "open_internship",
+                            "action_target": internship_id,
+                            "is_read": False,
+                            "internship_id": internship_id
+                        }).execute()
+                    else:
+                        supabase.table("notifications").insert({
+                            "student_id": student_id,
+                            "type": "internship",
+                            "title": f"New internship opportunity matches your skills: {title} at {company} ({new_score}% Match)",
+                            "priority": "medium",
+                            "action_type": "open_internship",
+                            "action_target": internship_id,
+                            "is_read": False,
+                            "internship_id": internship_id
+                        }).execute()
                     notified_new_internships.add(internship_id)
 
                 # Scenario B: Match Score Improved -> type: 'match'
@@ -340,6 +369,15 @@ def insert_internships(internships_data: list[dict]) -> tuple[int, int]:
         skills = job_core.pop("required_skills", [])
         requirements = job_core.pop("requirements", None)
         salary = job_core.pop("salary", None)
+        
+        # Classify job category & confidence
+        try:
+            from scraper import classify_job
+            category, confidence = classify_job(job_core.get("title", ""), job_core.get("description", ""))
+            job_core["category"] = category
+            job_core["classification_confidence"] = confidence
+        except Exception as class_err:
+            print(f"Warning: Failed to classify job: {class_err}")
         
         # Merge requirements and salary organically into the description payload for front-end rendering
         extended_details = ""

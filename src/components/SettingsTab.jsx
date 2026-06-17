@@ -24,6 +24,24 @@ const FACULTIES = {
   'FAIX': ['Artificial Intelligence', 'Cybersecurity']
 };
 
+const CAREER_INTERESTS = [
+  'Software Engineer',
+  'Frontend Developer',
+  'Backend Developer',
+  'Full Stack Developer',
+  'Mobile App Developer',
+  'Data Scientist',
+  'Data Analyst',
+  'AI / Machine Learning',
+  'Cybersecurity',
+  'DevOps Engineer',
+  'Cloud Computing',
+  'Networking',
+  'UI / UX Designer',
+  'QA Tester',
+  'Business Analyst'
+];
+
 const REQUIRED_FIELD_LABELS = {
   phone: 'Phone',
   dob: 'DOB',
@@ -137,6 +155,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const [linkedinUrl, setLinkedinUrl] = useState(user?.linkedin_url || '');
   const [githubUrl, setGithubUrl] = useState(user?.github_url || '');
   const [portfolioUrl, setPortfolioUrl] = useState(user?.portfolio_url || '');
+  const [preferredRoles, setPreferredRoles] = useState(user?.preferred_roles || []);
 
   // Modal State Control
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -225,6 +244,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       setLinkedinUrl(user.linkedin_url || '');
       setGithubUrl(user.github_url || '');
       setPortfolioUrl(user.portfolio_url || '');
+      setPreferredRoles(user.preferred_roles || []);
       setEmail(user.email || '');
       if (user.notification_preferences) {
         setNotifications(user.notification_preferences);
@@ -418,7 +438,8 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         semester: parseInt(semester) || null,
         linkedin_url: linkedinUrl,
         github_url: githubUrl,
-        portfolio_url: portfolioUrl
+        portfolio_url: portfolioUrl,
+        preferred_roles: preferredRoles
       } : {};
 
       const { error: subErr } = await supabase
@@ -480,6 +501,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       setLinkedinUrl(user.linkedin_url || '');
       setGithubUrl(user.github_url || '');
       setPortfolioUrl(user.portfolio_url || '');
+      setPreferredRoles(user.preferred_roles || []);
       if (user.notification_preferences) {
         setNotifications(user.notification_preferences);
       }
@@ -502,6 +524,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     linkedinUrl !== (user.linkedin_url || '') ||
     githubUrl !== (user.github_url || '') ||
     portfolioUrl !== (user.portfolio_url || '') ||
+    JSON.stringify(preferredRoles) !== JSON.stringify(user.preferred_roles || []) ||
     JSON.stringify(notifications) !== JSON.stringify(user.notification_preferences || {
       match_updates: true,
       new_internships: true,
@@ -640,6 +663,8 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                   ref={settingsDateRef}
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
+                  onClick={() => settingsDateRef.current?.showPicker()}
+                  style={{ cursor: 'pointer' }}
                   required
                 />
               </SettingsField>
@@ -787,7 +812,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         </div>
 
         {/* ── ROW 2: COMPLETION & NOTIFICATIONS GRID ─────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className={`grid grid-cols-1 ${isStudent ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6 mt-6`}>
           
           {/* Profile Completion Card */}
           <div className="p-5 md:p-6 space-y-6 settings-premium-card">
@@ -997,6 +1022,49 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               </div>
             </div>
           </div>
+
+          {/* Career Interests Card */}
+          {isStudent && (
+            <div className="p-5 md:p-6 space-y-6 settings-premium-card">
+              <CardHeader 
+                icon={Icons.IconSparkle} 
+                title="Career Interests" 
+                subtitle="Select your preferred roles to calibrate matching" 
+              />
+              
+              <div className="grid grid-cols-2 gap-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                {CAREER_INTERESTS.map((interest) => {
+                  const isSelected = preferredRoles.includes(interest);
+                  return (
+                    <div
+                      key={interest}
+                      onClick={() => {
+                        setPreferredRoles(prev => 
+                          isSelected 
+                            ? prev.filter(r => r !== interest) 
+                            : [...prev, interest]
+                        );
+                      }}
+                      className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer select-none transition-all duration-200 ${
+                        isSelected
+                          ? 'border-accent bg-accent/5 text-text shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)]'
+                          : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03] text-text-mute'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded flex items-center justify-center border transition-all duration-200 shrink-0 ${
+                        isSelected 
+                          ? 'border-accent bg-accent text-dark' 
+                          : 'border-white/20 bg-transparent'
+                      }`}>
+                        {isSelected && <Icons.IconCheck size={12} className="stroke-[3]" />}
+                      </div>
+                      <span className="text-xs font-semibold truncate">{interest}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
         </div>
       </form>

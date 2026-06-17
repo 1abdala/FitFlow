@@ -146,6 +146,7 @@ SKILL_KEYWORDS = {
     "Oracle": ["oracle", "oracle database", "oracle db"],
     "Snowflake": ["snowflake"],
     "Databricks": ["databricks"],
+    "Databases": ["database", "databases", "dbms"],
 
     # --- Cloud & DevOps ---
     "AWS": ["aws", "amazon web services"],
@@ -161,8 +162,9 @@ SKILL_KEYWORDS = {
 
     # --- Data & AI ---
     "Machine Learning": ["machine learning", "ml", "machine-learning"],
-    "Artificial Intelligence": ["artificial intelligence", "ai"],
+    "Artificial Intelligence": ["artificial intelligence", "artificial intelligent", "ai"],
     "Data Analysis": ["data analysis", "data analytics", "data analyst", "visualization"],
+    "Data Science": ["data science", "data scientist"],
     "TensorFlow": ["tensorflow", "tf"],
     "PyTorch": ["pytorch"],
     "Pandas": ["pandas"],
@@ -195,7 +197,12 @@ SKILL_KEYWORDS = {
     "Debugging": ["debugging", "debug", "bug reporting", "error logging"],
     "Software Engineering": ["software engineering", "software development", "software dev", "computer science", "coding"],
     "API": ["api", "apis", "backend services", "web services"],
-    "SDLC": ["sdlc", "software development lifecycle", "software development life cycle"]
+    "SDLC": ["sdlc", "software development lifecycle", "software development life cycle"],
+    "Data Structures & Algorithms": ["data structures", "algorithms", "data structures and algorithms"],
+    "System Integration": ["system integration", "systems integration", "system integrations", "integration"],
+    "Backend Development": ["backend", "back-end", "backend development", "backend services"],
+    "Frontend Development": ["frontend", "front-end", "frontend development", "frontend services"],
+    "Full Stack Development": ["fullstack", "full-stack", "full stack development"]
 }
 
 def normalize_text(text):
@@ -462,3 +469,75 @@ def scrape_internships(headless: bool = False) -> list[dict]:
             driver.quit()
         
     return scraped_data
+
+def classify_job(title: str, description: str = "") -> tuple[str, float]:
+    """
+    Classifies an internship title (and optionally its description) into one
+    of the 15 standard career interest categories, assigning a classification confidence.
+    Returns: tuple (category_name, confidence_score)
+    """
+    t = title.lower()
+    
+    # 1. Backend Developer
+    if any(x in t for x in ["backend", "back-end", "back end"]):
+        return "Backend Developer", 0.90
+        
+    # 2. Frontend Developer
+    if any(x in t for x in ["frontend", "front-end", "front end"]):
+        return "Frontend Developer", 0.90
+        
+    # 3. Full Stack Developer
+    if any(x in t for x in ["fullstack", "full-stack", "full stack"]):
+        return "Full Stack Developer", 0.90
+        
+    # 4. Mobile App Developer
+    if any(x in t for x in ["mobile", "ios", "android", "swift", "kotlin", "app developer"]):
+        return "Mobile App Developer", 0.90
+        
+    # 5. Data Scientist
+    if "data scientist" in t or "data science" in t:
+        return "Data Scientist", 0.90
+        
+    # 6. Data Analyst
+    if any(x in t for x in ["data analyst", "data analytics", "data analysis"]):
+        return "Data Analyst", 0.90
+        
+    # 7. AI / Machine Learning
+    if any(x in t for x in ["machine learning", "ml", "artificial intelligence", "deep learning", "intelligent system"]) or re.search(r'\bai\b', t):
+        return "AI / Machine Learning", 0.90
+        
+    # 8. Cybersecurity
+    if any(x in t for x in ["cyber", "security", "infosec", "cybersecurity", "penetration", "soc "]):
+        return "Cybersecurity", 0.90
+        
+    # 9. DevOps Engineer
+    if any(x in t for x in ["devops", "sre", "platform engineer", "platform engineering", "ci/cd", "cicd"]):
+        return "DevOps Engineer", 0.90
+        
+    # 10. Cloud Computing
+    if any(x in t for x in ["cloud", "aws", "azure", "gcp", "infrastructure"]):
+        return "Cloud Computing", 0.90
+        
+    # 11. Networking
+    if any(x in t for x in ["network", "networking", "cisco", "telecom"]):
+        return "Networking", 0.90
+        
+    # 12. UI / UX Designer
+    if any(x in t for x in ["ui", "ux", "design", "figma", "designer", "product design", "graphic design", "multimedia"]):
+        return "UI / UX Designer", 0.90
+        
+    # 13. QA Tester
+    if any(x in t for x in ["qa", "test", "testing", "quality assurance", "test engineer", "automation testing"]):
+        return "QA Tester", 0.90
+        
+    # 14. Business Analyst
+    if any(x in t for x in ["business analyst", "systems analyst", "system analyst", "product manager", "project manager", "scrum"]):
+        return "Business Analyst", 0.90
+        
+    # 15. Software Engineer (General Fallback)
+    if any(x in t for x in ["software", "programmer", "developer", "development", "engineer", "web", "application", "coding"]):
+        return "Software Engineer", 0.80
+        
+    # Default fallback
+    return "Software Engineer", 0.50
+
