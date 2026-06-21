@@ -49,7 +49,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (!authUser) return;
 
-        const table = user?.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+        const table = 'student_profiles';
         const { data } = await supabase.from(table).select('*').eq('id', authUser.id).maybeSingle();
 
         if (data) {
@@ -59,28 +59,21 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
           if (data.gender) setGender(data.gender);
           if (data.address) { setAddress(data.address); setShowAddress(true); }
           
-          if (user?.role === 'student') {
-            if (data.matric) setMatric(data.matric);
-            if (data.faculty) setFaculty(data.faculty);
-            if (data.programme) setProgramme(data.programme);
-            if (data.year_of_study) setYearOfStudy(data.year_of_study);
-            if (data.semester) setSemester(data.semester);
-            if (data.preferred_location) setPreferredLocation(data.preferred_location);
-            if (data.preferred_industry) setPreferredIndustry(data.preferred_industry);
-            if (data.preferred_roles) setPreferredRoles(data.preferred_roles);
+          if (data.matric) setMatric(data.matric);
+          if (data.faculty) setFaculty(data.faculty);
+          if (data.programme) setProgramme(data.programme);
+          if (data.year_of_study) setYearOfStudy(data.year_of_study);
+          if (data.semester) setSemester(data.semester);
+          if (data.preferred_location) setPreferredLocation(data.preferred_location);
+          if (data.preferred_industry) setPreferredIndustry(data.preferred_industry);
+          if (data.preferred_roles) setPreferredRoles(data.preferred_roles);
 
-            const { data: skData } = await supabase.from('user_skills')
-              .select(`skills (name)`)
-              .eq('user_id', authUser.id);
-            if (skData) {
-              const loadedSkills = skData.map(s => s?.skills?.name).filter(Boolean);
-              if (loadedSkills.length > 0) setSkills(loadedSkills);
-            }
-          } else {
-            if (data.staff_id) setStaffId(data.staff_id);
-            if (data.department) setDepartment(data.department);
-            if (data.position) setPosition(data.position);
-            if (data.company_name) setFaculty(data.company_name);
+          const { data: skData } = await supabase.from('user_skills')
+            .select(`skills (name)`)
+            .eq('user_id', authUser.id);
+          if (skData) {
+            const loadedSkills = skData.map(s => s?.skills?.name).filter(Boolean);
+            if (loadedSkills.length > 0) setSkills(loadedSkills);
           }
         }
       } catch (err) {
@@ -90,7 +83,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
       }
     };
     loadProfile();
-  }, [user?.role]);
+  }, []);
 
   // Step 2 Fields
   const [phone, setPhone] = useState('');
@@ -155,8 +148,8 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         const profileData = { id: authUser.id, phone, nationality, dob: dob || null, gender, address, oku_status: 'None' };
         
-        await supabase.from('profiles').upsert({ id: authUser.id, role: user.role, full_name: user.name });
-        const table = user.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+        await supabase.from('profiles').upsert({ id: authUser.id, role: 'student', full_name: user.name });
+        const table = 'student_profiles';
         await supabase.from(table).upsert(profileData);
         
         const { id: _, ...safeData } = profileData;
@@ -224,28 +217,10 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
     }
   };
 
-  const wrapUpComplete = async () => {
-    setError(null);
-    if (user.role === 'student') return; // Handled by handleAcademicNext + handlePreferredRolesComplete
-    setLoading(true);
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      await supabase.from('coordinator_profiles').upsert({ id: authUser.id, staff_id: staffId, department, position, company_name: faculty });
-
-      const updatedUser = { ...user, completion_percentage: 100, profile_completed: true };
-      onComplete(updatedUser, false);
-      setStep(4);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const isStudent = user?.role === 'student';
-  const totalSteps = isStudent ? 3 : 2;
+  const isStudent = true;
+  const totalSteps = 3;
   const currentStepNum = step - 1;
-  const isSuccessStep = step === (isStudent ? 5 : 4);
+  const isSuccessStep = step === 5;
   const progressPercent = isSuccessStep ? 100 : Math.round((currentStepNum / totalSteps) * 100);
 
   return (

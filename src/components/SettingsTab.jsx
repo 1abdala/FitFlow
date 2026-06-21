@@ -429,8 +429,8 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       if (baseErr) throw baseErr;
 
       // 2. Update Role Sub-profiles
-      const subTable = user.role === 'student' ? 'student_profiles' : 'coordinator_profiles';
-      const studentFields = user.role === 'student' ? {
+      const subTable = 'student_profiles';
+      const studentFields = {
         matric,
         faculty,
         programme,
@@ -440,7 +440,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         github_url: githubUrl,
         portfolio_url: portfolioUrl,
         preferred_roles: preferredRoles
-      } : {};
+      };
 
       const { error: subErr } = await supabase
         .from(subTable)
@@ -463,11 +463,9 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
       if (notifyErr) throw notifyErr;
 
-      // 4. Regenerate matches if student (since preferred locations/academics might impact matching weights)
-      if (user.role === 'student') {
-        await supabase.rpc('generate_internship_matches', { p_student_id: user.id });
-        await checkAndNotifyMatchChanges(user.id);
-      }
+      // 4. Regenerate matches
+      await supabase.rpc('generate_internship_matches', { p_student_id: user.id });
+      await checkAndNotifyMatchChanges(user.id);
 
       toast.success('Profile settings updated successfully!');
       onUserUpdate();
@@ -560,7 +558,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               {/* Profile Badge */}
               <div className="mb-4">
                 <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent font-bold border border-accent/20 text-[9px] uppercase tracking-wider">
-                  {user?.role === 'student' ? 'Student' : 'Coordinator'}
+                  Student
                 </span>
               </div>
 
@@ -703,8 +701,6 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
             />
 
             <div className="space-y-4">
-              {isStudent ? (
-                <>
                   {/* Matric Number spans full width of card to guarantee no truncation */}
                   <SettingsField label="Matric No" icon={Icons.IconCap}>
                     <input 
@@ -798,14 +794,6 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                       />
                     </SettingsField>
                   </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center select-none">
-                  <Icons.IconCap size={32} className="text-text-dim opacity-30 mb-3" />
-                  <p className="text-sm font-semibold text-text-mute">Academic settings restricted</p>
-                  <p className="text-[11px] text-text-dim mt-1.5 px-4 leading-relaxed">Coordinator accounts do not hold university student profiles.</p>
-                </div>
-              )}
             </div>
           </div>
 

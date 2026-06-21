@@ -22,7 +22,6 @@ FitFlow is an intelligent, AI-powered internship management and matching platfor
 ### Target Users
 * **Students:** University undergraduates seeking industrial training placements in the tech sector.
 * **Companies (Future Scope):** Employers seeking to filter candidates based on algorithmic skill matches rather than manual resume screening.
-* **Admin (University Coordinators):** Faculty members who need to monitor student placement rates, system health, and overall market trends.
 
 ---
 
@@ -34,9 +33,9 @@ FitFlow is an intelligent, AI-powered internship management and matching platfor
 * **Frontend:** React Context API for state management; login/registration modal forms.
 * **Backend:** Supabase Auth issues JWT tokens which are verified via Row Level Security (RLS) in the database.
 
-### Role-Based Access
-* **Purpose:** Ensures users only access interfaces relevant to their role.
-* **How it works:** A `role` column in the `users` table ('student', 'company', 'admin') dictates UI rendering and API endpoint authorization.
+### Student-Centric Architecture
+* **Purpose:** Provides a personalized workspace for individual students.
+* **How it works:** Row Level Security (RLS) policies restrict database queries so students can only view or modify their own profiles, skills, and application tracking records.
 
 ### Student Dashboard
 * **Purpose:** A centralized hub for students to view their internship prospects.
@@ -93,9 +92,9 @@ FitFlow is an intelligent, AI-powered internship management and matching platfor
 2. **Posting Internships:** Employer inputs job title, description, and manually tags required skills (or allows NLP to auto-tag from the description).
 3. **Managing Applicants:** Employer views a dashboard of students who applied, pre-sorted by FitFlow's algorithmic Match Score.
 
-### Admin Workflow
-1. **System Monitoring:** Admin views aggregate statistics (total students, total jobs).
-2. **Running Scraper:** Admin manually executes the Python scraper scripts (`scraper.py`) to refresh the database with the latest market listings.
+### Automation & Data Maintenance Workflow
+1. **Executing Scraper:** The Python scraper script (`scraper.py`) is executed as a background daemon or scheduled GitHub Action to extract the latest internship listings.
+2. **Algorithmic Categorization:** Scraped listings are passed to the parsing engine, which extracts technical skills and categorizes them prior to insertion into the `internships` table.
 
 ---
 

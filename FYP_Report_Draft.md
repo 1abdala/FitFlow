@@ -18,7 +18,7 @@ FitFlow is an intelligent, AI-powered internship matching platform designed to b
 * **Provide Actionable Skill Gap Analysis:** To highlight missing skills and recommend learning paths to improve employability.
 
 ### 1.4 Scope
-* **Target Audience:** University students seeking IT and software development internships, and university coordinators tracking placement metrics.
+* **Target Audience:** University students seeking IT and software development internships.
 * **Technology Stack:** React/Vite (Frontend), Supabase/PostgreSQL (Backend), FastAPI/Python (AI Microservice), Selenium (Scraper).
 * **Limitations:** The initial prototype focuses exclusively on tech-related internships (software engineering, data science, etc.) scraped from targeted regional job portals.
 
@@ -80,7 +80,17 @@ The project intersects three primary domains:
 * Supabase cloud project hosting.
 
 ### 2.5 Project Schedule and Milestones
-*(Insert Gantt Chart here showing milestones: DB Setup, Scraper MVP, Frontend Dashboard, API Integration, Testing, Final Presentation).*
+```mermaid
+gantt
+    title FitFlow Agile Development Schedule
+    dateFormat  YYYY-MM-DD
+    section Sprints
+    Sprint 1 - Foundation & Data Layer   :active, des1, 2026-04-01, 2026-04-14
+    Sprint 2 - Scraper Development      :active, des2, 2026-04-15, 2026-04-28
+    Sprint 3 - Recommendation Engine     :active, des3, 2026-04-29, 2026-05-12
+    Sprint 4 - Kanban Board & Onboarding  :active, des4, 2026-05-13, 2026-05-26
+    Sprint 5 - Hardening & Testing       :active, des5, 2026-05-27, 2026-06-09
+```
 
 ### 2.6 Conclusion
 This chapter reviewed the technological landscape and established Agile as the development methodology. The next chapter will analyze the system requirements in detail.
@@ -248,5 +258,39 @@ The FitFlow project successfully met its objectives. By integrating React, Pytho
 ---
 *APPENDICES*
 * *(Include Source Code Snippets)*
-* *(Include User Manual / Screenshots)*
+## APPENDIX B: USER MANUAL AND INTERFACE SCREENSHOTS
+
+This appendix presents the user interface screenshots of the FitFlow platform. The screenshots illustrate the user journey from landing page, registration, onboarding, main bento dashboard, matches feed, details overlay, learning redirects, settings panel, and background scraper monitoring.
+
+### Figure B.1: FitFlow Landing Page
+![Figure B.1: FitFlow Landing Page](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1779340214159.png)
+*Figure B.1 illustrates the FitFlow landing page, introducing students to the system's core capabilities, including automated scraping, profile matching, and skill gap visualization.*
+
+### Figure B.2: Account Registration OTP Gateway
+![Figure B.2: Account Registration OTP Gateway](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1781599175292.png)
+*Figure B.2 shows the registration email verification screen. The system sends an 8-digit verification code to the student's registered email address to validate the account before allowing profile configuration.*
+
+### Figure B.3: Guided Student Onboarding Wizard (Step 1)
+![Figure B.3: Guided Student Onboarding Wizard](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1780555764485.png)
+*Figure B.3 shows the first step of the onboarding wizard, which captures student demographic details (phone, date of birth, nationality, gender) and guides them through account setup.*
+
+### Figure B.4: Bento-Grid Dashboard Overview
+![Figure B.4: Bento-Grid Dashboard Overview](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1781498910944.png)
+*Figure B.4 displays the unified student dashboard. The layout incorporates KPI cards showing average match score and saved roles, alongside a list of highest matching internships and top missing skill gaps.*
+
+### Figure B.5: Ranked Recommendations Feed
+![Figure B.5: Ranked Recommendations Feed](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1781499313986.png)
+*Figure B.5 shows the My Matches recommendation feed. Internships are ranked by compatibility percentages. Each listing displays required tech skills, location, and stipend values.*
+
+### Figure B.6: Kanban Application Tracking Board
+![Figure B.6: Kanban Application Tracking Board](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1780449794403.png)
+*Figure B.6 presents the drag-and-drop Kanban application tracker. Applications are organized across Saved, Applied, Interviewing, Offers, and Rejected columns to simplify progress monitoring.*
+
+### Figure B.7: Profile Settings and Preferences Configuration
+![Figure B.7: Profile Settings and Preferences Configuration](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1781696350782.png)
+*Figure B.7 displays the settings configuration pane, showing the interactive profile completeness checklist, notification toggles, and the multi-select career interests checklist.*
+
+### Figure B.8: Automated Daily Scraper Execution (GitHub Actions)
+![Figure B.8: Automated Daily Scraper Execution](file:///C:/Users/bodyg/.gemini/antigravity/brain/67944ace-f2ec-4d8d-a3e1-d57238b94e63/media__1780996098059.png)
+*Figure B.8 displays the successful execution log of the background crawling service in GitHub Actions, which aggregates, validates, and syncs listings daily at midnight.*
 * *(Turnitin Report)*

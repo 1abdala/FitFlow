@@ -45,23 +45,18 @@ const AuthPage = () => {
         setLoading(true);
         const userEmail = session.user.email;
         const userName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
-        const userRole = session.user.user_metadata?.role || 'student';
         let { data: existingUser } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         
         if (!existingUser) {
-          // Auto-create base profile if it doesn't exist
           existingUser = {
             id: session.user.id,
-            role: userRole,
+            role: 'student',
             full_name: userName
           };
-          // Try to insert it so it persists
           await supabase.from('profiles').insert([existingUser]);
         }
 
-        // Ensure sub-profile exists (self-healing for trigger-created profiles)
-        const finalRole = existingUser?.role || userRole;
-        const subTable = finalRole === 'student' ? 'student_profiles' : 'coordinator_profiles';
+        const subTable = 'student_profiles';
         const { data: subProfile } = await supabase.from(subTable).select('id').eq('id', session.user.id).maybeSingle();
         if (!subProfile) {
           await supabase.from(subTable).insert([{ id: session.user.id }]);
@@ -215,16 +210,7 @@ const AuthPage = () => {
                 <p className="auth-sub">{isLogin ? 'Access your dashboard and matches.' : 'Join the smarter way to find internships.'}</p>
               </div>
 
-              {!isLogin && (
-                <div className="role-sel">
-                  <button onClick={() => setRole('student')} className={`role-btn ${role === 'student' ? 'role-active' : ''}`}>
-                    <Icons.IconTarget size={14} /> Student
-                  </button>
-                  <button onClick={() => setRole('coordinator')} className={`role-btn ${role === 'coordinator' ? 'role-active' : ''}`}>
-                    <Icons.IconBriefcase size={14} /> Coordinator
-                  </button>
-                </div>
-              )}
+
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && <div className="auth-err"><Icons.IconAlertCircle size={14} /> {error}</div>}

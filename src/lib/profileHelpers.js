@@ -4,7 +4,7 @@ import { supabase } from './supabase';
  * Dynamically computes user profile completion percentage, completed status, and lists missing fields
  * using a pure field-count ratio.
  * 
- * @param {Object} profile - The merged base profile + student/coordinator sub-profile
+ * @param {Object} profile - The merged base profile + student sub-profile
  * @param {Array<string>} skills - Array of skill names associated with the user
  * @returns {Object} { percentage: number, completed: boolean, requiredMissingFields: Array<string>, optionalMissingFields: Array<string> }
  */
@@ -18,82 +18,47 @@ export function getProfileStatus(profile, skills = []) {
     };
   }
 
-  const role = profile.role || 'student';
   const requiredMissingFields = [];
   const optionalMissingFields = [];
 
-  if (role === 'student') {
-    // 1. Required Fields for Student Onboarding
-    const requiredFields = ['phone', 'dob', 'matric', 'faculty', 'programme'];
-    
-    // 2. Optional Fields for Student
-    const optionalFields = ['nationality', 'gender', 'address', 'year_of_study', 'semester', 'preferred_location', 'preferred_industry', 'university', 'course', 'cv_url', 'linkedin_url', 'github_url', 'portfolio_url', 'avatar_url'];
+  // 1. Required Fields for Student Onboarding
+  const requiredFields = ['phone', 'dob', 'matric', 'faculty', 'programme'];
+  
+  // 2. Optional Fields for Student
+  const optionalFields = ['nationality', 'gender', 'address', 'year_of_study', 'semester', 'preferred_location', 'preferred_industry', 'university', 'course', 'cv_url', 'linkedin_url', 'github_url', 'portfolio_url', 'avatar_url'];
 
-    // Track completed counts
-    let completedCount = 0;
-    
-    requiredFields.forEach(f => {
-      if (profile[f]) {
-        completedCount++;
-      } else {
-        requiredMissingFields.push(f);
-      }
-    });
-
-    if (skills && skills.length > 0) {
+  // Track completed counts
+  let completedCount = 0;
+  
+  requiredFields.forEach(f => {
+    if (profile[f]) {
       completedCount++;
     } else {
-      requiredMissingFields.push('skills');
+      requiredMissingFields.push(f);
     }
+  });
 
-    optionalFields.forEach(f => {
-      if (!profile[f]) {
-        optionalMissingFields.push(f);
-      }
-    });
-
-    const totalRequired = requiredFields.length + 1; // +1 for skills
-    const percentage = Math.round((completedCount / totalRequired) * 100);
-
-    return {
-      percentage,
-      completed: completedCount === totalRequired,
-      requiredMissingFields,
-      optionalMissingFields
-    };
+  if (skills && skills.length > 0) {
+    completedCount++;
   } else {
-    // 1. Required Fields for Coordinator Onboarding
-    const requiredFields = ['phone', 'dob', 'staff_id', 'department', 'position'];
-    
-    // 2. Optional Fields for Coordinator
-    const optionalFields = ['nationality', 'gender', 'address', 'company_name'];
-
-    let completedCount = 0;
-
-    requiredFields.forEach(f => {
-      if (profile[f]) {
-        completedCount++;
-      } else {
-        requiredMissingFields.push(f);
-      }
-    });
-
-    optionalFields.forEach(f => {
-      if (!profile[f]) {
-        optionalMissingFields.push(f);
-      }
-    });
-
-    const totalRequired = requiredFields.length;
-    const percentage = Math.round((completedCount / totalRequired) * 100);
-
-    return {
-      percentage,
-      completed: completedCount === totalRequired,
-      requiredMissingFields,
-      optionalMissingFields
-    };
+    requiredMissingFields.push('skills');
   }
+
+  optionalFields.forEach(f => {
+    if (!profile[f]) {
+      optionalMissingFields.push(f);
+    }
+  });
+
+  const totalRequired = requiredFields.length + 1; // +1 for skills
+  const percentage = Math.round((completedCount / totalRequired) * 100);
+
+  return {
+    percentage,
+    completed: completedCount === totalRequired,
+    requiredMissingFields,
+    optionalMissingFields
+  };
 }
 
 /**
@@ -116,8 +81,7 @@ export async function fetchFullProfile(userId) {
     throw new Error(baseErr?.message || "Base profile not found");
   }
 
-  const role = baseProfile.role || 'student';
-  const subTable = role === 'student' ? 'student_profiles' : 'coordinator_profiles';
+  const subTable = 'student_profiles';
 
   // 2. Fetch sub-profile
   let { data: subProfile, error: subErr } = await supabase
@@ -138,17 +102,15 @@ export async function fetchFullProfile(userId) {
     }
   }
 
-  // 3. Fetch skills if student
+  // 3. Fetch skills
   let skills = [];
-  if (role === 'student') {
-    const { data: skillsData, error: skillsErr } = await supabase
-      .from('user_skills')
-      .select('skills:skill_id(name)')
-      .eq('user_id', userId);
+  const { data: skillsData, error: skillsErr } = await supabase
+    .from('user_skills')
+    .select('skills:skill_id(name)')
+    .eq('user_id', userId);
 
-    if (!skillsErr && skillsData) {
-      skills = skillsData.map(us => us.skills?.name).filter(Boolean);
-    }
+  if (!skillsErr && skillsData) {
+    skills = skillsData.map(us => us.skills?.name).filter(Boolean);
   }
 
   // Combine profiles, fallback to empty object if sub-profile doesn't exist yet (pre-onboarding)

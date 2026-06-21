@@ -84,7 +84,7 @@ const { data: userData } = await supabase.from('users').insert([{
 const userData = localStorage.getItem('fitflow_user');
 setUser(JSON.parse(userData));  // anyone can edit this in DevTools
 
-// If user edits localStorage to set role: "coordinator", they
+// If user edits localStorage to set role: "admin", they
 // get a different UI. Frontend role-gating is not security.
 
 // GOOD — derive role server-side on every auth change
@@ -100,7 +100,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 ```
 
 **Impact:**
-- A user can change their `role` to `coordinator` by editing localStorage and see coordinator UI paths.
+- A user can change their `role` to a higher privilege level by editing localStorage and attempt to access unauthorized UI paths.
 - An XSS attack that runs JS in the page context steals the full user profile.
 - A stale object in localStorage (e.g. after password reset) may grant incorrect access.
 
@@ -513,7 +513,6 @@ RLS policies cannot be audited through source code alone. The following tables a
 |---|---|---|
 | `users` | Read/write by user id | `auth.uid() = id` on ALL operations |
 | `student_profiles` | Read/write by user id | `auth.uid() = id` |
-| `coordinator_profiles` | Read/write by user id | `auth.uid() = id` |
 | `user_skills` | Read/write by user_id | `auth.uid() = user_id` |
 | `tracker_applications` | Read/write by user_id | `auth.uid() = user_id` |
 | `applications` | Read/write by student_id | `auth.uid() = student_id` |
@@ -738,7 +737,7 @@ The following personal data is collected from students:
 
 **OKU (disability) status** is classified as sensitive data under PDPA. Storing and processing it requires:
 - Explicit, informed consent (separate from general terms).
-- Strong access control — only the student and authorized coordinators should see it.
+- Strong access control — only the student should see it.
 - It should NOT be visible in any analytics or aggregate reporting.
 
 ---
