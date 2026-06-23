@@ -318,9 +318,10 @@ def regenerate_all_matches() -> int:
                     high_matches = len([m for m in (new_matches_res.data or []) if round(float(m["match_score"])) >= 80])
                     
                     # Fetch active application count from tracker
-                    apps_res = supabase.table("applications")\
+                    apps_res = supabase.table("tracker_applications")\
                         .select("id")\
-                        .eq("student_id", student_id)\
+                        .eq("user_id", student_id)\
+                        .is_("deleted_at", "null")\
                         .execute()
                     apps_count = len(apps_res.data or [])
                     
