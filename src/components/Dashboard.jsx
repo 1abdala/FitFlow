@@ -10,6 +10,7 @@ import * as Icons from './Icons';
 import { CVAnalyzerPage } from './CVAnalyzerPage';
 import { SettingsTab } from './SettingsTab';
 import ApplicationsTab from './ApplicationsTab';
+import InterviewTab from './InterviewTab';
 import { Toaster, toast } from 'react-hot-toast';
 import { useApplications } from '../hooks/useApplications';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
@@ -54,6 +55,7 @@ const Sidebar = ({ active, setActive, user, onLogout, onBack, isOpen, onClose })
     { id: "overview", icon: <Icons.IconGrid size={18} />, label: "Overview" },
     { id: "matches", icon: <Icons.IconTarget size={18} />, label: "My Matches", badge: null }, // Badge will be updated via props if needed
     { id: "applications", icon: <Icons.IconBriefcase size={18} />, label: "Applications" },
+    { id: "interview", icon: <Icons.IconUsers size={18} />, label: "Interview Prep" },
     { id: "skills", icon: <Icons.IconCap size={18} />, label: "Skill Profile" },
     { id: "learning", icon: <Icons.IconBook size={18} />, label: "Learning Hub" },
   ];
@@ -1522,6 +1524,10 @@ const Dashboard = () => {
 
           {activeTab === 'learning' && (
             <LearningHubTab skillGaps={skillGaps} />
+          )}
+
+          {activeTab === 'interview' && (
+            <InterviewTab user={user} onNavigate={setActiveTab} />
           )}
 
           {activeTab === 'settings' && (
