@@ -24,6 +24,26 @@ const FACULTIES = {
   'FAIX': ['Artificial Intelligence', 'Cybersecurity']
 };
 
+const malaysianStates = [
+  'Remote (Work from Home)', 'Johor', 'Kedah', 'Kelantan', 'Malacca', 
+  'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Sabah', 
+  'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur', 'Putrajaya', 'Labuan'
+];
+
+const INDUSTRIES = [
+  'Technology / Software Development',
+  'Finance / Fintech / Banking',
+  'E-commerce / Retail',
+  'Telecommunications',
+  'Logistics / Supply Chain',
+  'Healthcare / Biotechnology',
+  'Education / EdTech',
+  'Consulting / Professional Services',
+  'Manufacturing / Semiconductor / Electronics',
+  'Media / Creative / Entertainment',
+  'Energy / Utilities'
+];
+
 const CAREER_INTERESTS = [
   'Software Engineer',
   'Frontend Developer',
@@ -43,11 +63,19 @@ const CAREER_INTERESTS = [
 ];
 
 const REQUIRED_FIELD_LABELS = {
+  full_name: 'Name',
   phone: 'Phone',
   dob: 'DOB',
+  nationality: 'Nationality',
+  gender: 'Gender',
   matric: 'Matric',
   faculty: 'Faculty',
   programme: 'Programme',
+  year_of_study: 'Year',
+  semester: 'Semester',
+  preferred_location: 'Location',
+  preferred_industry: 'Industry',
+  preferred_roles: 'Roles',
   skills: 'Skills'
 };
 
@@ -132,7 +160,6 @@ const SettingsField = ({ label, icon: IconComponent, error, onIconClick, childre
 
 export const SettingsTab = ({ user, onUserUpdate }) => {
   const settingsDateRef = React.useRef(null);
-  const [profileStatus, setProfileStatus] = useState(null);
   const [appCount, setAppCount] = useState(0);
   const [matchScore, setMatchScore] = useState(0);
   const [authUserDetail, setAuthUserDetail] = useState(null);
@@ -150,6 +177,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   const [programme, setProgramme] = useState(user?.programme || '');
   const [yearOfStudy, setYearOfStudy] = useState(user?.year_of_study || '');
   const [semester, setSemester] = useState(user?.semester || '');
+  const [preferredLocation, setPreferredLocation] = useState(user?.preferred_location || '');
 
   // Socials
   const [linkedinUrl, setLinkedinUrl] = useState(user?.linkedin_url || '');
@@ -219,14 +247,25 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     }
   }, [newPassword]);
 
-  useEffect(() => {
-    if (user) {
-      // Pull skills list (required for getProfileStatus calculation)
-      const skillsList = user?.skills || [];
-      const status = getProfileStatus(user, skillsList);
-      setProfileStatus(status);
-    }
-  }, [user]);
+  // Compute profileStatus dynamically in real-time as state changes
+  const profileStatus = useMemo(() => {
+    const tempProfile = {
+      ...user,
+      full_name: fullName,
+      phone,
+      dob,
+      gender,
+      nationality,
+      matric,
+      faculty,
+      programme,
+      year_of_study: parseInt(yearOfStudy) || null,
+      semester: parseInt(semester) || null,
+      preferred_location: preferredLocation,
+      preferred_roles: preferredRoles
+    };
+    return getProfileStatus(tempProfile, user?.skills || []);
+  }, [user, fullName, phone, dob, gender, nationality, matric, faculty, programme, yearOfStudy, semester, preferredLocation, preferredRoles]);
 
   // Sync state if user changes
   useEffect(() => {
@@ -241,6 +280,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       setProgramme(user.programme || '');
       setYearOfStudy(user.year_of_study || '');
       setSemester(user.semester || '');
+      setPreferredLocation(user.preferred_location || '');
       setLinkedinUrl(user.linkedin_url || '');
       setGithubUrl(user.github_url || '');
       setPortfolioUrl(user.portfolio_url || '');
@@ -436,11 +476,15 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
         programme,
         year_of_study: parseInt(yearOfStudy) || null,
         semester: parseInt(semester) || null,
+        preferred_location: preferredLocation,
         linkedin_url: linkedinUrl,
         github_url: githubUrl,
         portfolio_url: portfolioUrl,
         preferred_roles: preferredRoles
       };
+
+      // Persist profile_completed status on save
+      const isProfileComplete = profileStatus.completed;
 
       const { error: subErr } = await supabase
         .from(subTable)
@@ -450,6 +494,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
           nationality,
           dob: dob || null,
           gender,
+          profile_completed: isProfileComplete,
           ...studentFields
         });
 
@@ -496,6 +541,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       setProgramme(user.programme || '');
       setYearOfStudy(user.year_of_study || '');
       setSemester(user.semester || '');
+      setPreferredLocation(user.preferred_location || '');
       setLinkedinUrl(user.linkedin_url || '');
       setGithubUrl(user.github_url || '');
       setPortfolioUrl(user.portfolio_url || '');
@@ -519,6 +565,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     programme !== (user.programme || '') ||
     String(yearOfStudy) !== String(user.year_of_study || '') ||
     String(semester) !== String(user.semester || '') ||
+    preferredLocation !== (user.preferred_location || '') ||
     linkedinUrl !== (user.linkedin_url || '') ||
     githubUrl !== (user.github_url || '') ||
     portfolioUrl !== (user.portfolio_url || '') ||
@@ -531,9 +578,9 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     })
   );
 
-  const totalRequired = 6;
-  const missingCount = profileStatus?.requiredMissingFields?.length || 0;
-  const completedCount = totalRequired - missingCount;
+  const totalRequired = profileStatus?.totalFields || 14;
+  const completedCount = profileStatus?.completedFields || 0;
+  const missingCount = totalRequired - completedCount;
   const isStudent = user?.role === 'student';
 
   return (
@@ -762,6 +809,17 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                       </select>
                     </SettingsField>
                   </div>
+
+                  <SettingsField label="Preferred Location" icon={Icons.IconMapPin}>
+                    <select 
+                      value={preferredLocation} 
+                      onChange={(e) => setPreferredLocation(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Location</option>
+                      {malaysianStates.map(st => <option key={st} value={st}>{st}</option>)}
+                    </select>
+                  </SettingsField>
 
                   {/* Social Links */}
                   <div className="pt-2 border-t border-white/5 space-y-3">

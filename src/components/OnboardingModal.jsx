@@ -3,6 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
 import { sendNotification } from '../lib/notificationService';
+import { getProfileStatus } from '../lib/profileHelpers';
+
+const INDUSTRIES = [
+  'Technology / Software Development',
+  'Finance / Fintech / Banking',
+  'E-commerce / Retail',
+  'Telecommunications',
+  'Logistics / Supply Chain',
+  'Healthcare / Biotechnology',
+  'Education / EdTech',
+  'Consulting / Professional Services',
+  'Manufacturing / Semiconductor / Electronics',
+  'Media / Creative / Entertainment',
+  'Energy / Utilities'
+];
 
 const CAREER_INTERESTS = [
   'Software Engineer',
@@ -34,8 +49,11 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [wasCompleted] = useState(() => {
+    if (user?.profile_completed || Number(user?.completion_percentage) === 100) {
+      return true;
+    }
     if (user?.role === 'student') {
-      return !!(user?.phone && user?.dob && user?.matric && user?.faculty && user?.programme && user?.skills?.length > 0);
+      return false;
     } else {
       return !!(user?.phone && user?.dob && user?.staff_id && user?.department && user?.position);
     }
@@ -65,7 +83,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
           if (data.year_of_study) setYearOfStudy(data.year_of_study);
           if (data.semester) setSemester(data.semester);
           if (data.preferred_location) setPreferredLocation(data.preferred_location);
-          if (data.preferred_industry) setPreferredIndustry(data.preferred_industry);
           if (data.preferred_roles) setPreferredRoles(data.preferred_roles);
 
           const { data: skData } = await supabase.from('user_skills')
@@ -102,7 +119,6 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
   const [preferredLocation, setPreferredLocation] = useState('');
-  const [preferredIndustry, setPreferredIndustry] = useState('');
   const [preferredRoles, setPreferredRoles] = useState([]);
 
   const [staffId, setStaffId] = useState('');
@@ -142,18 +158,41 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const handleNext = async () => {
     setError(null);
     if (step === 2) {
-      if (!phone || !phone.startsWith('+60') || !dob) return setError('Check phone (+60) and DOB.');
+      if (!phone || !phone.startsWith('+60') || !dob || !gender) return setError('Check phone (+60), DOB, and Gender.');
       setLoading(true);
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         const profileData = { id: authUser.id, phone, nationality, dob: dob || null, gender, address, oku_status: 'None' };
         
         await supabase.from('profiles').upsert({ id: authUser.id, role: 'student', full_name: user.name });
+        
+        // Calculate status to store profile_completed
+        const tempProfile = {
+          ...user,
+          ...profileData,
+          matric,
+          faculty,
+          programme,
+          year_of_study: parseInt(yearOfStudy) || null,
+          semester: parseInt(semester) || null,
+          preferred_location: preferredLocation,
+          preferred_roles: preferredRoles
+        };
+        const status = getProfileStatus(tempProfile, skills);
+        
         const table = 'student_profiles';
-        await supabase.from(table).upsert(profileData);
+        await supabase.from(table).upsert({
+          ...profileData,
+          profile_completed: status.completed
+        });
         
         const { id: _, ...safeData } = profileData;
-        const updatedUser = { ...user, ...safeData, completion_percentage: 33 };
+        const updatedUser = { 
+          ...user, 
+          ...safeData, 
+          completion_percentage: status.percentage, 
+          profile_completed: status.completed 
+        };
         
         onComplete(updatedUser, false);
         setStep(3);
@@ -167,17 +206,54 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
 
   const handleAcademicNext = async () => {
     setError(null);
-    if (!matric || !faculty || !programme) return setError('Academic fields required.');
+    if (!matric || !faculty || !programme || !yearOfStudy || !semester || !preferredLocation) {
+      return setError('All academic and preference fields are required.');
+    }
     setLoading(true);
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      await supabase.from('student_profiles').upsert({ id: authUser.id, matric, faculty, programme, year_of_study: parseInt(yearOfStudy) || null, semester: parseInt(semester) || null, preferred_location: preferredLocation, preferred_industry: preferredIndustry });
+      
+      const academicData = {
+        id: authUser.id,
+        matric,
+        faculty,
+        programme,
+        year_of_study: parseInt(yearOfStudy) || null,
+        semester: parseInt(semester) || null,
+        preferred_location: preferredLocation
+      };
+
+      // Get or save skills
       for (const s of skills) {
         const { data: sid } = await supabase.rpc('get_or_create_skill', { p_name: s });
         await supabase.from('user_skills').upsert({ user_id: authUser.id, skill_id: sid }, { onConflict: 'user_id,skill_id' });
       }
 
-      const updatedUser = { ...user, completion_percentage: 66 };
+      // Calculate status to store profile_completed
+      const tempProfile = {
+        ...user,
+        phone,
+        nationality,
+        dob,
+        gender,
+        address,
+        ...academicData,
+        preferred_roles: preferredRoles
+      };
+      const status = getProfileStatus(tempProfile, skills);
+
+      await supabase.from('student_profiles').upsert({
+        ...academicData,
+        profile_completed: status.completed
+      });
+
+      const updatedUser = { 
+        ...user, 
+        ...academicData,
+        skills,
+        completion_percentage: status.percentage,
+        profile_completed: status.completed
+      };
       onComplete(updatedUser, false);
       setStep(4);
     } catch (err) {
@@ -187,14 +263,39 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
     }
   };
 
-  const handlePreferredRolesComplete = async (skip = false) => {
+  const handlePreferredRolesComplete = async () => {
     setError(null);
+    if (preferredRoles.length === 0) {
+      return setError('Please select at least one preferred role.');
+    }
     setLoading(true);
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const rolesToSave = skip ? [] : preferredRoles;
+      const rolesToSave = preferredRoles;
       
-      await supabase.from('student_profiles').update({ preferred_roles: rolesToSave }).eq('id', authUser.id);
+      // Calculate status to store profile_completed
+      const tempProfile = {
+        ...user,
+        phone,
+        nationality,
+        dob,
+        gender,
+        address,
+        matric,
+        faculty,
+        programme,
+        year_of_study: parseInt(yearOfStudy) || null,
+        semester: parseInt(semester) || null,
+        preferred_location: preferredLocation,
+        preferred_roles: rolesToSave
+      };
+      const status = getProfileStatus(tempProfile, skills);
+
+      await supabase.from('student_profiles').update({ 
+        preferred_roles: rolesToSave,
+        profile_completed: status.completed
+      }).eq('id', authUser.id);
+      
       await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
       
       try {
@@ -207,7 +308,12 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         console.error("Failed to insert onboarding notification:", notifErr);
       }
 
-      const updatedUser = { ...user, preferred_roles: rolesToSave, completion_percentage: 100, profile_completed: true };
+      const updatedUser = { 
+        ...user, 
+        preferred_roles: rolesToSave, 
+        completion_percentage: status.percentage, 
+        profile_completed: status.completed 
+      };
       onComplete(updatedUser, false);
       setStep(5);
     } catch (err) {
@@ -402,16 +508,16 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                          </div>
                        </div>
                        <div className="input-group">
-                         <label className="input-label">Gender</label>
-                         <div className="ob-input-wrap">
-                           <div className="input-icon"><Icons.IconUser size={16} /></div>
-                           <select value={gender} onChange={(e) => setGender(e.target.value)}>
-                             <option value="">Select</option>
-                             <option value="Male">Male</option>
-                             <option value="Female">Female</option>
-                           </select>
-                         </div>
-                       </div>
+                          <label className="input-label">Gender *</label>
+                          <div className="ob-input-wrap">
+                            <div className="input-icon"><Icons.IconUser size={16} /></div>
+                            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                              <option value="">Select</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                            </select>
+                          </div>
+                        </div>
                      </div>
                    </motion.div>
                  )}
@@ -445,6 +551,41 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                                <select value={programme} onChange={(e) => setProgramme(e.target.value)} disabled={!faculty}>
                                  <option value="">Select</option>
                                  {faculty && faculties[faculty].map(p => <option key={p} value={p}>{p}</option>)}
+                               </select>
+                             </div>
+                           </div>
+                           <div className="input-group">
+                             <label className="input-label">Year of Study *</label>
+                             <div className="ob-input-wrap">
+                               <Icons.IconCalendar size={16} className="input-icon" />
+                               <select value={yearOfStudy} onChange={(e) => setYearOfStudy(e.target.value)}>
+                                 <option value="">Select</option>
+                                 <option value="1">1</option>
+                                 <option value="2">2</option>
+                                 <option value="3">3</option>
+                                 <option value="4">4</option>
+                               </select>
+                             </div>
+                           </div>
+                           <div className="input-group">
+                             <label className="input-label">Semester *</label>
+                             <div className="ob-input-wrap">
+                               <Icons.IconClock size={16} className="input-icon" />
+                               <select value={semester} onChange={(e) => setSemester(e.target.value)}>
+                                 <option value="">Select</option>
+                                 <option value="1">1</option>
+                                 <option value="2">2</option>
+                                 <option value="3">Short</option>
+                               </select>
+                             </div>
+                           </div>
+                           <div className="input-group">
+                             <label className="input-label">Preferred Location *</label>
+                             <div className="ob-input-wrap">
+                               <Icons.IconMapPin size={16} className="input-icon" />
+                               <select value={preferredLocation} onChange={(e) => setPreferredLocation(e.target.value)}>
+                                 <option value="">Select Location</option>
+                                 {malaysianStates.map(st => <option key={st} value={st}>{st}</option>)}
                                </select>
                              </div>
                            </div>
@@ -613,23 +754,13 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                <div className="flex gap-3">
                  {step > 2 && <button onClick={() => setStep(step - 1)} className="btn btn-glass btn-sm px-4">Back</button>}
                  
-                 {step === 4 && isStudent && (
-                   <button 
-                     onClick={() => handlePreferredRolesComplete(true)} 
-                     disabled={loading} 
-                     className="btn btn-glass btn-sm px-6"
-                   >
-                     Skip for now
-                   </button>
-                 )}
-                 
                  <button 
                    onClick={
                      step === 2 
                        ? handleNext 
                        : step === 3 
                          ? (isStudent ? handleAcademicNext : wrapUpComplete) 
-                         : handlePreferredRolesComplete.bind(null, false)
+                         : handlePreferredRolesComplete
                    } 
                    disabled={loading} 
                    className="btn btn-primary px-8 shadow-[0_0_20px_rgba(var(--accent-rgb),0.4)]"

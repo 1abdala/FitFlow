@@ -20,23 +20,67 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const getPasswordStrength = (pass) => {
-    let score = 0;
-    if (!pass) return 0;
-    if (pass.length >= 8) score += 1;
-    if (/[A-Z]/.test(pass)) score += 1;
-    if (/[0-9]/.test(pass)) score += 1;
-    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
-    return score;
+  const getPasswordRulesStatus = (pass) => {
+    return {
+      minLength: pass.length >= 8,
+      hasUppercase: /[A-Z]/.test(pass),
+      hasLowercase: /[a-z]/.test(pass),
+      hasNumber: /[0-9]/.test(pass),
+      hasSpecial: /[^A-Za-z0-9]/.test(pass)
+    };
   };
 
-  const getStrengthMeta = (score) => {
-    if (score === 0) return { label: '', color: '' };
-    if (score === 1) return { label: 'Weak', color: 'var(--danger)' };
-    if (score === 2) return { label: 'Fair', color: 'var(--warn)' };
-    if (score === 3) return { label: 'Good', color: 'var(--accent)' };
-    return { label: 'Strong', color: 'var(--pos)' };
+  const getPasswordScore = (rulesStatus) => {
+    return Object.values(rulesStatus).filter(Boolean).length;
+  };
+
+  const getStrengthInfo = (pass) => {
+    if (!pass) {
+      return {
+        label: 'None',
+        segments: 0,
+        color: 'var(--text-dim)',
+        bgColor: 'transparent',
+        borderColor: 'var(--border)'
+      };
+    }
+    const rules = getPasswordRulesStatus(pass);
+    const score = getPasswordScore(rules);
+    if (score <= 2) {
+      return {
+        label: 'Weak',
+        segments: 1,
+        color: 'var(--danger)',
+        bgColor: 'var(--danger-soft)',
+        borderColor: 'rgba(248, 113, 113, 0.2)'
+      };
+    } else if (score === 3) {
+      return {
+        label: 'Fair',
+        segments: 2,
+        color: 'var(--warn)',
+        bgColor: 'var(--warn-soft)',
+        borderColor: 'rgba(251, 191, 36, 0.2)'
+      };
+    } else if (score === 4) {
+      return {
+        label: 'Good',
+        segments: 3,
+        color: 'var(--accent-2)',
+        bgColor: 'var(--accent-soft)',
+        borderColor: 'rgba(122, 166, 255, 0.2)'
+      };
+    } else {
+      return {
+        label: 'Strong',
+        segments: 4,
+        color: 'var(--pos)',
+        bgColor: 'var(--pos-soft)',
+        borderColor: 'rgba(52, 211, 153, 0.2)'
+      };
+    }
   };
 
   useEffect(() => {
@@ -108,6 +152,20 @@ const AuthPage = () => {
         if (authErr) throw authErr;
         // Navigation and profile checks are handled by onAuthStateChange
       } else {
+        const rules = getPasswordRulesStatus(password);
+        const isPasswordValid = rules.minLength && rules.hasUppercase && rules.hasLowercase && rules.hasNumber && rules.hasSpecial;
+        const score = getPasswordScore(rules);
+        
+        if (score <= 2) {
+          throw new Error('Password strength is Weak. Please select a stronger password.');
+        }
+        if (!isPasswordValid) {
+          throw new Error('Please satisfy all password rules.');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match.');
+        }
+
         const { data: signUpData, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: role } } });
         if (error) throw error;
         
@@ -119,6 +177,27 @@ const AuthPage = () => {
       }
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
+
+  const rulesStatus = getPasswordRulesStatus(password);
+  const isPasswordValid = rulesStatus.minLength && rulesStatus.hasUppercase && rulesStatus.hasLowercase && rulesStatus.hasNumber && rulesStatus.hasSpecial;
+  const score = getPasswordScore(rulesStatus);
+  const strengthInfo = getStrengthInfo(password);
+
+  const checklist = [
+    { key: 'minLength', text: 'At least 8 characters', satisfied: rulesStatus.minLength },
+    { key: 'hasUppercase', text: 'Contains an uppercase letter', satisfied: rulesStatus.hasUppercase },
+    { key: 'hasLowercase', text: 'Contains a lowercase letter', satisfied: rulesStatus.hasLowercase },
+    { key: 'hasNumber', text: 'Contains a number', satisfied: rulesStatus.hasNumber },
+    { key: 'hasSpecial', text: 'Contains a special character', satisfied: rulesStatus.hasSpecial }
+  ];
+
+  const isSubmitDisabled = loading || (!isLogin && (
+    score <= 2 ||
+    password !== confirmPassword ||
+    !isPasswordValid ||
+    !password ||
+    !confirmPassword
+  ));
 
   return (
     <div className="auth-page">
@@ -244,21 +323,156 @@ const AuthPage = () => {
                     >
                       {showPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
                     </button>
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={password} 
+                      onChange={(e) => setPassword(e.target.value)} 
+                      placeholder="••••••••" 
+                      required 
+                    />
                   </div>
+
+                  {/* Password Strength Indicator */}
                   {!isLogin && password && (
-                    <div className="pass-strength">
-                      <div className="strength-bar">
-                        {[1, 2, 3, 4].map(l => <div key={l} className={`strength-bit ${l <= getPasswordStrength(password) ? 'bit-active' : ''}`} />)}
+                    <div style={{ marginTop: '12px' }}>
+                      <div className="flex items-center justify-between gap-4 mb-2">
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-mute)' }}>Password Strength</span>
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="px-2.5 py-0.5 rounded-full text-xs font-bold border"
+                          style={{
+                            color: strengthInfo.color,
+                            backgroundColor: strengthInfo.bgColor,
+                            borderColor: strengthInfo.borderColor,
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          {strengthInfo.label}
+                        </motion.span>
                       </div>
-                      <div className="strength-label" style={{ color: getStrengthMeta(getPasswordStrength(password)).color }}>
-                        {getStrengthMeta(getPasswordStrength(password)).label}
+
+                      {/* Divided Progress Bar */}
+                      <div className="flex gap-1.5 h-1.5 mb-4">
+                        {[1, 2, 3, 4].map((seg) => {
+                          const isActive = seg <= strengthInfo.segments;
+                          return (
+                            <div
+                              key={seg}
+                              className="flex-1 rounded-full transition-all duration-300"
+                              style={{
+                                backgroundColor: isActive ? strengthInfo.color : 'var(--surface-3)',
+                                boxShadow: isActive ? `0 0 8px ${strengthInfo.color}44` : 'none'
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      {/* Live Password Rules Checklist */}
+                      <div className="space-y-2 mb-4 p-3 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                        {checklist.map((item) => (
+                          <div key={item.key} className="flex items-center gap-2.5 text-xs font-medium" style={{ color: item.satisfied ? 'var(--text)' : 'var(--text-dim)' }}>
+                            <div className="relative flex items-center justify-center w-4 h-4 flex-shrink-0">
+                              <AnimatePresence mode="wait">
+                                {item.satisfied ? (
+                                  <motion.div
+                                    key="checked"
+                                    initial={{ scale: 0.5, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.5, opacity: 0 }}
+                                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                    style={{ color: 'var(--pos)' }}
+                                  >
+                                    <Icons.IconCheckCircle size={14} />
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="unchecked"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 0.6 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                    style={{
+                                      width: 10,
+                                      height: 10,
+                                      borderRadius: '50%',
+                                      border: '1.5px solid var(--text-dim)',
+                                    }}
+                                  />
+                                )}
+                              </AnimatePresence>
+                            </div>
+                            <span className="transition-colors duration-250">{item.text}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
                 </div>
 
-                <button type="submit" disabled={loading} className="btn btn-primary w-full justify-center">
+                {/* Confirm Password Field */}
+                {!isLogin && (
+                  <div className="input-group">
+                    <label className="input-label">Confirm Password</label>
+                    <div className="input-wrap">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        className="input-icon"
+                      >
+                        {showConfirmPassword ? <Icons.IconEyeOff size={16} /> : <Icons.IconEye size={16} />}
+                      </button>
+                      <input 
+                        type={showConfirmPassword ? "text" : "password"} 
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)} 
+                        placeholder="••••••••" 
+                        style={{ paddingRight: '44px' }}
+                        required 
+                      />
+                      {confirmPassword && (
+                        <div className="absolute right-4 flex items-center justify-center pointer-events-none">
+                          <AnimatePresence mode="wait">
+                            {password === confirmPassword ? (
+                              <motion.div
+                                key="match"
+                                initial={{ scale: 0.7, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.7, opacity: 0 }}
+                                style={{ color: 'var(--pos)' }}
+                              >
+                                <Icons.IconCheckCircle size={16} />
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="mismatch"
+                                initial={{ scale: 0.7, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.7, opacity: 0 }}
+                                style={{ color: 'var(--danger)' }}
+                              >
+                                <Icons.IconAlertCircle size={16} />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+                    {/* Live Validation Messages */}
+                    {confirmPassword && (
+                      <div className="text-xs mt-1.5 flex items-center gap-1.5 font-medium">
+                        {password === confirmPassword ? (
+                          <span style={{ color: 'var(--pos)' }}>Passwords match</span>
+                        ) : (
+                          <span style={{ color: 'var(--danger)' }}>Passwords do not match</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button type="submit" disabled={isSubmitDisabled} className="btn btn-primary w-full justify-center">
                   {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
                   <Icons.IconArrowRight size={14} />
                 </button>

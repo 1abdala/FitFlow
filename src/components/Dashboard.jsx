@@ -310,41 +310,101 @@ const Topbar = ({
   </div>
 );
 
-const WelcomeCard = ({ user, skillGaps, onContinueSetup, onRefresh, refreshing }) => (
-  <div className="welcome">
-    <div className="welcome-bg" aria-hidden="true">
-      <svg viewBox="0 0 600 200" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="wg" x1="0" x2="1">
-            <stop offset="0" stopColor="var(--accent)" stopOpacity="0.5" />
-            <stop offset="1" stopColor="var(--accent-2)" stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
-        <path d="M0,120 C150,60 300,170 600,80 L600,200 L0,200 Z" fill="url(#wg)" opacity="0.4" />
-        <path d="M0,140 C200,90 350,180 600,110 L600,200 L0,200 Z" fill="url(#wg)" opacity="0.6" />
-      </svg>
-    </div>
-    <div className="welcome-inner">
-      <div className="welcome-kicker"><Icons.IconWave size={14} /> {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
-      <h2 className="welcome-title">
-        Welcome back, <span className="welcome-name">{user?.name?.split(' ')[0]}</span>.
-      </h2>
-      <p className="welcome-sub">
-        {(!user.profile_completed && Number(user.completion_percentage) !== 100) 
-          ? `Your profile is only ${user.completion_percentage || 33}% complete. Finish setup to unlock accurate AI matching.`
-          : `Your profile is missing ${skillGaps.length > 0 ? `about ${skillGaps.length} key skills` : 'no key skills'} for your top matches. Close the gap and unlock more roles.`}
-      </p>
-      <div className="welcome-cta">
-        {(!user.profile_completed && Number(user.completion_percentage) !== 100) && (
-          <button className="btn btn-primary btn-sm" onClick={onContinueSetup}>Continue Setup <Icons.IconArrowRight size={14} /></button>
-        )}
-        <button className="btn btn-ghost btn-sm" onClick={onRefresh} disabled={refreshing} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {refreshing ? 'Refreshing...' : 'Refresh matches'}
-        </button>
+const WelcomeCard = ({ user, skillGaps, onContinueSetup, onRefresh, refreshing }) => {
+  const isComplete = user.profile_completed || Number(user.completion_percentage) === 100;
+  
+  const getMissingCategories = () => {
+    const missing = user.requiredMissingFields || user.missingFields || [];
+    const categories = [
+      { name: 'Personal Information', fields: ['full_name', 'phone', 'dob', 'nationality', 'gender'] },
+      { name: 'Academic Information', fields: ['matric', 'faculty', 'programme', 'year_of_study', 'semester', 'preferred_location', 'preferred_industry'] },
+      { name: 'Career Interests', fields: ['preferred_roles'] },
+      { name: 'Skills Profile', fields: ['skills'] }
+    ];
+    return categories
+      .filter(cat => cat.fields.some(field => missing.includes(field)))
+      .map(cat => cat.name);
+  };
+
+  const missingCats = getMissingCategories();
+
+  return (
+    <div className="welcome">
+      <div className="welcome-bg" aria-hidden="true">
+        <svg viewBox="0 0 600 200" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="wg" x1="0" x2="1">
+              <stop offset="0" stopColor="var(--accent)" stopOpacity="0.5" />
+              <stop offset="1" stopColor="var(--accent-2)" stopOpacity="0.2" />
+            </linearGradient>
+          </defs>
+          <path d="M0,120 C150,60 300,170 600,80 L600,200 L0,200 Z" fill="url(#wg)" opacity="0.4" />
+          <path d="M0,140 C200,90 350,180 600,110 L600,200 L0,200 Z" fill="url(#wg)" opacity="0.6" />
+        </svg>
+      </div>
+      <div className="welcome-inner flex flex-col md:flex-row md:items-center justify-between gap-6 w-full relative z-10">
+        <div className="flex-1">
+          <div className="welcome-kicker"><Icons.IconWave size={14} /> {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+          <h2 className="welcome-title">
+            Welcome back, <span className="welcome-name">{user?.name?.split(' ')[0]}</span>.
+          </h2>
+          <p className="welcome-sub mt-2">
+            {isComplete 
+              ? `Your profile is missing ${skillGaps.length > 0 ? `about ${skillGaps.length} key skills` : 'no key skills'} for your top matches. Close the gap and unlock more roles.`
+              : `Complete your setup to calibrate the AI match engine and unlock personalized recommendations.`}
+          </p>
+          <div className="welcome-cta mt-6">
+            {!isComplete && (
+              <button className="btn btn-primary btn-sm" onClick={onContinueSetup}>Continue Setup <Icons.IconArrowRight size={14} /></button>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={onRefresh} disabled={refreshing} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              {refreshing ? 'Refreshing...' : 'Refresh matches'}
+            </button>
+          </div>
+        </div>
+
+        {/* Completion Card Widget */}
+        <div className="welcome-completion-card p-4 rounded-2xl border backdrop-blur-md flex flex-col gap-2.5 min-w-[260px] max-w-[320px] w-full shrink-0"
+             style={{ 
+               background: 'rgba(255, 255, 255, 0.02)', 
+               borderColor: isComplete ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)' 
+             }}>
+          {isComplete ? (
+            <>
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                <Icons.IconCheckCircle size={16} />
+                <span>Profile Complete</span>
+              </div>
+              <p className="text-[11px] text-text-mute leading-normal">
+                All required information has been provided.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <span className="font-bold text-xs text-text">Profile {user.completion_percentage || 0}% Complete</span>
+                <span className="text-[10px] font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">Incomplete</span>
+              </div>
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+                <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${user.completion_percentage || 0}%` }} />
+              </div>
+              {missingCats.length > 0 && (
+                <div className="text-[10px] leading-normal mt-0.5">
+                  <span className="text-text-mute font-medium block">Missing:</span>
+                  <div className="text-red-400 font-bold mt-0.5 flex flex-col gap-0.5">
+                    {missingCats.map(cat => (
+                      <span key={cat}>• {cat}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const KpiCard = ({ icon, label, value, delta, deltaTone, sub, sparkline }) => (
   <div className="kpi">
@@ -645,7 +705,8 @@ const Dashboard = () => {
   }, [fetchUserProfile]);
 
   useEffect(() => {
-    if (user && !user.profile_completed && user.role === 'student' && !hasAutoOpened) {
+    const isProfileComplete = user && (user.profile_completed || Number(user.completion_percentage) === 100);
+    if (user && !isProfileComplete && user.role === 'student' && !hasAutoOpened) {
       setShowOnboarding(true);
       setHasAutoOpened(true);
     }

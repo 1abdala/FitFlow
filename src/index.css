@@ -119,6 +119,13 @@
   transform: translateY(-1px);
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .btn-sm {
   padding: 8px 14px;
   font-size: 13px;

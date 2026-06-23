@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
 import { checkAndNotifyMatchChanges } from '../lib/notificationService';
+import { getProfileStatus } from '../lib/profileHelpers';
 
 /* ─── Tech colour map ─────────────────────────────────────────────── */
 const TECH_COLORS = {
@@ -269,6 +270,14 @@ const SkillProfileTab = ({ user, onUserUpdate, onMatchesUpdate, skillGaps = [] }
         const updated = [...currentSkills, canonical];
         setCurrentSkills(updated);
 
+        // Recalculate status to store profile_completed
+        const tempProfile = { ...user, skills: updated };
+        const status = getProfileStatus(tempProfile, updated);
+        await supabase
+          .from('student_profiles')
+          .update({ profile_completed: status.completed })
+          .eq('id', userId);
+
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
         await checkAndNotifyMatchChanges(userId, oldMatches);
 
@@ -298,6 +307,14 @@ const SkillProfileTab = ({ user, onUserUpdate, onMatchesUpdate, skillGaps = [] }
         const updated = currentSkills.filter(s => s !== skillToRemove);
         setCurrentSkills(updated);
 
+        // Recalculate status to store profile_completed
+        const tempProfile = { ...user, skills: updated };
+        const status = getProfileStatus(tempProfile, updated);
+        await supabase
+          .from('student_profiles')
+          .update({ profile_completed: status.completed })
+          .eq('id', userId);
+
         await supabase.rpc('generate_internship_matches', { p_student_id: userId });
         await checkAndNotifyMatchChanges(userId, oldMatches);
 
@@ -317,7 +334,8 @@ const SkillProfileTab = ({ user, onUserUpdate, onMatchesUpdate, skillGaps = [] }
   if (loading) return <LoadingSkeleton />;
 
   /* ── Computed values ─────────────────────────────── */
-  const profileStrength = Math.min(100, Math.round((currentSkills.length / 15) * 100));
+  const status = getProfileStatus(user, currentSkills);
+  const profileStrength = status.percentage;
   const strengthLabel   = profileStrength >= 90 ? 'Expert' : profileStrength >= 60 ? 'Proficient' : profileStrength >= 30 ? 'Developing' : 'Getting Started';
   const strengthColor   = profileStrength >= 90 ? 'var(--pos)' : profileStrength >= 60 ? 'var(--accent)' : profileStrength >= 30 ? 'var(--warn)' : 'var(--text-dim)';
 
