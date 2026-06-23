@@ -25,7 +25,7 @@ const detectCategory = (title) => {
   return 'other';
 };
 
-const InternshipDetailsModal = ({ job, onClose }) => {
+const InternshipDetailsModal = ({ job, user, onClose }) => {
   if (!job) return null;
 
   const { internships, match_score, skill_gaps } = job;
@@ -34,6 +34,47 @@ const InternshipDetailsModal = ({ job, onClose }) => {
   const allSkills = internships?.internship_skills?.map(s => s.skills?.name) || [];
   const missingSkills = skill_gaps?.map(g => g.skills?.name) || [];
   const verified = allSkills.filter(s => !missingSkills.includes(s));
+
+  // Determine program relevance and preferred role match to explain score breakdown
+  const category = internships?.category || '';
+  const programme = user?.programme || '';
+  const preferredRoles = user?.preferred_roles || [];
+  const title = internships?.title || '';
+
+  const isProgRelevant = (() => {
+    if (!programme) return true;
+    const p = programme.toLowerCase();
+    const c = category.toLowerCase();
+
+    if (p.includes('bits') || p.includes('software engineering')) {
+      return ['software engineer', 'full stack developer', 'backend developer', 'frontend developer', 'mobile app developer', 'qa tester', 'devops engineer', 'software engineering'].includes(c);
+    } else if (p.includes('bitd') || p.includes('network') || p.includes('cloud')) {
+      return ['networking', 'cloud computing', 'devops engineer'].includes(c);
+    } else if (p.includes('bitz') || p.includes('security') || p.includes('cyber')) {
+      return ['cybersecurity', 'networking'].includes(c);
+    } else if (p.includes('bitm') || p.includes('media') || p.includes('ui') || p.includes('ux') || p.includes('design')) {
+      return ['ui / ux designer', 'frontend developer', 'mobile app developer'].includes(c);
+    } else if (p.includes('bita') || p.includes('intelligent') || p.includes('data') || p.includes('ai') || p.includes('ml')) {
+      return ['data analyst', 'data scientist', 'ai / machine learning', 'business analyst'].includes(c);
+    }
+    return true;
+  })();
+
+  const isRoleMatched = (() => {
+    if (!preferredRoles || preferredRoles.length === 0) return false;
+    const t = title.toLowerCase();
+    const c = category.toLowerCase();
+    
+    return preferredRoles.some(role => {
+      const r = role.toLowerCase();
+      return t.includes(r) || c === r;
+    });
+  })();
+
+  const hasPreferredRoles = preferredRoles && preferredRoles.length > 0;
+  const roleScoreContribution = hasPreferredRoles && isRoleMatched ? 15 : 0;
+  const progScoreContribution = isProgRelevant ? 10 : 0;
+  const skillScoreContribution = Math.max(0, score - roleScoreContribution - progScoreContribution);
 
   const [summary, setSummary] = React.useState(null);
   const [loadingSummary, setLoadingSummary] = React.useState(false);
@@ -254,10 +295,54 @@ const InternshipDetailsModal = ({ job, onClose }) => {
                 </svg>
                 <div className="idm-score-num">{score}<i>%</i></div>
               </div>
-              <div className="idm-score-meta">
+              <div className="idm-score-meta" style={{ width: '100%' }}>
                 <div className="idm-score-label">Match score</div>
                 <div className="idm-score-tier">
                   {score >= 85 ? "Top-tier fit" : score >= 70 ? "Strong fit" : score >= 55 ? "Stretch fit" : "Long shot"}
+                </div>
+
+                {/* Score Breakdown Explanation */}
+                <div style={{
+                  marginTop: '12px',
+                  paddingTop: '10px',
+                  borderTop: '1px solid var(--border)',
+                  width: '100%',
+                  fontSize: '11px',
+                  textAlign: 'left',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px'
+                }}>
+                  <div style={{
+                    color: 'var(--text-mute)',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '2px'
+                  }}>
+                    Match Breakdown
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-mute)' }}>Skills Match ({hasPreferredRoles ? '75%' : '90%'}):</span>
+                    <span style={{ fontWeight: 600, color: skillScoreContribution > 0 ? 'var(--text)' : 'var(--text-dim)' }}>
+                      {skillScoreContribution}%
+                    </span>
+                  </div>
+                  {hasPreferredRoles && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--text-mute)' }}>Preferred Role (15%):</span>
+                      <span style={{ fontWeight: 600, color: roleScoreContribution > 0 ? 'var(--pos)' : 'var(--text-dim)' }}>
+                        {roleScoreContribution > 0 ? `+${roleScoreContribution}%` : '0%'}
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-mute)' }}>Programme (10%):</span>
+                    <span style={{ fontWeight: 600, color: progScoreContribution > 0 ? 'var(--pos)' : 'var(--text-dim)' }}>
+                      {progScoreContribution > 0 ? `+${progScoreContribution}%` : '0%'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

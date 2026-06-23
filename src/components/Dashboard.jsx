@@ -1547,6 +1547,7 @@ const Dashboard = () => {
         {selectedJob && (
           <InternshipDetailsModal
             job={selectedJob}
+            user={user}
             onClose={() => setSelectedJob(null)}
           />
         )}
