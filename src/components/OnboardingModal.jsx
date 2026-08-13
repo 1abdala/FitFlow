@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
 import { sendNotification } from '../lib/notificationService';
 import { getProfileStatus } from '../lib/profileHelpers';
+import { isValidMalaysianPhone, isValidMatric, isValidStudentDateOfBirth, matricInputValue } from '../lib/profileValidation';
 
 const INDUSTRIES = [
   'Technology / Software Development',
@@ -36,6 +37,127 @@ const CAREER_INTERESTS = [
   'QA Tester',
   'Business Analyst'
 ];
+
+const CustomOnboardingSelect = ({ 
+  icon: Icon, 
+  value, 
+  onChange, 
+  options = [], 
+  placeholder = "Select...", 
+  disabled = false,
+  searchable = false
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const normalizedOptions = useMemo(() => {
+    return options.map(opt => typeof opt === 'object' && opt !== null && 'value' in opt ? opt : { value: opt, label: opt });
+  }, [options]);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !search.trim()) return normalizedOptions;
+    return normalizedOptions.filter(opt => String(opt.label).toLowerCase().includes(search.toLowerCase().trim()));
+  }, [normalizedOptions, searchable, search]);
+
+  const selectedOption = normalizedOptions.find(opt => String(opt.value) === String(value));
+
+  return (
+    <div className="relative w-full text-left select-none" ref={popoverRef}>
+      <div 
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`ob-input-wrap flex items-center justify-between min-h-[50px] px-3.5 py-3 cursor-pointer transition-all ${
+          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-accent/40'
+        } ${isOpen ? 'border-accent shadow-[0_0_15px_rgba(79,124,255,0.25)]' : ''}`}
+      >
+        <div className="flex items-center gap-3 min-w-0 pr-2 pl-1">
+          {Icon && <Icon size={16} className={`shrink-0 ${isOpen ? 'text-accent' : 'text-text-mute'}`} />}
+          <span className={`text-sm font-medium truncate ${selectedOption ? 'text-text font-semibold' : 'text-text-mute'}`}>
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+        </div>
+        <Icons.IconChevronDown size={15} className={`text-text-mute transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-accent' : ''}`} />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && !disabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 right-0 mt-2 rounded-xl border border-white/10 shadow-2xl z-[300] overflow-hidden"
+            style={{
+              background: '#0B1220',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(79, 124, 255, 0.25)'
+            }}
+          >
+            {searchable && (
+              <div className="p-3 border-b border-white/10 bg-[#0F172A]">
+                <div className="relative flex items-center">
+                  <Icons.IconSearch size={15} className="absolute left-3 text-text-mute pointer-events-none" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search options..."
+                    className="w-full bg-[#1E293B] text-white text-sm font-medium pl-9 pr-8 py-2.5 rounded-lg border border-white/10 focus:border-accent focus:outline-none placeholder:text-text-mute"
+                    autoFocus
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="absolute right-2.5 text-text-mute hover:text-white text-xs focus:outline-none bg-white/5 hover:bg-white/10 rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="max-h-60 overflow-y-auto p-2 custom-scrollbar text-xs sm:text-sm">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                      setSearch('');
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-between my-0.5 ${
+                      String(value) === String(opt.value) ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {String(value) === String(opt.value) && <Icons.IconCheck size={16} className="shrink-0" />}
+                  </button>
+                ))
+              ) : (
+                <div className="py-6 text-center text-text-mute text-xs sm:text-sm">
+                  No options matching "{search}"
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const dateInputRef = React.useRef(null);
@@ -71,7 +193,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
         const { data } = await supabase.from(table).select('*').eq('id', authUser.id).maybeSingle();
 
         if (data) {
-          if (data.phone) setPhone(data.phone);
+          if (data.phone) setPhone(data.phone.replace(/^\+?60/, '').replace(/^0+/, ''));
           if (data.nationality) setNationality(data.nationality);
           if (data.dob) setDob(data.dob);
           if (data.gender) setGender(data.gender);
@@ -158,11 +280,15 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   const handleNext = async () => {
     setError(null);
     if (step === 2) {
-      if (!phone || !phone.startsWith('+60') || !dob || !gender) return setError('Check phone (+60), DOB, and Gender.');
+      const cleanDigits = phone ? phone.toString().replace(/^\+?60/, '').replace(/^0+/, '').replace(/\D/g, '') : '';
+      const fullPhone = `+60${cleanDigits}`;
+      if (!isValidMalaysianPhone(fullPhone) || !isValidStudentDateOfBirth(dob) || !gender) {
+        return setError('Enter a valid Malaysian phone number, date of birth (ages 16-100), and gender.');
+      }
       setLoading(true);
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        const profileData = { id: authUser.id, phone, nationality, dob: dob || null, gender, address, oku_status: 'None' };
+        const profileData = { id: authUser.id, phone: fullPhone, nationality, dob: dob || null, gender, address, oku_status: 'None' };
         
         await supabase.from('profiles').upsert({ id: authUser.id, role: 'student', full_name: user.name });
         
@@ -208,6 +334,9 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
     setError(null);
     if (!matric || !faculty || !programme || !yearOfStudy || !semester || !preferredLocation) {
       return setError('All academic and preference fields are required.');
+    }
+    if (!isValidMatric(matric)) {
+      return setError('Matric number must be in format B032320119.');
     }
     setLoading(true);
     try {
@@ -471,13 +600,27 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                  {step === 2 && (
                    <motion.div key="step2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                       <div className="input-group">
-                         <label className="input-label">Phone (+60) *</label>
-                         <div className="ob-input-wrap">
-                           <div className="input-icon"><Icons.IconPhone size={16} /></div>
-                           <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+60123456789" />
-                         </div>
-                       </div>
+                        <div className="input-group">
+                          <label className="input-label">Phone Number *</label>
+                          <div className="ob-input-wrap relative flex items-center">
+                            <div className="input-icon"><Icons.IconPhone size={16} /></div>
+                            <div className="absolute left-10 flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs font-bold text-accent select-none pointer-events-none">
+                              <span>🇲🇾</span>
+                              <span>+60</span>
+                            </div>
+                            <input 
+                              type="tel" 
+                              value={phone} 
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/^\+?60/, '').replace(/^0+/, '').replace(/\D/g, '');
+                                setPhone(val);
+                              }} 
+                              placeholder="123456789" 
+                              maxLength={9}
+                              className="pl-[105px]"
+                            />
+                          </div>
+                        </div>
                        <div className="input-group">
                          <label className="input-label">Date of Birth *</label>
                          <div className="ob-input-wrap">
@@ -497,26 +640,25 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                            />
                          </div>
                        </div>
-                       <div className="input-group">
-                         <label className="input-label">Nationality</label>
-                         <div className="ob-input-wrap">
-                           <Icons.IconMapPin size={16} className="input-icon" />
-                           <select value={nationality} onChange={(e) => setNationality(e.target.value)}>
-                             <option value="Malaysian">Malaysian</option>
-                             <option value="Non-Malaysian">Non-Malaysian</option>
-                           </select>
-                         </div>
-                       </div>
-                       <div className="input-group">
+                        <div className="input-group">
+                          <label className="input-label">Nationality</label>
+                          <CustomOnboardingSelect
+                            icon={Icons.IconMapPin}
+                            value={nationality}
+                            onChange={setNationality}
+                            options={['Malaysian', 'Non-Malaysian']}
+                            placeholder="Select Nationality"
+                          />
+                        </div>
+                        <div className="input-group">
                           <label className="input-label">Gender *</label>
-                          <div className="ob-input-wrap">
-                            <div className="input-icon"><Icons.IconUser size={16} /></div>
-                            <select value={gender} onChange={(e) => setGender(e.target.value)}>
-                              <option value="">Select</option>
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                            </select>
-                          </div>
+                          <CustomOnboardingSelect
+                            icon={Icons.IconUser}
+                            value={gender}
+                            onChange={setGender}
+                            options={['Male', 'Female']}
+                            placeholder="Select Gender"
+                          />
                         </div>
                      </div>
                    </motion.div>
@@ -531,64 +673,67 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                              <label className="input-label">Matric Number *</label>
                              <div className="ob-input-wrap">
                                <Icons.IconCap size={16} className="input-icon" />
-                               <input type="text" value={matric} onChange={(e) => setMatric(e.target.value.toUpperCase())} placeholder="B03..." />
-                             </div>
+                                <input type="text" value={matric} onChange={(e) => setMatric(matricInputValue(e.target.value))} placeholder="B032320119" inputMode="text" maxLength={10} aria-describedby="matric-format" />
+                              </div>
+                              <p id="matric-format" className="mt-2 text-xs text-text-mute">Use B followed by 9 digits, for example B032320119.</p>
                            </div>
                            <div className="input-group">
-                             <label className="input-label">Faculty *</label>
-                             <div className="ob-input-wrap">
-                               <Icons.IconBriefcase size={16} className="input-icon" />
-                               <select value={faculty} onChange={(e) => { setFaculty(e.target.value); setProgramme(''); }}>
-                                 <option value="">Select</option>
-                                 {Object.keys(faculties).map(f => <option key={f} value={f}>{f}</option>)}
-                               </select>
-                             </div>
-                           </div>
-                           <div className="input-group sm:col-span-2">
-                             <label className="input-label">Programme *</label>
-                             <div className="ob-input-wrap">
-                               <Icons.IconBook size={16} className="input-icon" />
-                               <select value={programme} onChange={(e) => setProgramme(e.target.value)} disabled={!faculty}>
-                                 <option value="">Select</option>
-                                 {faculty && faculties[faculty].map(p => <option key={p} value={p}>{p}</option>)}
-                               </select>
-                             </div>
-                           </div>
-                           <div className="input-group">
-                             <label className="input-label">Year of Study *</label>
-                             <div className="ob-input-wrap">
-                               <Icons.IconCalendar size={16} className="input-icon" />
-                               <select value={yearOfStudy} onChange={(e) => setYearOfStudy(e.target.value)}>
-                                 <option value="">Select</option>
-                                 <option value="1">1</option>
-                                 <option value="2">2</option>
-                                 <option value="3">3</option>
-                                 <option value="4">4</option>
-                               </select>
-                             </div>
-                           </div>
-                           <div className="input-group">
-                             <label className="input-label">Semester *</label>
-                             <div className="ob-input-wrap">
-                               <Icons.IconClock size={16} className="input-icon" />
-                               <select value={semester} onChange={(e) => setSemester(e.target.value)}>
-                                 <option value="">Select</option>
-                                 <option value="1">1</option>
-                                 <option value="2">2</option>
-                                 <option value="3">Short</option>
-                               </select>
-                             </div>
-                           </div>
-                           <div className="input-group">
-                             <label className="input-label">Preferred Location *</label>
-                             <div className="ob-input-wrap">
-                               <Icons.IconMapPin size={16} className="input-icon" />
-                               <select value={preferredLocation} onChange={(e) => setPreferredLocation(e.target.value)}>
-                                 <option value="">Select Location</option>
-                                 {malaysianStates.map(st => <option key={st} value={st}>{st}</option>)}
-                               </select>
-                             </div>
-                           </div>
+                              <label className="input-label">Faculty *</label>
+                              <CustomOnboardingSelect
+                                icon={Icons.IconBriefcase}
+                                value={faculty}
+                                onChange={(val) => { setFaculty(val); setProgramme(''); }}
+                                options={Object.keys(faculties)}
+                                placeholder="Select Faculty"
+                              />
+                            </div>
+                            <div className="input-group sm:col-span-2">
+                              <label className="input-label">Programme *</label>
+                              <CustomOnboardingSelect
+                                icon={Icons.IconBook}
+                                value={programme}
+                                onChange={setProgramme}
+                                options={faculty ? faculties[faculty] : []}
+                                placeholder={faculty ? "Select Programme" : "Select Faculty first"}
+                                disabled={!faculty}
+                                searchable={true}
+                              />
+                            </div>
+                            <div className="input-group">
+                              <label className="input-label">Year of Study *</label>
+                              <CustomOnboardingSelect
+                                icon={Icons.IconCalendar}
+                                value={yearOfStudy}
+                                onChange={setYearOfStudy}
+                                options={['1', '2', '3', '4']}
+                                placeholder="Select Year"
+                              />
+                            </div>
+                            <div className="input-group">
+                              <label className="input-label">Semester *</label>
+                              <CustomOnboardingSelect
+                                icon={Icons.IconClock}
+                                value={semester}
+                                onChange={setSemester}
+                                options={[
+                                  { value: '1', label: '1' },
+                                  { value: '2', label: '2' },
+                                  { value: '3', label: 'Short' }
+                                ]}
+                                placeholder="Select Semester"
+                              />
+                            </div>
+                            <div className="input-group sm:col-span-2">
+                              <label className="input-label">Preferred Location *</label>
+                              <CustomOnboardingSelect
+                                icon={Icons.IconMapPin}
+                                value={preferredLocation}
+                                onChange={setPreferredLocation}
+                                options={malaysianStates}
+                                placeholder="Select Location"
+                                searchable={true}
+                              />
+                            </div>
                          </div>
                          
                          <div className="input-group mt-2">
@@ -637,15 +782,15 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                            </div>
                          </div>
                          <div className="input-group">
-                           <label className="input-label">Faculty / Department *</label>
-                           <div className="ob-input-wrap">
-                              <Icons.IconBriefcase size={16} className="input-icon" />
-                              <select value={faculty} onChange={(e) => setFaculty(e.target.value)}>
-                                <option value="">Select</option>
-                                {Object.keys(faculties).map(f => <option key={f} value={f}>{f}</option>)}
-                              </select>
-                           </div>
-                         </div>
+                            <label className="input-label">Faculty / Department *</label>
+                            <CustomOnboardingSelect
+                              icon={Icons.IconBriefcase}
+                              value={faculty}
+                              onChange={setFaculty}
+                              options={Object.keys(faculties)}
+                              placeholder="Select Faculty / Department"
+                            />
+                          </div>
                        </div>
                      )}
                    </motion.div>

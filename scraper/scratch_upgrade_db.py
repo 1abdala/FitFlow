@@ -2,8 +2,10 @@ import os
 from supabase import create_client, Client
 from scraper import extract_skills
 
-url = "https://frsxpsgshyksykouzbfh.supabase.co"
-key = os.environ.get("SUPABASE_SERVICE_KEY", "sb_secret_QioAJdvG_D3ejbfMosI-kg_mZNslB-Y")
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_SERVICE_KEY")
+if not url or not key:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in the environment.")
 supabase: Client = create_client(url, key)
 
 def upgrade_database():

@@ -186,7 +186,11 @@ const Topbar = ({
   showDropdown = false, 
   setShowDropdown, 
   onNotificationClick, 
-  onClearAll 
+  onClearAll,
+  searchQuery = '',
+  setSearchQuery,
+  activeTab,
+  setActiveTab
 }) => (
   <div className="topbar">
     <div className="topbar-left">
@@ -202,8 +206,30 @@ const Topbar = ({
     <div className="topbar-right">
       <div className="search select-none">
         <Icons.IconSearch size={16} />
-        <input placeholder="Search internships, skills, companies…" />
-        <span className="kbd">⌘K</span>
+        <input 
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            if (setSearchQuery) {
+              setSearchQuery(e.target.value);
+              if (e.target.value.trim() && activeTab !== 'matches' && activeTab !== 'overview') {
+                setActiveTab('matches');
+              }
+            }
+          }}
+          placeholder="Search internships, skills, companies…" 
+        />
+        {searchQuery ? (
+          <button 
+            onClick={() => setSearchQuery && setSearchQuery('')}
+            className="text-text-mute hover:text-text text-xs ml-1 focus:outline-none"
+            title="Clear search"
+          >
+            ✕
+          </button>
+        ) : (
+          <span className="kbd">⌘K</span>
+        )}
       </div>
       
       <div className="relative">
@@ -648,6 +674,283 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
   );
 };
 
+const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availableLocations = [] }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const popularStates = ['Kuala Lumpur', 'Selangor', 'Penang', 'Johor', 'Kedah', 'Perak', 'Melaka', 'Sarawak', 'Sabah'];
+
+  const filteredLocations = availableLocations.filter(loc => 
+    loc.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredStates = popularStates.filter(st =>
+    st.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative inline-block text-left" ref={popoverRef}>
+      <div className="flex items-center gap-2">
+        <span className="m-sort-lbl">Location</span>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="location-filter-btn flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        >
+          <span className="flex items-center gap-1.5 truncate max-w-[140px]">
+            <Icons.IconMapPin size={13} className="text-accent shrink-0" />
+            {selectedLocation === 'All' ? 'All Locations' : selectedLocation}
+          </span>
+          <Icons.IconChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-64 rounded-xl border border-white/10 shadow-2xl z-[300] overflow-hidden"
+            style={{
+              background: '#0B1220',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(79, 124, 255, 0.2)'
+            }}
+          >
+            {/* Search Input Box inside location popover */}
+            <div className="p-2.5 border-b border-white/10 bg-[#0F172A]">
+              <div className="relative flex items-center">
+                <Icons.IconSearch size={14} className="absolute left-2.5 text-text-mute pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search location..."
+                  className="w-full bg-[#1E293B] text-white text-xs font-medium pl-8 pr-7 py-1.5 rounded-md border border-white/10 focus:border-accent focus:outline-none placeholder:text-text-mute"
+                  autoFocus
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 text-text-mute hover:text-white text-xs focus:outline-none"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Location Items List */}
+            <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLocation('All');
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                  selectedLocation === 'All' ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                }`}
+              >
+                <span>🌐 All Locations</span>
+                {selectedLocation === 'All' && <Icons.IconCheck size={14} />}
+              </button>
+
+              {filteredStates.length > 0 && (
+                <div className="mt-2">
+                  <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-accent-2 uppercase">
+                    Popular Regions
+                  </div>
+                  {filteredStates.map(state => (
+                    <button
+                      key={state}
+                      type="button"
+                      onClick={() => {
+                        setSelectedLocation(state);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                        selectedLocation === state ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                      }`}
+                    >
+                      <span>📍 {state}</span>
+                      {selectedLocation === state && <Icons.IconCheck size={14} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {filteredLocations.length > 0 && (
+                <div className="mt-2">
+                  <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-text-mute uppercase">
+                    Specific Postings ({filteredLocations.length})
+                  </div>
+                  {filteredLocations.map(loc => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => {
+                        setSelectedLocation(loc);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                        selectedLocation === loc ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="truncate pr-2">{loc}</span>
+                      {selectedLocation === loc && <Icons.IconCheck size={14} className="shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {filteredStates.length === 0 && filteredLocations.length === 0 && (
+                <div className="py-6 text-center text-text-mute text-xs">
+                  No locations matching "{search}"
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categories = CAREER_INTERESTS }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCategories = categories.filter(cat =>
+    cat.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative inline-block text-left" ref={popoverRef}>
+      <div className="flex items-center gap-2">
+        <span className="m-sort-lbl">Category</span>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="location-filter-btn flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        >
+          <span className="flex items-center gap-1.5 truncate max-w-[150px]">
+            <Icons.IconBriefcase size={13} className="text-accent shrink-0" />
+            {selectedCategory === 'All' ? 'All Categories' : selectedCategory}
+          </span>
+          <Icons.IconChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-64 rounded-xl border border-white/10 shadow-2xl z-[300] overflow-hidden"
+            style={{
+              background: '#0B1220',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(79, 124, 255, 0.2)'
+            }}
+          >
+            {/* Search Input Box inside Category Popover */}
+            <div className="p-2.5 border-b border-white/10 bg-[#0F172A]">
+              <div className="relative flex items-center">
+                <Icons.IconSearch size={14} className="absolute left-2.5 text-text-mute pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search category..."
+                  className="w-full bg-[#1E293B] text-white text-xs font-medium pl-8 pr-7 py-1.5 rounded-md border border-white/10 focus:border-accent focus:outline-none placeholder:text-text-mute"
+                  autoFocus
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 text-text-mute hover:text-white text-xs focus:outline-none"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Category Options List */}
+            <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('All');
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                  selectedCategory === 'All' ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                }`}
+              >
+                <span>🚀 All Categories</span>
+                {selectedCategory === 'All' && <Icons.IconCheck size={14} />}
+              </button>
+
+              <div className="mt-1">
+                {filteredCategories.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(cat);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                      selectedCategory === cat ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="truncate pr-2">{cat}</span>
+                    {selectedCategory === cat && <Icons.IconCheck size={14} className="shrink-0" />}
+                  </button>
+                ))}
+              </div>
+
+              {filteredCategories.length === 0 && (
+                <div className="py-6 text-center text-text-mute text-xs">
+                  No categories matching "{search}"
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -656,6 +959,7 @@ const Dashboard = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -668,6 +972,7 @@ const Dashboard = () => {
   const [matchFilter, setMatchFilter] = useState('all');
   const [sortBy, setSortBy] = useState('Best match');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedLocation, setSelectedLocation] = useState('All');
   const [showPreferredOnly, setShowPreferredOnly] = useState(false);
   const prevPreferredRolesRef = useRef();
 
@@ -885,52 +1190,59 @@ const Dashboard = () => {
 
       await fetchNotifications();
 
-      channel = supabase
-        .channel(`notifications-user-${session.user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `student_id=eq.${session.user.id}`
-          },
-          async (payload) => {
-            const newNotif = payload.new;
-            let internship = null;
+      const channelName = `notifications-user-${session.user.id}`;
+      const existingChannel = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`);
+      if (existingChannel) {
+        await supabase.removeChannel(existingChannel);
+      }
 
-            if (newNotif.action_target && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newNotif.action_target)) {
-              const { data } = await supabase
-                .from('internships')
-                .select('id, title, company_name, company_logo_url')
-                .eq('id', newNotif.action_target)
-                .single();
-              if (data) internship = data;
-            }
+      channel = supabase.channel(channelName);
 
-            const enrichedNotif = {
-              ...newNotif,
-              internship,
-              timeString: 'Just now'
-            };
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `student_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          const newNotif = payload.new;
+          let internship = null;
 
-            setNotifications(prev => [enrichedNotif, ...prev.slice(0, 9)]);
-            setUnreadCount(prev => prev + 1);
-
-            let toastIcon = '🔔';
-            if (newNotif.type === 'match' || newNotif.type === 'match_score_improved') toastIcon = '🎯';
-            else if (newNotif.type === 'internship') toastIcon = '💼';
-            else if (newNotif.type === 'application') toastIcon = '📊';
-            else if (newNotif.type === 'cv') toastIcon = '📄';
-
-            toast(newNotif.title, {
-              icon: toastIcon,
-              duration: 5000,
-              id: newNotif.id
-            });
+          if (newNotif.action_target && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newNotif.action_target)) {
+            const { data } = await supabase
+              .from('internships')
+              .select('id, title, company_name, company_logo_url')
+              .eq('id', newNotif.action_target)
+              .single();
+            if (data) internship = data;
           }
-        )
-        .subscribe();
+
+          const enrichedNotif = {
+            ...newNotif,
+            internship,
+            timeString: 'Just now'
+          };
+
+          setNotifications(prev => [enrichedNotif, ...prev.slice(0, 9)]);
+          setUnreadCount(prev => prev + 1);
+
+          let toastIcon = '🔔';
+          if (newNotif.type === 'match' || newNotif.type === 'match_score_improved') toastIcon = '🎯';
+          else if (newNotif.type === 'internship') toastIcon = '💼';
+          else if (newNotif.type === 'application') toastIcon = '📊';
+          else if (newNotif.type === 'cv') toastIcon = '📄';
+
+          toast(newNotif.title, {
+            icon: toastIcon,
+            duration: 5000,
+            id: newNotif.id
+          });
+        }
+      );
+
+      channel.subscribe();
     };
 
     setupNotifications();
@@ -959,7 +1271,7 @@ const Dashboard = () => {
         `)
         .eq('student_id', authUser.id)
         .order('match_score', { ascending: false })
-        .limit(50);
+        .limit(200);
 
       if (matchesErr) {
         setMatches([{ id: 'error', match_score: 0, internships: { title: "Error", company_name: matchesErr.message } }]);
@@ -1095,8 +1407,39 @@ const Dashboard = () => {
     return found?.stage || null;
   }, [trackerApps]);
 
+  const availableLocations = useMemo(() => {
+    const locs = new Set();
+    matches.forEach(m => {
+      const l = m.internships?.location;
+      if (l) locs.add(l.trim());
+    });
+    return Array.from(locs).sort();
+  }, [matches]);
+
   const processedMatches = useMemo(() => {
     let result = matches.filter(m => {
+      // Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const title = m.internships?.title?.toLowerCase() || '';
+        const company = m.internships?.company_name?.toLowerCase() || '';
+        const location = m.internships?.location?.toLowerCase() || '';
+        const category = m.internships?.category?.toLowerCase() || '';
+        const skills = m.internships?.internship_skills?.map(s => s.skills?.name?.toLowerCase()).join(' ') || '';
+
+        const matchesSearch = title.includes(q) || company.includes(q) || location.includes(q) || category.includes(q) || skills.includes(q);
+        if (!matchesSearch) return false;
+      }
+
+      // Location Filter
+      if (selectedLocation !== 'All') {
+        const loc = m.internships?.location?.toLowerCase() || '';
+        const target = selectedLocation.toLowerCase();
+        if (!loc.includes(target)) {
+          return false;
+        }
+      }
+
       // Category Filter
       if (selectedCategory !== 'All') {
         const jobCat = m.internships?.category;
@@ -1142,7 +1485,7 @@ const Dashboard = () => {
       result = [...result].sort((a, b) => extractStipend(b.internships?.description) - extractStipend(a.internships?.description));
     }
     return result;
-  }, [matches, selectedCategory, matchFilter, sortBy, getApplicationStatus, showPreferredOnly, user?.preferred_roles]);
+  }, [matches, searchQuery, selectedLocation, selectedCategory, matchFilter, sortBy, getApplicationStatus, showPreferredOnly, user?.preferred_roles]);
 
   const processedAvgScore = useMemo(() => {
     if (processedMatches.length === 0) return 0;
@@ -1152,6 +1495,28 @@ const Dashboard = () => {
 
   const countByFilter = (f) => {
     return matches.filter(m => {
+      // Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const title = m.internships?.title?.toLowerCase() || '';
+        const company = m.internships?.company_name?.toLowerCase() || '';
+        const location = m.internships?.location?.toLowerCase() || '';
+        const category = m.internships?.category?.toLowerCase() || '';
+        const skills = m.internships?.internship_skills?.map(s => s.skills?.name?.toLowerCase()).join(' ') || '';
+
+        const matchesSearch = title.includes(q) || company.includes(q) || location.includes(q) || category.includes(q) || skills.includes(q);
+        if (!matchesSearch) return false;
+      }
+
+      // Location Filter
+      if (selectedLocation !== 'All') {
+        const loc = m.internships?.location?.toLowerCase() || '';
+        const target = selectedLocation.toLowerCase();
+        if (!loc.includes(target)) {
+          return false;
+        }
+      }
+
       // Category Filter
       if (selectedCategory !== 'All') {
         const jobCat = m.internships?.category;
@@ -1231,6 +1596,10 @@ const Dashboard = () => {
           setShowDropdown={setShowNotifDropdown}
           onNotificationClick={handleNotificationClick}
           onClearAll={handleClearAll}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
         <div className="main-scroll custom-scrollbar">
           
@@ -1444,20 +1813,17 @@ const Dashboard = () => {
                   ))}
                 </div>
                 
-                <div className="m-sort flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="m-sort-lbl">Category</span>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="category-filter-select"
-                    >
-                      <option value="All">All Categories</option>
-                      {CAREER_INTERESTS.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="m-sort flex items-center gap-4 flex-wrap">
+                  <LocationFilterPopover 
+                    selectedLocation={selectedLocation} 
+                    setSelectedLocation={setSelectedLocation} 
+                    availableLocations={availableLocations} 
+                  />
+
+                  <CategoryFilterPopover 
+                    selectedCategory={selectedCategory} 
+                    setSelectedCategory={setSelectedCategory} 
+                  />
 
                   <div className="flex items-center gap-2">
                     <span className="m-sort-lbl">Sort by</span>

@@ -18,7 +18,16 @@ SEARCH_QUERIES = [
     "software intern",
     "IT intern",
     "data intern",
-    "tech intern"
+    "tech intern",
+    "cybersecurity intern",
+    "security intern",
+    "network intern",
+    "cloud intern",
+    "devops intern",
+    "web intern",
+    "UI UX intern",
+    "QA intern",
+    "systems analyst intern"
 ]
 
 
@@ -176,11 +185,16 @@ def scrape_linkedin_internships() -> list[dict]:
 
             if url in seen_urls:
                 continue
-            if "intern" not in title_lower:
+            
+            # Reject senior/executive management roles
+            if any(s in title_lower for s in ["senior", "lead", "principal", "head of", "director", "manager", "architect", "vp ", "chief"]):
+                print(f"    [SKIP – senior/manager role] {job['title']}")
                 continue
+
             if not _TECH_TITLE_RE.search(title_lower):
                 print(f"    [SKIP – non-tech] {job['title']}")
                 continue
+
             if any(kw in title_lower for kw in NON_TECH_ANTI_KEYWORDS):
                 print(f"    [SKIP – blocked domain] {job['title']}")
                 continue

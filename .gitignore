@@ -39,3 +39,9 @@ scraper/dump.html
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files & installers
+~$*
+*.tmp
+*.msi
+

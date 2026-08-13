@@ -2,7 +2,9 @@ import os
 from supabase import create_client, Client
 
 url = "https://frsxpsgshyksykouzbfh.supabase.co"
-key = os.environ.get("SUPABASE_SERVICE_KEY", "sb_secret_QioAJdvG_D3ejbfMosI-kg_mZNslB-Y")
+key = os.environ.get("SUPABASE_SERVICE_KEY")
+if not key:
+    raise RuntimeError("Missing SUPABASE_SERVICE_KEY environment variable.")
 supabase: Client = create_client(url, key)
 
 def check_db():

@@ -3212,7 +3212,7 @@
   color: var(--text-dim);
 }
 
-.input-wrap input, .input-wrap select {
+.input-wrap input {
   width: 100%;
   padding: 12px 14px 12px 42px;
   background: var(--surface);
@@ -3224,10 +3224,38 @@
   appearance: none;
 }
 
+.input-wrap select {
+  width: 100%;
+  padding: 12px 38px 12px 42px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: #F8FAFC;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 16px !important;
+}
+
 .input-wrap input:focus, .input-wrap select:focus {
   border-color: var(--accent);
-  background: var(--surface-2);
+  background-color: var(--surface-2);
   outline: none;
+}
+
+.input-wrap select option,
+.input-wrap select optgroup {
+  background-color: #0B1220 !important;
+  color: #F8FAFC !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
 }
 
 .pass-strength {
@@ -3376,13 +3404,23 @@
 
 .ob-input-wrap input, .ob-input-wrap select {
   width: 100%;
-  padding: 14px 16px 14px 44px;
+  padding: 14px 40px 14px 44px;
   background: transparent;
   border: none;
-  color: var(--text);
+  color: #F8FAFC;
   font-size: 14px;
+  font-weight: 500;
   outline: none;
   appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.ob-input-wrap select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 16px !important;
 }
 
 .ob-input-wrap input[type="date"]::-webkit-calendar-picker-indicator {
@@ -3390,9 +3428,13 @@
   -webkit-appearance: none !important;
 }
 
-.ob-input-wrap select option {
-  background: var(--surface);
-  color: var(--text);
+.ob-input-wrap select option,
+.ob-input-wrap select optgroup {
+  background-color: #0B1220 !important;
+  color: #F8FAFC !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
 }
 
 .ob-input-wrap .input-icon {
@@ -3805,7 +3847,37 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-.category-filter-select option {
-  background: var(--surface-2);
+/* Universal High-Contrast Drop List Options for all selects across the entire system */
+select option,
+select optgroup {
+  background-color: #0B1220 !important;
+  color: #F8FAFC !important;
+  font-weight: 500 !important;
+  padding: 10px 14px !important;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: #1E293B !important;
+  color: #4F7CFF !important;
+}
+
+.category-filter-select option,
+.category-filter-select optgroup {
+  background-color: #0B1220 !important;
+  color: #F8FAFC !important;
+  font-weight: 500;
+  padding: 8px 12px;
+}
+
+.location-filter-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text);
+}
+
+.location-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(79, 124, 255, 0.4);
 }

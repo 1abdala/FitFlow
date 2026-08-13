@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { checkAndNotifyMatchChanges } from '../lib/notificationService';
 import { getProfileStatus } from '../lib/profileHelpers';
+import { isValidMalaysianPhone, isValidMatric, isValidStudentDateOfBirth, matricInputValue } from '../lib/profileValidation';
 import * as Icons from './Icons';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -166,7 +167,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
   // Form states - Personal Info
   const [fullName, setFullName] = useState(user?.full_name || user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [phone, setPhone] = useState(() => (user?.phone || '').replace(/^\+?60/, '').replace(/^0+/, ''));
   const [dob, setDob] = useState(user?.dob || '');
   const [gender, setGender] = useState(user?.gender || '');
   const [nationality, setNationality] = useState(user?.nationality || 'Malaysian');
@@ -271,7 +272,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   useEffect(() => {
     if (user) {
       setFullName(user.full_name || user.name || '');
-      setPhone(user.phone || '');
+      setPhone((user.phone || '').replace(/^\+?60/, '').replace(/^0+/, ''));
       setDob(user.dob || '');
       setGender(user.gender || '');
       setNationality(user.nationality || 'Malaysian');
@@ -457,6 +458,20 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   // Save profile information
   const handleSaveProfile = async (e) => {
     if (e) e.preventDefault();
+    if (!isValidMatric(matric)) {
+      toast.error('Matric number must be in format B032320119.');
+      return;
+    }
+    const cleanPhoneDigits = phone ? phone.toString().replace(/^\+?60/, '').replace(/^0+/, '').replace(/\D/g, '') : '';
+    const formattedPhone = cleanPhoneDigits ? `+60${cleanPhoneDigits}` : '';
+    if (!isValidMalaysianPhone(formattedPhone)) {
+      toast.error('Enter a valid Malaysian phone number.');
+      return;
+    }
+    if (!isValidStudentDateOfBirth(dob)) {
+      toast.error('Date of birth must correspond to an age between 16 and 100.');
+      return;
+    }
     setSavingProfile(true);
 
     try {
@@ -485,12 +500,11 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
       // Persist profile_completed status on save
       const isProfileComplete = profileStatus.completed;
-
       const { error: subErr } = await supabase
         .from(subTable)
         .upsert({
           id: user.id,
-          phone,
+          phone: formattedPhone,
           nationality,
           dob: dob || null,
           gender,
@@ -689,13 +703,24 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
               </SettingsField>
 
               <SettingsField label="Phone Number" icon={Icons.IconPhone}>
-                <input 
-                  type="text" 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+601XXXXXXXX"
-                  required
-                />
+                <div className="flex items-center w-full relative">
+                  <div className="absolute left-11 flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs font-bold text-accent select-none pointer-events-none">
+                    <span>🇲🇾</span>
+                    <span>+60</span>
+                  </div>
+                  <input 
+                    type="tel" 
+                    value={phone}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/^\+?60/, '').replace(/^0+/, '').replace(/\D/g, '');
+                      setPhone(val);
+                    }}
+                    placeholder="123456789"
+                    maxLength={9}
+                    required
+                    className="pl-[105px]"
+                  />
+                </div>
               </SettingsField>
 
               <SettingsField 
@@ -753,10 +778,13 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                     <input 
                       type="text" 
                       value={matric}
-                      onChange={(e) => setMatric(e.target.value)}
-                      placeholder="B03XXXXXXXX"
+                      onChange={(e) => setMatric(matricInputValue(e.target.value))}
+                      placeholder="B032320119"
+                      maxLength={10}
+                      aria-describedby="settings-matric-format"
                       required
                     />
+                    <p id="settings-matric-format" className="mt-2 text-xs text-text-mute">B followed by 9 digits.</p>
                   </SettingsField>
 
                   <SettingsField label="Faculty" icon={Icons.IconBriefcase}>

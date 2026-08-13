@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from google import genai
@@ -39,8 +39,8 @@ def get_user_id_from_token(auth_header: str, supabase_client: Client) -> str:
         if not user_resp or not user_resp.user:
             raise HTTPException(status_code=401, detail="Invalid token")
         return user_resp.user.id
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
 app.add_middleware(
@@ -233,7 +233,7 @@ async def get_summary(request: Request, internship_id: str):
         raise
     except Exception as e:
         print(f"DEBUG: EXCEPTION: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unable to generate internship summary")
 
 
 @app.post("/analyze-cv")
@@ -254,17 +254,26 @@ async def analyze_cv(request: Request, student_id: str = Form(...), file: Upload
     token = auth_header.replace("Bearer ", "")
     supabase.postgrest.auth(token)
 
-    if not file.filename.lower().endswith(".pdf"):
+    if not file.filename or not file.filename.lower().endswith(".pdf") or file.content_type not in {"application/pdf", "application/x-pdf"}:
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-    # Enforce file size limit (5MB)
-    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    MAX_FILE_SIZE = 10 * 1024 * 1024
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_FILE_SIZE + 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File size exceeds the 10MB limit.")
 
     # Parse PDF
     try:
-        content = await file.read()
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=413, detail="File size exceeds the 5MB limit.")
+        chunks = []
+        total_size = 0
+        while chunk := await file.read(1024 * 1024):
+            total_size += len(chunk)
+            if total_size > MAX_FILE_SIZE:
+                raise HTTPException(status_code=413, detail="File size exceeds the 10MB limit.")
+            chunks.append(chunk)
+        content = b"".join(chunks)
+        if not content.startswith(b"%PDF-"):
+            raise HTTPException(status_code=400, detail="The uploaded file is not a valid PDF.")
         pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
         text = ""
         for page in pdf_reader.pages:
@@ -371,17 +380,18 @@ SYSTEM_INTERVIEWER = (
 
 class CreateSessionRequest(BaseModel):
     internship_id: Optional[str] = None
-    custom_role: Optional[str] = None
-    max_questions: Optional[int] = 3
-    interview_type: str
-    difficulty: str
+    custom_role: Optional[str] = Field(default=None, max_length=100)
+    max_questions: int = Field(default=3, ge=1, le=10)
+    interview_type: str = Field(min_length=1, max_length=50)
+    difficulty: str = Field(min_length=1, max_length=30)
 
 
 class SubmitAnswerRequest(BaseModel):
-    answer: str
+    answer: str = Field(min_length=1, max_length=5000)
 
 
 @app.post("/interviews/session/create")
+@limiter.limit("10/minute")
 async def create_interview_session(req: CreateSessionRequest, request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase or not (gemini_client or OPENAI_KEY):
@@ -447,7 +457,7 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
             raise HTTPException(status_code=500, detail="Failed to create session record")
         session = sess_res.data[0]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Unable to create interview session")
 
     # 4. Generate first question using Gemini
     init_prompt = f"Welcome the candidate and start the internship interview. Candidate: {student_name}\n"
@@ -521,6 +531,7 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
 
 
 @app.post("/interviews/session/{session_id}/question")
+@limiter.limit("20/minute")
 async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase or not (gemini_client or OPENAI_KEY):
@@ -658,6 +669,7 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Requ
 
 
 @app.post("/interviews/session/{session_id}/evaluate")
+@limiter.limit("5/minute")
 async def evaluate_session(session_id: str, request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase or not (gemini_client or OPENAI_KEY):
@@ -862,10 +874,13 @@ async def evaluate_session(session_id: str, request: Request):
     b_data = analysis.get("behavioral", {})
     f_data = analysis.get("confidence", {})
 
-    t_score = float(t_data.get("score", 60) if isinstance(t_data.get("score"), (int, float)) else 60)
-    c_score = float(c_data.get("score", 70) if isinstance(c_data.get("score"), (int, float)) else 70)
-    b_score = float(b_data.get("score", 65) if isinstance(b_data.get("score"), (int, float)) else 65)
-    f_score = float(f_data.get("score", 60) if isinstance(f_data.get("score"), (int, float)) else 60)
+    def score_in_range(value, fallback):
+        return max(0, min(100, float(value) if isinstance(value, (int, float)) else fallback))
+
+    t_score = score_in_range(t_data.get("score"), 60)
+    c_score = score_in_range(c_data.get("score"), 70)
+    b_score = score_in_range(b_data.get("score"), 65)
+    f_score = score_in_range(f_data.get("score"), 60)
     
     # Calculate overall readiness score on backend using the formula:
     # 40% Technical + 25% Communication + 20% Behavioral + 15% Confidence
@@ -970,7 +985,7 @@ async def get_interview_sessions(request: Request):
             .execute()
         return sess_res.data or []
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unable to load interview sessions")
 
 
 @app.get("/interviews/analytics")
@@ -1042,7 +1057,7 @@ async def get_interview_analytics(request: Request):
             "common_weaknesses": common_weaknesses
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unable to load interview analytics")
 
 
 if __name__ == "__main__":

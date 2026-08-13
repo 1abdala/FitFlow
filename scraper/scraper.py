@@ -99,6 +99,8 @@ NON_TECH_ANTI_KEYWORDS = [
     'event management', 'event planning',
     # Retail
     'retail', 'merchandising',
+    # Physical / Non-IT Security
+    'security officer', 'security guard', 'warehouse security', 'hotel security', 'loss prevention', 'security control room', 'security executive',
     # Generic govt / non-specific programmes
     'teraju', 'yayasan',
 ]

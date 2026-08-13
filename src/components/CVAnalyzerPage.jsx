@@ -4,6 +4,8 @@ import { sendNotification } from '../lib/notificationService';
 import * as Icons from './Icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const MAX_CV_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 export const CVAnalyzerPage = ({ user, onUserUpdate }) => {
   const [file, setFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -37,8 +39,11 @@ export const CVAnalyzerPage = ({ user, onUserUpdate }) => {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const selected = e.target.files[0];
-      if (selected.type !== 'application/pdf') {
-        setError('Please upload a PDF file.');
+      if (selected.type !== 'application/pdf' || !selected.name.toLowerCase().endsWith('.pdf')) {
+        setError('Please upload a valid PDF file.');
+        setFile(null);
+      } else if (selected.size > MAX_CV_UPLOAD_BYTES) {
+        setError('PDF files must be 10 MB or smaller.');
         setFile(null);
       } else {
         setError('');
