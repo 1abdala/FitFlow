@@ -133,14 +133,20 @@ def generate_content_unified(contents, config=None):
             if system_instr:
                 messages.append({"role": "system", "content": system_instr})
             
-            user_content = contents
-            if not isinstance(user_content, str):
-                user_content = str(user_content)
-            messages.append({"role": "user", "content": user_content})
+            if isinstance(contents, list):
+                for item in contents:
+                    if isinstance(item, dict) and "role" in item and "content" in item:
+                        r = "assistant" if item["role"] in ["interviewer", "assistant"] else "user"
+                        messages.append({"role": r, "content": item["content"]})
+                    else:
+                        messages.append({"role": "user", "content": str(item)})
+            else:
+                messages.append({"role": "user", "content": str(contents)})
             
             payload = {
                 "model": model,
                 "messages": messages,
+                "temperature": 0.7
             }
             if is_json:
                 payload["response_format"] = {"type": "json_object"}
@@ -373,18 +379,14 @@ CV TEXT:
 
 
 SYSTEM_INTERVIEWER = (
-    "You are a professional HR and Technical Recruiter conducting a realistic internship interview. "
-    "Your goal is to assess the candidate's readiness for the specific target role and company. "
-    "Guidelines:\n"
-    "1. Tailor all questions to the specific internship role, company name, required skills, and responsibilities provided.\n"
-    "2. Ask technical questions focusing on programming concepts, tools, framework architectures, or specific domains relevant to the job description.\n"
-    "3. Ask company-specific or industry-specific situational questions based on the target company's business context.\n"
-    "4. Formulate behavioral questions (e.g., using the STAR method format) that assess soft skills like teamwork, problem-solving, and adaptiveness.\n"
-    "5. Ask logical, conversational follow-up questions based directly on the candidate's previous response (rather than asking disconnected generic questions).\n"
-    "6. Conduct the interview sequentially: ask exactly ONE clear question at a time.\n"
-    "7. Keep all responses very concise, professional, natural, and under 3 sentences. Never output bullet points or lists.\n"
-    "8. Never prefix your responses with 'Interviewer:' or any other name/prefix label. Output ONLY the conversational response directly.\n"
-    "9. Do not use placeholders like '[Your Name]', '[Recruiter Name]', or '[Recruiter's Name]'. Introduce yourself simply as 'the Recruiter' or 'the Grab Interview Team' without using brackets."
+    "You are an expert Senior Technical Interviewer conducting a realistic job interview. "
+    "Your objective is to evaluate the candidate's technical skills, problem-solving ability, and fit for their specific target role.\n"
+    "CRITICAL GUIDELINES:\n"
+    "1. TAILORED & SPECIFIC: Ask questions directly grounded in the target job title, company, and required tech stack. Never ask generic placeholder questions.\n"
+    "2. DYNAMIC FOLLOW-UP: Analyze the candidate's previous response carefully. Ask targeted follow-up questions probing their technical depth, implementation choices, architecture, or trade-offs based on the exact tools/frameworks they mentioned.\n"
+    "3. ONE QUESTION AT A TIME: Ask exactly ONE clear question per turn.\n"
+    "4. NATURAL CONVERSATIONAL TONE: Briefly acknowledge their response in 1 sentence, then ask your next specific question.\n"
+    "5. STRICT LENGTH: Keep your complete response under 3 sentences. Do NOT output lists, bullet points, or prefixes like 'Interviewer:'."
 )
 
 
@@ -421,7 +423,7 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
         base_profile_res = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
         skills_res = supabase.table("user_skills").select("skills:skill_id(name)").eq("user_id", user_id).execute()
         
-        student_name = base_profile_res.data.get("full_name", "Student") if base_profile_res.data else "Student"
+        student_name = base_profile_res.data.get("full_name", "Candidate") if base_profile_res.data else "Candidate"
         programme = profile_res.data.get("programme", "") if profile_res.data else ""
         roles = ", ".join(profile_res.data.get("preferred_roles", [])) if (profile_res.data and profile_res.data.get("preferred_roles")) else ""
         skills_list = [s.get("skills", {}).get("name") for s in (skills_res.data or []) if s.get("skills")]
@@ -452,7 +454,7 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
                 job_skills_list = [s.get("skills", {}).get("name") for s in iskills_res.data if s.get("skills")]
         except Exception as e:
             print("Error fetching internship details", e)
-    job_skills = ", ".join(job_skills_list) if job_skills_list else "Not specified"
+    job_skills = ", ".join(job_skills_list) if job_skills_list else "core technical skills"
 
     # 3. Insert session into database
     try:
@@ -470,40 +472,46 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to create interview session")
 
-    # 4. Generate first question using Gemini
-    init_prompt = f"Welcome the candidate and start the internship interview. Candidate: {student_name}\n"
+    # 4. Generate first question
+    init_prompt = f"Candidate Name: {student_name}\n"
     if programme:
-        init_prompt += f"Candidate Major/Programme: {programme}\n"
+        init_prompt += f"Academic Major: {programme}\n"
     if skills:
-        init_prompt += f"Candidate Extracted Skills: {skills}\n"
+        init_prompt += f"Candidate Known Skills: {skills}\n"
     if roles:
         init_prompt += f"Candidate Preferred Roles: {roles}\n"
         
     if job_title:
         init_prompt += (
-            f"Target Position: {job_title}\n"
+            f"Target Internship Role: {job_title}\n"
             f"Target Company: {job_company}\n"
-            f"Required Skills: {job_skills}\n"
-            f"Job Description and Responsibilities: {job_desc}\n"
-            f"Formulate a role-specific introductory or first technical question that directly links their profile/skills with the responsibilities of this {job_title} role at {job_company}.\n"
+            f"Required Skills for Job: {job_skills}\n"
+            f"Job Description: {job_desc}\n\n"
+            f"INSTRUCTION: Welcome {student_name} to the interview for the {job_title} role at {job_company}. "
+            f"Ask a sharp, role-specific first technical or situational question directly testing their experience with {job_skills} or a key responsibility of this {job_title} position. "
+            f"Do NOT ask a generic 'tell me about yourself' question."
         )
     elif req.custom_role and req.custom_role != 'general':
         role_criteria = {
-            "Software Developer": "programming, data structures, algorithms, databases, APIs, software design",
-            "Data Analyst": "SQL, Excel, data visualization, statistics, data cleaning",
-            "UI/UX Designer": "design thinking, user research, wireframing, prototyping, usability testing",
-            "Cybersecurity": "security concepts, risk assessment, network security, incident response"
+            "Software Developer": "data structures, system design, Git, backend/frontend frameworks, and clean code practices",
+            "Data Analyst": "SQL queries, data cleaning, pandas, data visualization, and statistical analysis",
+            "UI/UX Designer": "user research, wireframing in Figma, design systems, and usability testing",
+            "Cybersecurity": "network security, vulnerability assessment, encryption, and incident response"
         }
-        role_skills = role_criteria.get(req.custom_role, "general technical skills")
+        role_skills = role_criteria.get(req.custom_role, "core domain skills")
         init_prompt += (
-            f"Target Position: {req.custom_role}\n"
-            f"Required Skills: {role_skills}\n"
-            f"Formulate a role-specific introductory or first technical question focusing on {role_skills} relevant to a {req.custom_role} role.\n"
+            f"Target Role: {req.custom_role}\n"
+            f"Required Focus Skills: {role_skills}\n\n"
+            f"INSTRUCTION: Welcome {student_name} and ask a sharp, specific technical question focusing on {role_skills} for a {req.custom_role} role. "
+            f"Do NOT ask a generic placeholder question."
         )
     else:
-        init_prompt += "No specific internship was selected. Formulate a general technical/behavioral introductory question for their field.\n"
+        init_prompt += (
+            f"Interview Focus: {req.interview_type} ({req.difficulty} level)\n\n"
+            f"INSTRUCTION: Welcome {student_name} and ask a practical technical question relevant to their field ({programme or 'technology'})."
+        )
     
-    init_prompt += f"\nDifficulty Level: {req.difficulty}\nInterview Focus Type: {req.interview_type}\n\nIntroduce yourself briefly as the recruiter, welcome the candidate, and ask the first highly tailored question. Keep the response under 3 sentences."
+    init_prompt += f"\nDifficulty Level: {req.difficulty}\nInterview Focus: {req.interview_type}\nKeep total response under 3 sentences."
 
     try:
         response = generate_content_unified(
@@ -512,10 +520,11 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
         )
         first_question = clean_interviewer_response(response.text.strip())
     except Exception as e:
-        print("Gemini failed for first question", e)
+        print("AI generation failed for first question", e)
         if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-            raise HTTPException(status_code=429, detail="Gemini API quota exceeded. Please wait a minute and launch your session again.")
-        first_question = f"Hello {student_name}, welcome. To start off, could you introduce yourself and tell me why you are interested in this {req.interview_type} internship?"
+            raise HTTPException(status_code=429, detail="API quota exceeded. Please wait a minute and launch your session again.")
+        target_role_display = job_title or req.custom_role or req.interview_type
+        first_question = f"Welcome {student_name}! To kick off our {target_role_display} interview, could you walk me through a technical project where you applied {job_skills or skills or 'your key skills'} and how you handled the main implementation challenges?"
 
     # 5. Save first question to messages with metadata
     try:
@@ -619,54 +628,47 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Requ
             pass
     job_skills = ", ".join(job_skills_list) if job_skills_list else "Not specified"
 
-    # Build prompt
-    prompt = f"Interview Context:\n- Focus Area: {session.get('interview_type')}\n- Difficulty Level: {session.get('difficulty')}\n"
-    if job_title:
-        prompt += (
-            f"- Target Position: {job_title} at {job_company}\n"
-            f"- Required Skills: {job_skills}\n"
-            f"- Role Description & Responsibilities: {job_desc}\n"
-        )
-    elif custom_role and custom_role != 'general':
-        role_criteria = {
-            "Software Developer": "programming, data structures, algorithms, databases, APIs, software design",
-            "Data Analyst": "SQL, Excel, data visualization, statistics, data cleaning",
-            "UI/UX Designer": "design thinking, user research, wireframing, prototyping, usability testing",
-            "Cybersecurity": "security concepts, risk assessment, network security, incident response"
-        }
-        role_skills = role_criteria.get(custom_role, "general technical skills")
-        prompt += (
-            f"- Target Position: {custom_role}\n"
-            f"- Required Skills: {role_skills}\n"
-        )
+    # Build multi-turn chat structure
+    chat_turns = []
     
-    prompt += "\nHere is the interview conversation history so far:\n"
-    for m in messages:
-        role_label = "Candidate" if m["role"] == "candidate" else "Interviewer"
-        prompt += f"{role_label}: {m['content']}\n"
-        
-    # Append latest answer
-    prompt += f"Candidate: {req.answer}\n"
-    
-    prompt += (
-        "\nInterviewer Instructions:\n"
-        "1. Analyze the candidate's latest response.\n"
-        "2. Formulate a direct, natural follow-up question based on their answer. Challenge any gaps, ask them to elaborate on the technical aspects/methodologies/tools they mentioned, or ask a behavioral follow-up keeping it tightly aligned with the target role responsibilities.\n"
-        "3. Ensure the question matches the difficulty level and focus area.\n"
-        "4. Acknowledge their response briefly and ask exactly ONE follow-up question. Keep the entire response under 3 sentences."
+    context_header = (
+        f"INTERVIEW ROLE CONTEXT:\n"
+        f"- Target Position: {job_title or custom_role or 'Technical Role'}" + (f" at {job_company}" if job_company else "") + "\n"
+        f"- Required Skills: {job_skills}\n"
+        f"- Focus Area: {session.get('interview_type')}\n"
+        f"- Difficulty Level: {session.get('difficulty')}\n"
     )
+    chat_turns.append({"role": "system", "content": context_header})
+    
+    # Append existing conversation history
+    for m in messages:
+        role_key = "assistant" if m["role"] in ["interviewer", "assistant"] else "user"
+        chat_turns.append({"role": role_key, "content": m["content"]})
+        
+    # Append current candidate answer
+    chat_turns.append({"role": "user", "content": req.answer})
+    
+    # Follow-up instruction
+    followup_instruction = (
+        f"INSTRUCTION FOR INTERVIEWER:\n"
+        f"Analyze the candidate's latest response: '{req.answer}'.\n"
+        f"Acknowledge what they said in 1 concise, natural sentence.\n"
+        f"Then ask a sharp, specific FOLLOW-UP question probing deeper into the exact tools, methodologies, code logic, frameworks, or trade-offs they just mentioned for the {job_title or custom_role or 'target'} position.\n"
+        f"Keep your complete response under 3 sentences."
+    )
+    chat_turns.append({"role": "user", "content": followup_instruction})
 
     try:
         response = generate_content_unified(
-            contents=prompt,
+            contents=chat_turns,
             config=types.GenerateContentConfig(system_instruction=SYSTEM_INTERVIEWER)
         )
         next_question = clean_interviewer_response(response.text.strip())
     except Exception as e:
-        print("Gemini next question failed", e)
+        print("AI next question failed", e)
         if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-            raise HTTPException(status_code=429, detail="Gemini API quota exceeded. Please wait a minute before submitting your answer.")
-        next_question = "Interesting. Can you tell me about a time when you faced a difficult technical challenge and how you solved it?"
+            raise HTTPException(status_code=429, detail="API quota exceeded. Please wait a minute before submitting your answer.")
+        next_question = f"Thanks for explaining that! Building on your point about {req.answer[:40]}..., could you elaborate on how you handled error handling or performance optimization in that workflow?"
 
     # Save next question
     supabase.table("interview_messages").insert({
