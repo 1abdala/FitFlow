@@ -20,8 +20,8 @@ import urllib.error
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 SUPABASE_URL = os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL")
-SUPABASE_ANON_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+SUPABASE_ANON_KEY = os.getenv("VITE_SUPABASE_ANON_KEY") or os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+GEMINI_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_KEY")
 
 app = FastAPI()
 
@@ -29,6 +29,7 @@ app = FastAPI()
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 def get_user_id_from_token(auth_header: str, supabase_client: Client) -> str:
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
@@ -42,10 +43,19 @@ def get_user_id_from_token(auth_header: str, supabase_client: Client) -> str:
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
+raw_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+allowed_origins = [o.strip() for o in raw_origins if o.strip()]
+if not allowed_origins:
+    allowed_origins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://fit-flow-eta.vercel.app"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,7 +69,7 @@ if GEMINI_KEY:
     gemini_client = genai.Client(api_key=GEMINI_KEY)
     print("DEBUG: Gemini client initialized.")
 
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
 
 def generate_content_with_fallback(contents, config=None):
     if not gemini_client:
@@ -391,6 +401,7 @@ class SubmitAnswerRequest(BaseModel):
 
 
 @app.post("/interviews/session/create")
+@app.post("/api/interviews/session/create")
 @limiter.limit("10/minute")
 async def create_interview_session(req: CreateSessionRequest, request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
@@ -531,6 +542,7 @@ async def create_interview_session(req: CreateSessionRequest, request: Request):
 
 
 @app.post("/interviews/session/{session_id}/question")
+@app.post("/api/interviews/session/{session_id}/question")
 @limiter.limit("20/minute")
 async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
@@ -669,6 +681,7 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Requ
 
 
 @app.post("/interviews/session/{session_id}/evaluate")
+@app.post("/api/interviews/session/{session_id}/evaluate")
 @limiter.limit("5/minute")
 async def evaluate_session(session_id: str, request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
@@ -966,6 +979,7 @@ async def evaluate_session(session_id: str, request: Request):
 
 
 @app.get("/interviews/sessions")
+@app.get("/api/interviews/sessions")
 async def get_interview_sessions(request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase:
@@ -989,6 +1003,7 @@ async def get_interview_sessions(request: Request):
 
 
 @app.get("/interviews/analytics")
+@app.get("/api/interviews/analytics")
 async def get_interview_analytics(request: Request):
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY) if SUPABASE_URL and SUPABASE_ANON_KEY else None
     if not supabase:
