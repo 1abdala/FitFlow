@@ -674,7 +674,7 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
   );
 };
 
-const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availableLocations = [] }) => {
+const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availableLocations = [], matches = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const popoverRef = useRef(null);
@@ -690,6 +690,27 @@ const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availabl
   }, []);
 
   const popularStates = ['Kuala Lumpur', 'Selangor', 'Penang', 'Johor', 'Kedah', 'Perak', 'Melaka', 'Sarawak', 'Sabah'];
+
+  const locationCounts = useMemo(() => {
+    const counts = { All: matches.length };
+    (matches || []).forEach(m => {
+      const itemLoc = m.internships?.location || '';
+      if (!itemLoc) return;
+
+      popularStates.forEach(st => {
+        if (itemLoc.toLowerCase().includes(st.toLowerCase())) {
+          counts[st] = (counts[st] || 0) + 1;
+        }
+      });
+
+      availableLocations.forEach(loc => {
+        if (itemLoc.toLowerCase().includes(loc.toLowerCase()) || loc.toLowerCase().includes(itemLoc.toLowerCase())) {
+          counts[loc] = (counts[loc] || 0) + 1;
+        }
+      });
+    });
+    return counts;
+  }, [matches, availableLocations]);
 
   const filteredLocations = availableLocations.filter(loc => 
     loc.toLowerCase().includes(search.toLowerCase())
@@ -761,12 +782,19 @@ const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availabl
                   setSelectedLocation('All');
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-between gap-2 ${
                   selectedLocation === 'All' ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
                 }`}
               >
                 <span>🌐 All Locations</span>
-                {selectedLocation === 'All' && <Icons.IconCheck size={14} />}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    selectedLocation === 'All' ? 'bg-accent text-dark' : 'bg-white/10 text-slate-300'
+                  }`}>
+                    {matches.length}
+                  </span>
+                  {selectedLocation === 'All' && <Icons.IconCheck size={14} className="text-accent" />}
+                </div>
               </button>
 
               {filteredStates.length > 0 && (
@@ -774,22 +802,32 @@ const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availabl
                   <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-accent-2 uppercase">
                     Popular Regions
                   </div>
-                  {filteredStates.map(state => (
-                    <button
-                      key={state}
-                      type="button"
-                      onClick={() => {
-                        setSelectedLocation(state);
-                        setIsOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between ${
-                        selectedLocation === state ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
-                      }`}
-                    >
-                      <span>📍 {state}</span>
-                      {selectedLocation === state && <Icons.IconCheck size={14} />}
-                    </button>
-                  ))}
+                  {filteredStates.map(state => {
+                    const count = locationCounts[state] || 0;
+                    return (
+                      <button
+                        key={state}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLocation(state);
+                          setIsOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between gap-2 ${
+                          selectedLocation === state ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="truncate">📍 {state}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            selectedLocation === state ? 'bg-accent text-dark' : 'bg-white/10 text-slate-300'
+                          }`}>
+                            {count}
+                          </span>
+                          {selectedLocation === state && <Icons.IconCheck size={14} className="text-accent" />}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -798,22 +836,32 @@ const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availabl
                   <div className="px-3 py-1 text-[10px] font-bold tracking-wider text-text-mute uppercase">
                     Specific Postings ({filteredLocations.length})
                   </div>
-                  {filteredLocations.map(loc => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => {
-                        setSelectedLocation(loc);
-                        setIsOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between ${
-                        selectedLocation === loc ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="truncate pr-2">{loc}</span>
-                      {selectedLocation === loc && <Icons.IconCheck size={14} className="shrink-0" />}
-                    </button>
-                  ))}
+                  {filteredLocations.map(loc => {
+                    const count = locationCounts[loc] || 0;
+                    return (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLocation(loc);
+                          setIsOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between gap-2 ${
+                          selectedLocation === loc ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="truncate pr-1">{loc}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            selectedLocation === loc ? 'bg-accent text-dark' : 'bg-white/10 text-slate-300'
+                          }`}>
+                            {count}
+                          </span>
+                          {selectedLocation === loc && <Icons.IconCheck size={14} className="shrink-0 text-accent" />}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1818,6 +1866,7 @@ const Dashboard = () => {
                     selectedLocation={selectedLocation} 
                     setSelectedLocation={setSelectedLocation} 
                     availableLocations={availableLocations} 
+                    matches={matches}
                   />
 
                   <CategoryFilterPopover 

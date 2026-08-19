@@ -7,17 +7,23 @@ import * as Icons from './Icons';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// 9 Premium Gradient SVG presets
+// Helper to generate Chrome-safe & cross-browser SVG data URLs
+const createSvgDataUrl = (gradientStart, gradientEnd) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${gradientStart}"/><stop offset="100%" stop-color="${gradientEnd}"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#g)"/><circle cx="50" cy="38" r="18" fill="#ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="#ffffff" opacity="0.95"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
+// 9 Premium Gradient SVG presets (Fully encoded for Chrome & all browsers)
 const PRESET_AVATARS = [
-  { id: 'preset-1', name: 'Indigo Dream', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%234f7cff"/><stop offset="100%" stop-color="%238b5cf6"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-2', name: 'Emerald Forest', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2310b981"/><stop offset="100%" stop-color="%2314b8a6"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-3', name: 'Sunset Glow', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23f59e0b"/><stop offset="100%" stop-color="%23f43f5e"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-4', name: 'Ocean Cyan', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2306b6d4"/><stop offset="100%" stop-color="%233b82f6"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-5', name: 'Cyber Neon', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23d946ef"/><stop offset="100%" stop-color="%23ec4899"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-6', name: 'Galaxy Nebula', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%237c3aed"/><stop offset="100%" stop-color="%23c084fc"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-7', name: 'Solar Flare', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23f97316"/><stop offset="100%" stop-color="%23ef4444"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-8', name: 'Industrial Slate', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2364748b"/><stop offset="100%" stop-color="%23334155"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
-  { id: 'preset-9', name: 'Aurora Borealis', value: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%231e1b4b"/><stop offset="100%" stop-color="%230d9488"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/><circle cx="50" cy="38" r="18" fill="%23ffffff" opacity="0.95"/><path d="M22,82 C22,65 34,58 50,58 C66,58 78,65 78,82 Z" fill="%23ffffff" opacity="0.95"/></svg>` },
+  { id: 'preset-1', name: 'Indigo Dream', value: createSvgDataUrl('#4f7cff', '#8b5cf6') },
+  { id: 'preset-2', name: 'Emerald Forest', value: createSvgDataUrl('#10b981', '#14b8a6') },
+  { id: 'preset-3', name: 'Sunset Glow', value: createSvgDataUrl('#f59e0b', '#f43f5e') },
+  { id: 'preset-4', name: 'Ocean Cyan', value: createSvgDataUrl('#06b6d4', '#3b82f6') },
+  { id: 'preset-5', name: 'Cyber Neon', value: createSvgDataUrl('#d946ef', '#ec4899') },
+  { id: 'preset-6', name: 'Galaxy Nebula', value: createSvgDataUrl('#7c3aed', '#c084fc') },
+  { id: 'preset-7', name: 'Solar Flare', value: createSvgDataUrl('#f97316', '#ef4444') },
+  { id: 'preset-8', name: 'Industrial Slate', value: createSvgDataUrl('#64748b', '#334155') },
+  { id: 'preset-9', name: 'Aurora Borealis', value: createSvgDataUrl('#1e1b4b', '#0d9488') },
 ];
 
 const FACULTIES = {
@@ -704,21 +710,20 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
 
               <SettingsField label="Phone Number" icon={Icons.IconPhone}>
                 <div className="flex items-center w-full relative">
-                  <div className="absolute left-11 flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs font-bold text-accent select-none pointer-events-none">
+                  <div className="absolute left-11 flex items-center gap-1.5 text-xs font-bold text-accent select-none pointer-events-none pr-2.5 border-r border-white/10">
                     <span>🇲🇾</span>
                     <span>+60</span>
                   </div>
                   <input 
                     type="tel" 
-                    value={phone}
+                    value={phone.replace(/^\+?60/, '').replace(/^0+/, '')}
                     onChange={(e) => {
                       const val = e.target.value.replace(/^\+?60/, '').replace(/^0+/, '').replace(/\D/g, '');
                       setPhone(val);
                     }}
                     placeholder="123456789"
-                    maxLength={9}
                     required
-                    className="pl-[105px]"
+                    style={{ paddingLeft: '110px' }}
                   />
                 </div>
               </SettingsField>
@@ -1324,10 +1329,13 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
                           onClick={() => handleSelectPreset(preset.value)}
                           className="group flex flex-col items-center p-2.5 rounded-xl bg-white/2 border border-white/5 hover:border-accent hover:bg-white/5 transition-all duration-200"
                         >
-                          <div 
-                            className="w-12 h-12 rounded-full overflow-hidden border border-white/10 group-hover:scale-105 group-hover:border-accent transition-all duration-200"
-                            dangerouslySetInnerHTML={{ __html: preset.value.replace('data:image/svg+xml;utf8,', '') }}
-                          />
+                          <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 group-hover:scale-105 group-hover:border-accent transition-all duration-200 flex items-center justify-center">
+                            <img 
+                              src={preset.value} 
+                              alt={preset.name} 
+                              className="w-full h-full object-cover" 
+                            />
+                          </div>
                           <span className="text-[10px] text-text-mute mt-1.5 text-center font-medium truncate w-full group-hover:text-text transition-colors">{preset.name}</span>
                         </button>
                       ))}

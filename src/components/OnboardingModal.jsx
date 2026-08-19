@@ -225,7 +225,7 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
   }, []);
 
   // Step 2 Fields
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(() => (user?.phone || '').replace(/^\+?60/, '').replace(/^0+/, ''));
   const [nationality, setNationality] = useState('Malaysian');
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState('');
@@ -604,20 +604,20 @@ const OnboardingModal = ({ user, onClose, onComplete, onNavigate }) => {
                           <label className="input-label">Phone Number *</label>
                           <div className="ob-input-wrap relative flex items-center">
                             <div className="input-icon"><Icons.IconPhone size={16} /></div>
-                            <div className="absolute left-10 flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs font-bold text-accent select-none pointer-events-none">
+                            <div className="absolute left-10 flex items-center gap-1.5 text-xs font-bold text-accent select-none pointer-events-none pr-2.5 border-r border-white/10">
                               <span>🇲🇾</span>
                               <span>+60</span>
                             </div>
                             <input 
                               type="tel" 
-                              value={phone} 
+                              value={phone.replace(/^\+?60/, '').replace(/^0+/, '')} 
                               onChange={(e) => {
                                 const val = e.target.value.replace(/^\+?60/, '').replace(/^0+/, '').replace(/\D/g, '');
                                 setPhone(val);
                               }} 
                               placeholder="123456789" 
-                              maxLength={9}
-                              className="pl-[105px]"
+                              maxLength={10}
+                              style={{ paddingLeft: '110px' }}
                             />
                           </div>
                         </div>

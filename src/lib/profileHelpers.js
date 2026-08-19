@@ -89,9 +89,9 @@ export function getProfileStatus(profile, skills = []) {
   const totalFields = requiredFields.length + 2; // 11 required + preferred_roles + skills = 13 total fields
   const percentage = Math.round((completedCount / totalFields) * 100);
 
-  // Profile is complete if all 11 required fields are filled AND preferred_roles is filled.
-  // skills are optional and do not block completion status.
-  const requiredFieldsCompleted = requiredMissingFields.filter(f => f !== 'skills').length === 0;
+  // Profile is complete if all 11 required fields are filled.
+  // preferred_roles and skills are optional and do not block completion status.
+  const requiredFieldsCompleted = requiredMissingFields.filter(f => f !== 'skills' && f !== 'preferred_roles').length === 0;
 
   return {
     percentage,
@@ -168,11 +168,18 @@ export async function fetchFullProfile(userId) {
   // 4. Calculate status
   const status = getProfileStatus(mergedProfile, skills);
 
+  // Self-heal: If required fields are completed but profile_completed in DB is false, persist true to DB
+  if (status.completed && !subProfile?.profile_completed) {
+    supabase.from('student_profiles').update({ profile_completed: true }).eq('id', userId).then();
+  }
+
+  const isCompleted = status.completed || !!subProfile?.profile_completed;
+
   return {
     ...mergedProfile,
     skills,
     completion_percentage: status.percentage,
-    profile_completed: status.completed,
+    profile_completed: isCompleted,
     completedFields: status.completedFields,
     totalFields: status.totalFields,
     missingFields: status.missingFields,
