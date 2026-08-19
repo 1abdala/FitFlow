@@ -332,7 +332,8 @@ const InterviewTab = ({ user, onNavigate }) => {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || "Failed to start session");
+        const errMsg = errData.detail || errData.message || `Failed to start session (${response.status})`;
+        throw new Error(errMsg);
       }
       const data = await response.json();
       
