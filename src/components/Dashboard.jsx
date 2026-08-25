@@ -911,10 +911,31 @@ const LocationFilterPopover = ({ selectedLocation, setSelectedLocation, availabl
   );
 };
 
-const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categories = CAREER_INTERESTS }) => {
+const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categories = CAREER_INTERESTS, matches = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const popoverRef = useRef(null);
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    matches.forEach((m) => {
+      const rawCat = (m.internships?.category || '').toLowerCase().trim();
+      const title = (m.internships?.title || '').toLowerCase().trim();
+
+      categories.forEach((cat) => {
+        const catLower = cat.toLowerCase().trim();
+        const mainKeyword = catLower.split('/')[0].split('(')[0].trim();
+
+        if (
+          (rawCat && (rawCat === catLower || rawCat.includes(mainKeyword))) ||
+          (title && title.includes(mainKeyword))
+        ) {
+          counts[cat] = (counts[cat] || 0) + 1;
+        }
+      });
+    });
+    return counts;
+  }, [matches, categories]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -930,6 +951,10 @@ const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categori
     cat.toLowerCase().includes(search.toLowerCase())
   );
 
+  const selectedCount = selectedCategory === 'All'
+    ? matches.length
+    : (categoryCounts[selectedCategory] || 0);
+
   return (
     <div className="relative inline-block text-left" ref={popoverRef}>
       <div className="flex items-center gap-2">
@@ -939,11 +964,16 @@ const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categori
           onClick={() => setIsOpen(!isOpen)}
           className="location-filter-btn flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
         >
-          <span className="flex items-center gap-1.5 truncate max-w-[150px]">
+          <span className="flex items-center gap-1.5 truncate max-w-[170px]">
             <Icons.IconBriefcase size={13} className="text-accent shrink-0" />
             {selectedCategory === 'All' ? 'All Categories' : selectedCategory}
           </span>
-          <Icons.IconChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-accent/20 text-accent">
+              {selectedCount}
+            </span>
+            <Icons.IconChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
         </button>
       </div>
 
@@ -954,7 +984,7 @@ const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categori
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 mt-2 w-64 rounded-xl border border-white/10 shadow-2xl z-[300] overflow-hidden"
+            className="absolute left-0 mt-2 w-72 rounded-xl border border-white/10 shadow-2xl z-[300] overflow-hidden"
             style={{
               background: '#0B1220',
               boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(79, 124, 255, 0.2)'
@@ -992,31 +1022,48 @@ const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categori
                   setSelectedCategory('All');
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-between ${
+                className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors flex items-center justify-between gap-2 ${
                   selectedCategory === 'All' ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
                 }`}
               >
                 <span>🚀 All Categories</span>
-                {selectedCategory === 'All' && <Icons.IconCheck size={14} />}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    selectedCategory === 'All' ? 'bg-accent text-dark' : 'bg-white/10 text-slate-300'
+                  }`}>
+                    {matches.length}
+                  </span>
+                  {selectedCategory === 'All' && <Icons.IconCheck size={14} className="text-accent" />}
+                </div>
               </button>
 
               <div className="mt-1">
-                {filteredCategories.map(cat => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory(cat);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between ${
-                      selectedCategory === cat ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
-                    }`}
-                  >
-                    <span className="truncate pr-2">{cat}</span>
-                    {selectedCategory === cat && <Icons.IconCheck size={14} className="shrink-0" />}
-                  </button>
-                ))}
+                {filteredCategories.map(cat => {
+                  const count = categoryCounts[cat] || 0;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center justify-between gap-2 ${
+                        selectedCategory === cat ? 'bg-accent/20 text-accent font-bold' : 'text-slate-100 hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="truncate pr-1">{cat}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          selectedCategory === cat ? 'bg-accent text-dark' : 'bg-white/10 text-slate-300'
+                        }`}>
+                          {count}
+                        </span>
+                        {selectedCategory === cat && <Icons.IconCheck size={14} className="shrink-0 text-accent" />}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {filteredCategories.length === 0 && (
@@ -1905,6 +1952,7 @@ const Dashboard = () => {
                   <CategoryFilterPopover 
                     selectedCategory={selectedCategory} 
                     setSelectedCategory={setSelectedCategory} 
+                    matches={matches}
                   />
 
                   <div className="flex items-center gap-2">
