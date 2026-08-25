@@ -48,4 +48,50 @@ export const IconMic = (p) => <Icon {...p}><path d="M12 1a3 3 0 00-3 3v8a3 3 0 0
 export const IconVolume2 = (p) => <Icon {...p}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></Icon>;
 export const IconChevronDown = (p) => <Icon d="M6 9l6 6 6-6" {...p} />;
 
+export const IconLinkedIn = ({ size = 15, style = {}, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
+    {...props}
+  >
+    <path
+      d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.25V10.9H6.46M7.86 6.74a1.63 1.63 0 1 0 0 3.26 1.63 1.63 0 0 0 0-3.26z"
+      fill="#0A66C2"
+    />
+  </svg>
+);
+
+export const IconJobStreet = ({ size = 15, style = {}, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
+    {...props}
+  >
+    <rect width="24" height="24" rx="5" fill="#E6007E" />
+    <path
+      d="M15.5 15.5a3.5 3.5 0 0 1-3.5 3.5 3.5 3.5 0 0 1-3.5-3.5V12h2v3.5a1.5 1.5 0 0 0 3 0V8h2v7.5z"
+      fill="#FFFFFF"
+    />
+  </svg>
+);
+
+export const getSourceInfo = (sourceStr, applyUrl) => {
+  const src = (sourceStr || '').toLowerCase().trim();
+  const url = (applyUrl || '').toLowerCase().trim();
+
+  if (src === 'linkedin' || src.includes('linkedin') || url.includes('linkedin.com')) {
+    return { type: 'linkedin', label: 'LinkedIn', tooltip: 'Scraped from LinkedIn' };
+  }
+  if (src === 'jobstreet' || src.includes('jobstreet') || url.includes('jobstreet.com') || url.includes('jobstreet.my')) {
+    return { type: 'jobstreet', label: 'JobStreet', tooltip: 'Scraped from JobStreet' };
+  }
+  return null;
+};
+
 

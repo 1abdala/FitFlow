@@ -264,7 +264,20 @@ const InternshipDetailsModal = ({ job, user, onClose }) => {
               </div>
               <h2 className="idm-title">{internships?.title}</h2>
               <div className="idm-sub">
-                <b>{internships?.company_name}</b>
+                <b style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  {internships?.company_name}
+                  {(() => {
+                    const srcInfo = Icons.getSourceInfo ? Icons.getSourceInfo(internships?.source, internships?.apply_url) : null;
+                    return srcInfo ? (
+                      <span
+                        title={srcInfo.tooltip}
+                        style={{ display: 'inline-flex', alignItems: 'center', cursor: 'help', flexShrink: 0 }}
+                      >
+                        {srcInfo.type === 'linkedin' ? <Icons.IconLinkedIn size={15} /> : <Icons.IconJobStreet size={15} />}
+                      </span>
+                    ) : null;
+                  })()}
+                </b>
                 <span className="m-card-dot">·</span>
                 <span>{internships?.location}</span>
                 <span className="m-card-dot">·</span>

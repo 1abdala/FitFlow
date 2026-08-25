@@ -457,6 +457,7 @@ const KpiCard = ({ icon, label, value, delta, deltaTone, sub, sparkline }) => (
 const MatchRow = ({ job, onSelect, animDelay = 0 }) => {
   const score = Math.round(job.match_score);
   const gaps = job.skill_gaps ?? [];
+  const srcInfo = Icons.getSourceInfo ? Icons.getSourceInfo(job.internships?.source, job.internships?.apply_url) : null;
   return (
     <motion.div
       className={`match-row ${score >= 85 ? "match-hi" : ""}`}
@@ -483,7 +484,17 @@ const MatchRow = ({ job, onSelect, animDelay = 0 }) => {
       </div>
       <div className="match-meta">
         <div className="match-role">{job.internships?.title}</div>
-        <div className="match-co">{job.internships?.company_name}</div>
+        <div className="match-co" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {job.internships?.company_name}
+          {srcInfo && (
+            <span
+              title={srcInfo.tooltip}
+              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'help', flexShrink: 0 }}
+            >
+              {srcInfo.type === 'linkedin' ? <Icons.IconLinkedIn size={14} /> : <Icons.IconJobStreet size={14} />}
+            </span>
+          )}
+        </div>
       </div>
       <div className="match-skills">
         {gaps.slice(0, 2).map((sg, i) => <span key={i} className="skill-chip skill-miss">{sg.skills?.name}</span>)}
@@ -541,6 +552,7 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
   const loc    = job.internships?.location || "Kuala Lumpur";
   const tier   = score >= 90 ? "tier1" : score >= 75 ? "tier2" : "tier3";
   const isSaved = job.applications && job.applications.length > 0;
+  const srcInfo = Icons.getSourceInfo ? Icons.getSourceInfo(job.internships?.source, job.internships?.apply_url) : null;
 
   const cardRef = useRef(null);
   const glowRef = useRef(null);
@@ -629,7 +641,28 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
           </div>
         </div>
         <div className="m-card-meta">
-          <span className="m-card-co">{co}</span>
+          <span className="m-card-co" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {co}
+            {srcInfo && (
+              <span
+                title={srcInfo.tooltip}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  verticalAlign: 'middle',
+                  cursor: 'help',
+                  flexShrink: 0
+                }}
+              >
+                {srcInfo.type === 'linkedin' ? (
+                  <Icons.IconLinkedIn size={15} />
+                ) : (
+                  <Icons.IconJobStreet size={15} />
+                )}
+              </span>
+            )}
+          </span>
           <span className="m-card-dot">·</span>
           <span>{loc}</span>
           <span className="m-card-dot">·</span>
@@ -1314,7 +1347,7 @@ const Dashboard = () => {
         .select(`
           id,
           match_score,
-          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, company_logo_url, category, internship_skills ( skills ( name ) ) ),
+          internships ( id, title, company_name, location, apply_url, description, created_at, last_seen_at, company_logo_url, category, source, internship_skills ( skills ( name ) ) ),
           skill_gaps ( skills ( name ) )
         `)
         .eq('student_id', authUser.id)
