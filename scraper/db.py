@@ -5,11 +5,12 @@ from supabase import create_client, Client
 from datetime import datetime, timedelta, timezone
 
 def get_supabase_client() -> Client:
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_SERVICE_KEY")
+    url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
+    # Prefer SERVICE_KEY if valid, but fall back to VITE_SUPABASE_ANON_KEY
+    key = os.environ.get("VITE_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_SERVICE_KEY")
     
     if not url or not key:
-        raise ValueError("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in .env file.")
+        raise ValueError("Missing SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env file.")
         
     return create_client(url, key)
 
