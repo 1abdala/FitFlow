@@ -165,8 +165,8 @@ def regenerate_all_matches() -> int:
                 batch = inactive_ids[i:i+100]
                 supabase.table("matching_results").delete().in_("internship_id", batch).execute()
         
-        # 2. Re-run matches for active students
-        students = supabase.table("profiles").select("id").eq("role", "student").execute()
+        # 2. Re-run matches for all user profiles
+        students = supabase.table("profiles").select("id").execute()
         count = 0
         for s in (students.data or []):
             student_id = s["id"]

@@ -1399,7 +1399,7 @@ const Dashboard = () => {
         `)
         .eq('student_id', authUser.id)
         .order('match_score', { ascending: false })
-        .limit(200);
+        .limit(1000);
 
       if (matchesErr) {
         setMatches([{ id: 'error', match_score: 0, internships: { title: "Error", company_name: matchesErr.message } }]);
