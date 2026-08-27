@@ -1,5 +1,6 @@
 import re
 import time
+import random
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -11,10 +12,18 @@ from selenium.webdriver.support import expected_conditions as EC
 
 TARGET_URL = "https://my.jobstreet.com/internship-jobs"
 
+JOBSTREET_SEARCH_QUERIES = [
+    "internship",
+    "cybersecurity-jobs",
+    "cyber-security-jobs",
+    "information-security-jobs",
+    "it-security-jobs",
+    "software-internship-jobs",
+    "data-internship-jobs",
+    "it-internship-jobs"
+]
+
 # ── Tech title allowlist ─────────────────────────────────────────────
-# A job MUST match at least one of these (word-boundary aware) to be kept.
-# Short tokens like "it", "ai", "qa" use \b so they don't match inside
-# longer words (e.g. \bit\b won't match "audit" or "hospitality").
 _TECH_TITLE_RE = re.compile(
     r'\b(?:'
     r'software|developer|development|'
@@ -52,10 +61,7 @@ _TECH_TITLE_RE = re.compile(
 )
 
 # ── Non-tech blocklist ───────────────────────────────────────────────
-# Secondary guard: even if a tech keyword slips in (e.g. "Digital Marketing"),
-# these phrases immediately reject the title.
 NON_TECH_ANTI_KEYWORDS = [
-    # Business & finance
     'marketing', 'hr ', 'human resource', 'human resources',
     'accounting', 'accountant', 'finance', 'financial',
     'tax ', 'taxation', 'audit', 'auditing', 'compliance',
@@ -64,12 +70,10 @@ NON_TECH_ANTI_KEYWORDS = [
     'procurement', 'purchasing', 'supply chain', 'logistics',
     'banking', 'insurance', 'investment',
     'real estate', 'property management',
-    # HR & admin
     'recruitment', 'talent acquisition',
     'admin ', 'administration', 'administrative',
     'clerical', 'receptionist',
     'operation ', 'operations management',
-    # Non-IT engineering & manufacturing
     'civil engineering', 'civil intern',
     'mechanical engineer', 'mechatronic',
     'electrical engineer',
@@ -78,35 +82,25 @@ NON_TECH_ANTI_KEYWORDS = [
     'manufacturing', 'production planning',
     'quantity surveyor', 'architecture intern',
     'geotechnical', 'structural engineer',
-    # Customer-facing (non-tech)
     'customer service', 'customer experience', 'customer success',
     'customer engagement', 'customer support', 'customer care',
     'call centre', 'call center',
-    # Communications & media
     'public relation', 'pr intern',
     'content writer', 'copywriter', 'journalist',
     'media relation', 'broadcast',
-    # Design (non-digital)
     'graphic design', 'interior design', 'fashion design',
     'textile',
-    # Healthcare
     'healthcare', 'medical ', 'nursing', ' nurse ',
     'pharmacy', 'pharmacist', 'clinical ',
-    # Education
     ' teacher', 'teaching ', 'tutor',
-    # Hospitality & tourism
     'hospitality', 'tourism', 'hotel', 'culinary',
     'event management', 'event planning',
-    # Retail
     'retail', 'merchandising',
-    # Physical / Non-IT Security
     'security officer', 'security guard', 'warehouse security', 'hotel security', 'loss prevention', 'security control room', 'security executive',
-    # Generic govt / non-specific programmes
     'teraju', 'yayasan',
 ]
 
 SKILL_KEYWORDS = {
-    # --- Core Languages ---
     "Python": ["python", "python3"],
     "Java": ["java", "core java", "j2ee"],
     "JavaScript": ["javascript", "js", "ecmascript"],
@@ -123,8 +117,6 @@ SKILL_KEYWORDS = {
     "R": ["r programming", "r language", "rstudio"],
     "SQL": ["sql", "structured query language"],
     "Scala": ["scala"],
-
-    # --- Web & Frameworks ---
     "React": ["react", "react.js", "reactjs", "react native"],
     "Angular": ["angular", "angular.js"],
     "Vue.js": ["vue", "vue.js", "vuejs"],
@@ -139,8 +131,6 @@ SKILL_KEYWORDS = {
     "Tailwind CSS": ["tailwind", "tailwindcss"],
     "GraphQL": ["graphql"],
     "REST API": ["rest api", "restful api", "restful"],
-
-    # --- Databases & Warehouses ---
     "PostgreSQL": ["postgresql", "postgres"],
     "MySQL": ["mysql"],
     "MongoDB": ["mongodb", "mongo"],
@@ -149,8 +139,6 @@ SKILL_KEYWORDS = {
     "Snowflake": ["snowflake"],
     "Databricks": ["databricks"],
     "Databases": ["database", "databases", "dbms"],
-
-    # --- Cloud & DevOps ---
     "AWS": ["aws", "amazon web services"],
     "Azure": ["azure", "microsoft azure"],
     "Google Cloud": ["gcp", "google cloud", "google cloud platform"],
@@ -161,8 +149,6 @@ SKILL_KEYWORDS = {
     "Terraform": ["terraform"],
     "Linux": ["linux", "unix", "ubuntu", "centos", "bash", "shell window"],
     "Azure Data Factory": ["azure data factory", "adf"],
-
-    # --- Data & AI ---
     "Machine Learning": ["machine learning", "ml", "machine-learning"],
     "Artificial Intelligence": ["artificial intelligence", "artificial intelligent", "ai"],
     "Data Analysis": ["data analysis", "data analytics", "data analyst", "visualization"],
@@ -174,17 +160,13 @@ SKILL_KEYWORDS = {
     "Power BI": ["power bi", "powerbi", "tableau"],
     "Computer Vision": ["computer vision"],
     "NLP": ["nlp", "natural language processing"],
-
-    # --- IT Infrastructure & Helpdesk ---
     "Networking": ["networking", "network management", "tcp/ip", "lan/wan", "network+", "tcp ip"],
     "Troubleshooting": ["troubleshooting", "hardware troubleshooting", "software troubleshooting", "technical support", "it support"],
     "System Administration": ["system administration", "sysadmin", "system admin"],
     "Active Directory": ["active directory", "ad"],
     "VMware": ["vmware", "virtualization", "hyper-v"],
-    "Cybersecurity": ["cybersecurity", "cyber security", "information security", "infosec", "comptia", "network security", "it security", "firewall", "ips"],
+    "Cybersecurity": ["cybersecurity", "cyber security", "information security", "infosec", "comptia", "network security", "it security", "firewall", "ips", "soc", "penetration testing"],
     "OSI Model": ["osi model", "osi"],
-
-    # --- Business, Design & Soft Skills ---
     "Microsoft Office": ["microsoft office", "ms office", "office 365", "microsoft office suite", "excel", "powerpoint", "word"],
     "Project Management": ["project management", "agile", "scrum", "kanban", "jira", "azure devops"],
     "Git": ["git", "version control", "github", "gitlab"],
@@ -193,8 +175,6 @@ SKILL_KEYWORDS = {
     "Problem Solving": ["problem solving", "problem-solving", "analytical skills"],
     "ITIL": ["itil", "it infrastructure library"],
     "CRM": ["crm"],
-
-    # --- Software Engineering & QA ---
     "Software Testing": ["software testing", "quality assurance", "qa", "software qa", "testing", "manual testing", "automated testing", "test automation", "test execution"],
     "Debugging": ["debugging", "debug", "bug reporting", "error logging"],
     "Software Engineering": ["software engineering", "software development", "software dev", "computer science", "coding"],
@@ -208,41 +188,28 @@ SKILL_KEYWORDS = {
 }
 
 def normalize_text(text):
-    """Normalize formatting, standardize whitespace & symbols safely."""
-    # Convert to lowercase
     text = text.lower()
-    # Normalize slashes separating words (e.g. "ui/ux" -> "ui ux")
     text = re.sub(r'(?<=[a-z])/(?=[a-z])', ' ', text)
-    # Replace newlines and multiple consecutive spaces/tabs with a single space
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
 def extract_skills(text):
-    """Deterministic NLP extractor supporting multi-word, boundaries, and synonyms."""
     if not text:
         return []
-        
     normalized = normalize_text(text)
     extracted = set()
 
     for canonical_skill, synonyms in SKILL_KEYWORDS.items():
         for syn in synonyms:
-            # Handle multi-word matching by explicitly allowing dynamic spacing
             safe_syn = re.escape(syn).replace(r'\ ', r'\s+')
-            
-            # Smart boundaries: lookbehind/ahead for non-word chars OR start/end of string
-            # We explicitly don't use '\b' because it fatally breaks on trailing symbols (c++, .net)
             pattern = r'(?:^|[\s,.;:()\[\]{}|\\/!"\'-])' + safe_syn + r'(?:$|[\s,.;:()\[\]{}|\\/!"\'-])'
-            
             if re.search(pattern, normalized):
                 extracted.add(canonical_skill)
-                break  # Prevents redundant mapping if multiple synonyms match
-
+                break
     return sorted(list(extracted))
 
 def extract_requirements(text):
     text_clean = text.lower()
-
     patterns = [
         r"(requirements.*?)(responsibilities|benefits|about|$)",
         r"(qualifications.*?)(responsibilities|benefits|about|$)",
@@ -251,77 +218,65 @@ def extract_requirements(text):
         r"(skills.*?experience.*?)(responsibilities|benefits|about|$)",
         r"(what you need.*?)(responsibilities|benefits|about|$)"
     ]
-
     for pattern in patterns:
         match = re.search(pattern, text_clean, re.DOTALL)
         if match:
             return match.group(1).strip()
 
-    # FALLBACK: extract bullet-like lines without truncating arbitrarily
     lines = text.split("\n")
     bullet_lines = [l.strip() for l in lines if ("•" in l or "-" in l)]
-
     if len(bullet_lines) >= 3:
-        return "\n".join(bullet_lines)  # Removed the [:10] truncation!
-
+        return "\n".join(bullet_lines)
     return None
 
 def _parse_job_card(card, index):
     try:
-        # Title + URL (Strict JobStreet API matching)
         title_elem = card.find_element(By.CSS_SELECTOR, "a[data-automation='jobTitle']")
         title = title_elem.get_attribute("innerText").strip()
         job_url = title_elem.get_attribute("href")
 
-        # Company
         company = "Unknown"
         try:
             company = card.find_element(By.CSS_SELECTOR, "[data-automation='jobCompany']").text.strip()
-        except:
+        except Exception:
             pass
 
-        # Location
         location = "Malaysia"
         try:
             location = card.find_element(By.CSS_SELECTOR, "[data-automation='jobLocation']").text.strip()
-        except:
+        except Exception:
             pass
 
-        # Salary (optional)
         salary = None
         try:
             salary = card.find_element(By.CSS_SELECTOR, "[data-automation='jobSalary']").text.strip()
-        except:
+        except Exception:
             pass
 
-        # Company Logo (optional)
         logo_url = None
         try:
             logo_img = card.find_element(By.CSS_SELECTOR, "img")
             logo_url = logo_img.get_attribute("src")
-        except:
+        except Exception:
             pass
 
-        # Must be an internship
         title_lower = title.lower()
-        if "intern" not in title_lower:
+
+        # Flexible Internship & Tech matching:
+        # Match if title has intern / protege / trainee / training terms OR explicit tech/cyber keywords
+        is_intern = any(term in title_lower for term in ["intern", "protege", "protégé", "trainee", "training", "placement", "attachment", "junior", "associate", "fresh"])
+        is_tech = _TECH_TITLE_RE.search(title_lower)
+        is_cyber = any(term in title_lower for term in ["cyber", "security", "soc", "infosec", "penetration", "risk"])
+
+        if not is_tech and not is_cyber:
             return None
 
-        # PRIMARY: title must contain at least one tech keyword (allowlist)
-        if not _TECH_TITLE_RE.search(title_lower):
-            print(f"  [SKIP – non-tech title] {title}")
-            return None
-
-        # SECONDARY: reject known non-tech phrases even if a tech word crept in
-        # (e.g. "Digital Marketing Intern" has "digital" but is not tech)
         if any(kw in title_lower for kw in NON_TECH_ANTI_KEYWORDS):
-            print(f"  [SKIP – blocked domain] {title}")
             return None
             
         if job_url.startswith("/"):
             job_url = f"https://my.jobstreet.com{job_url}"
 
-        # URL Normalization: Strip tracking parameters and anchors for unique constraint stability
         if "?" in job_url:
             job_url = job_url.split("?")[0]
         if "#" in job_url:
@@ -339,27 +294,24 @@ def _parse_job_card(card, index):
             "company_logo_url": logo_url
         }
 
-    except Exception as e:
-        print("ERROR:", e)
+    except Exception:
         return None
 
-def scrape_internships(headless: bool = False) -> list[dict]:
+def scrape_internships(headless: bool = True, max_pages_per_query: int = 3) -> list[dict]:
     """
-    PHASE 1: Scrapes listing page ONLY from JobStreet using resilient native Selenium.
-    Handles JavaScript rendering and scrolling bot protections naturally.
+    PHASE 1: Scrapes listing pages from JobStreet across multiple search queries & pagination.
     """
-    print(f"Scraping from: {TARGET_URL}")
+    print(f"\n--- JobStreet Internship Scraper (Expanded Malaysia Coverage) ---")
     scraped_data = []
+    seen_urls = set()
 
-    # Configure Chrome heavily for stealth
     chrome_options = Options()
     if headless:
         chrome_options.add_argument("--headless=new")
     
-    # Critical Anti-bot measures
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
 
@@ -368,7 +320,6 @@ def scrape_internships(headless: bool = False) -> list[dict]:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Override navigator.webdriver to bypass advanced bot probes
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
             Object.defineProperty(navigator, 'webdriver', {
@@ -377,68 +328,65 @@ def scrape_internships(headless: bool = False) -> list[dict]:
             """
         })
 
-        print("Launching browser session...")
-        driver.get(TARGET_URL)
-        
-        print("Waiting for page load and Javascript rendering (15 seconds)...")
-        time.sleep(15) 
-        
-        # Ensure lazy loading triggers natively
-        print("Scrolling to trigger dynamic content loading...")
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(3)
+        print("Launching browser session for JobStreet...")
 
-        # Explicitly wait for structural layout blocks indicating JS finished
-        try:
-            WebDriverWait(driver, 20).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article[data-card-type='JobCard']"))
-            )
-        except Exception:
-            print("WARNING: Job cards took too long to load or site structure changed/blocked.")
-
-        job_cards = driver.find_elements(By.CSS_SELECTOR, "article[data-card-type='JobCard']")
-
-        if not job_cards:
-            print(f"No <article> tags found. Dumped fully rendered payload to dump.html")
-            with open("dump.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            return []
-
-        print(f"Discovered {len(job_cards)} potential job listings.\n")
-
-        for index, card in enumerate(job_cards):
-            internship = _parse_job_card(card, index + 1)
+        for query_slug in JOBSTREET_SEARCH_QUERIES:
+            print(f"\n  [JobStreet Query] '{query_slug}'...")
             
-            if internship:
-                scraped_data.append(internship)
+            for page in range(1, max_pages_per_query + 1):
+                target_url = f"https://my.jobstreet.com/{query_slug}?page={page}" if page > 1 else f"https://my.jobstreet.com/{query_slug}"
+                print(f"    Navigating to Page {page}: {target_url}")
                 
-                # PHASE 1: Print results gracefully matching exactly user pattern
-                print(f"[{len(scraped_data)}] {internship['title']} @ {internship['company_name']}")
+                try:
+                    driver.get(target_url)
+                    time.sleep(5)
 
-        print(f"\n--- PHASE 2: Deep Extraction Initiating ({len(scraped_data)} Jobs) ---")
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(2)
+
+                    job_cards = driver.find_elements(By.CSS_SELECTOR, "article")
+
+                    if not job_cards:
+                        print(f"    No cards found on page {page} for '{query_slug}'")
+                        break
+
+                    page_added = 0
+                    for index, card in enumerate(job_cards):
+                        internship = _parse_job_card(card, index + 1)
+                        if internship:
+                            url = internship["apply_url"]
+                            if url not in seen_urls:
+                                seen_urls.add(url)
+                                scraped_data.append(internship)
+                                page_added += 1
+
+                    print(f"    -> Page {page}: Found {len(job_cards)} cards, Kept {page_added} new candidate(s)")
+                    
+                    if len(job_cards) < 10:
+                        break
+
+                except Exception as e:
+                    print(f"    Error processing {target_url}: {e}")
+                    break
+
+        print(f"\n--- PHASE 2: Deep Extraction Initiating ({len(scraped_data)} JobStreet Candidates) ---")
         
-        for job in scraped_data:
+        for idx, job in enumerate(scraped_data, 1):
             url = job.get("apply_url")
-            
             if not url or not url.startswith("http"):
-                print(f"Skipping invalid URL: {url}")
                 continue
                 
-            print(f"\nVisiting: {url}")
+            print(f"  [{idx}/{len(scraped_data)}] Visiting: {url}")
             
             try:
                 driver.get(url)
+                time.sleep(2.5)
                 
-                # Enforce a conservative cooldown to handle Javascript payloads
-                time.sleep(3)
-                
-                # Wait explicitly for the newly mapped jobAdDetails node
-                WebDriverWait(driver, 10).until(
+                WebDriverWait(driver, 8).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, '[data-automation="jobAdDetails"]'))
                 )
                 
                 desc = driver.find_element(By.CSS_SELECTOR, '[data-automation="jobAdDetails"]').text
-                
                 job["description"] = desc
                 
                 requirements = extract_requirements(desc)
@@ -447,70 +395,66 @@ def scrape_internships(headless: bool = False) -> list[dict]:
                 skills = extract_skills(desc)
                 job["required_skills"] = skills
 
-                print(f"  + Description Extracted successfully ({len(desc)} characters).")
-                if requirements:
-                    print(f"  + Requirements Extracted ({len(requirements)} chars)")
-                else:
-                    print("  No requirements section found")
-                print(f"  + Skills Extracted: {skills}")
+                print(f"    + Description: {len(desc)} chars | Skills ({len(skills)}): {skills[:5]}")
 
-                # Phase 2 safety net: if zero tech skills extracted and the
-                # description itself has no tech signal, skip this job entirely.
-                if not skills and not _TECH_TITLE_RE.search(desc.lower()):
-                    print(f"  [SKIP – no tech skills in description] {job['title']}")
+                if not skills and not _TECH_TITLE_RE.search(desc.lower()) and not any(k in desc.lower() for k in ["cyber", "security", "soc"]):
+                    print(f"    [SKIP – no tech skills in description] {job['title']}")
                     job["_drop"] = True
                 
             except Exception as e:
-                print(f"  Phase 2 Deep Extraction Failed for {url}: {e}")
+                print(f"    Phase 2 Deep Extraction Failed for {url}: {e}")
                 job["description"] = "Description extraction failed."
 
     except Exception as e:
-        print(f"Selenium error while scraping: {e}")
+        print(f"Selenium error while scraping JobStreet: {e}")
     finally:
         if driver:
             driver.quit()
         
+    kept = [j for j in scraped_data if not j.get("_drop", False)]
+    print(f"\n  JobStreet scrape complete: {len(kept)} jobs ready for DB sync.")
     return scraped_data
 
 def classify_job(title: str, description: str = "") -> tuple[str, float]:
     """
-    Classifies an internship title (and optionally its description) into one
-    of the 15 standard career interest categories, assigning a classification confidence.
-    Returns: tuple (category_name, confidence_score)
+    Classifies an internship title (and description) into standard career interest categories.
     """
     t = title.lower()
+    d = description.lower()
     
-    # 1. Backend Developer
+    # 1. Cybersecurity (High priority check for all security terms)
+    if any(x in t for x in ["cyber", "security", "infosec", "cybersecurity", "penetration", "soc ", "vulnerability", "technology risk", "it risk", "grc", "defense"]):
+        return "Cybersecurity", 0.95
+    if "cybersecurity" in d or "information security" in d:
+        return "Cybersecurity", 0.85
+
+    # 2. Backend Developer
     if any(x in t for x in ["backend", "back-end", "back end"]):
         return "Backend Developer", 0.90
         
-    # 2. Frontend Developer
+    # 3. Frontend Developer
     if any(x in t for x in ["frontend", "front-end", "front end"]):
         return "Frontend Developer", 0.90
         
-    # 3. Full Stack Developer
+    # 4. Full Stack Developer
     if any(x in t for x in ["fullstack", "full-stack", "full stack"]):
         return "Full Stack Developer", 0.90
         
-    # 4. Mobile App Developer
+    # 5. Mobile App Developer
     if any(x in t for x in ["mobile", "ios", "android", "swift", "kotlin", "app developer"]):
         return "Mobile App Developer", 0.90
         
-    # 5. Data Scientist
+    # 6. Data Scientist
     if "data scientist" in t or "data science" in t:
         return "Data Scientist", 0.90
         
-    # 6. Data Analyst
+    # 7. Data Analyst
     if any(x in t for x in ["data analyst", "data analytics", "data analysis"]):
         return "Data Analyst", 0.90
         
-    # 7. AI / Machine Learning
+    # 8. AI / Machine Learning
     if any(x in t for x in ["machine learning", "ml", "artificial intelligence", "deep learning", "intelligent system"]) or re.search(r'\bai\b', t):
         return "AI / Machine Learning", 0.90
-        
-    # 8. Cybersecurity
-    if any(x in t for x in ["cyber", "security", "infosec", "cybersecurity", "penetration", "soc "]):
-        return "Cybersecurity", 0.90
         
     # 9. DevOps Engineer
     if any(x in t for x in ["devops", "sre", "platform engineer", "platform engineering", "ci/cd", "cicd"]):
@@ -540,6 +484,7 @@ def classify_job(title: str, description: str = "") -> tuple[str, float]:
     if any(x in t for x in ["software", "programmer", "developer", "development", "engineer", "web", "application", "coding"]):
         return "Software Engineer", 0.80
         
-    # Default fallback
     return "Software Engineer", 0.50
 
+if __name__ == "__main__":
+    scrape_internships(headless=True)
