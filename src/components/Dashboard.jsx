@@ -926,10 +926,27 @@ const CategoryFilterPopover = ({ selectedCategory, setSelectedCategory, categori
         const catLower = cat.toLowerCase().trim();
         const mainKeyword = catLower.split('/')[0].split('(')[0].trim();
 
-        if (
+        const isMatch = (
           (rawCat && (rawCat === catLower || rawCat.includes(mainKeyword))) ||
-          (title && title.includes(mainKeyword))
-        ) {
+          (title && title.includes(mainKeyword)) ||
+          (rawCat.includes('cyber') && catLower.includes('cyber')) ||
+          (title.includes('security') && catLower.includes('cyber')) ||
+          (title.includes('soc') && catLower.includes('cyber')) ||
+          (rawCat.includes('data scientist') && catLower.includes('data scientist')) ||
+          (rawCat.includes('data analyst') && catLower.includes('data analyst')) ||
+          (rawCat.includes('backend') && catLower.includes('backend')) ||
+          (rawCat.includes('frontend') && catLower.includes('frontend')) ||
+          (rawCat.includes('full stack') && catLower.includes('full stack')) ||
+          (rawCat.includes('mobile') && catLower.includes('mobile')) ||
+          (rawCat.includes('cloud') && catLower.includes('cloud')) ||
+          (rawCat.includes('devops') && catLower.includes('devops')) ||
+          (rawCat.includes('network') && catLower.includes('network')) ||
+          (rawCat.includes('ui') && catLower.includes('ui')) ||
+          (rawCat.includes('qa') && catLower.includes('qa')) ||
+          (rawCat.includes('business analyst') && catLower.includes('business analyst'))
+        );
+
+        if (isMatch) {
           counts[cat] = (counts[cat] || 0) + 1;
         }
       });
