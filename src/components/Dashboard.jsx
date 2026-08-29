@@ -1404,6 +1404,13 @@ const Dashboard = () => {
         setMatches([{ id: 'error-auth', match_score: 0, internships: { title: "Auth Error", company_name: "No valid session found. Please logout and login again." } }]);
         return;
       }
+
+      // 0. Ensure fresh matching results exist for current user in Supabase
+      try {
+        await supabase.rpc('generate_internship_matches', { p_student_id: authUser.id });
+      } catch (rpcErr) {
+        console.warn('RPC generate_internship_matches warning:', rpcErr);
+      }
       
       // 1. Fetch matches
       const { data: matchesData, error: matchesErr } = await supabase
