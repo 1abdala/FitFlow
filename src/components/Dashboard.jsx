@@ -1448,11 +1448,17 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (user && user.role === 'student') {
+    if (user) {
       fetchMatches();
-    } else if (user) {
+    } else {
       setLoadingMatches(false);
     }
+
+    const handleFocus = () => {
+      if (user) fetchMatches();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
   const toggleSave = async (internshipId, isSaved) => {
