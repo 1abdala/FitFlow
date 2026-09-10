@@ -1025,124 +1025,124 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
             )}
           </div>
 
-          {/* Notification Preferences Card */}
+          {/* Email Notification Settings Card */}
           <div className="p-5 md:p-6 space-y-6 settings-premium-card">
             <CardHeader 
               icon={Icons.IconBell} 
               title="Email Notification Settings" 
-              subtitle="Control automated transactional emails, daily match alerts, and weekly career digests" 
+              subtitle="Manage how and when FitFlow delivers personalized updates to your inbox." 
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
               {/* 1. Master Email Notifications */}
               <div 
                 onClick={() => handleNotificationChange('email_notifications')}
-                className="group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3"
+                className="group flex flex-col justify-between p-5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3.5"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-accent/10 text-accent p-2.5 rounded-xl border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                      <Icons.IconMail size={16} />
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent border border-accent/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconMail size={18} />
                     </div>
                     <div>
                       <div className="font-bold text-sm text-text leading-tight">Master Email Notifications</div>
-                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md mt-1">
-                        Global Switch
+                      <span className="inline-block text-[9.5px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md mt-1">
+                        GLOBAL SWITCH
                       </span>
                     </div>
                   </div>
                   <div 
-                    className="settings-premium-toggle shrink-0 mt-1" 
+                    className="settings-premium-toggle shrink-0 mt-0.5" 
                     role="switch" 
                     aria-checked={!!notifications.email_notifications}
                   />
                 </div>
-                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
-                  Master toggle to enable or disable all email communications from FitFlow. When turned off, no automated alerts or digests will be delivered to your inbox.
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5 font-medium">
+                  Enable or disable all email notifications.
                 </p>
               </div>
 
-              {/* 2. New ≥70% Internship Alerts */}
+              {/* 2. New High-Fit Match Alerts */}
               <div 
                 onClick={() => handleNotificationChange('new_high_match_alerts')}
-                className={`group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
+                className={`group flex flex-col justify-between p-5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-pos/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.08)] hover:bg-white/4 space-y-3.5 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-pos/10 text-pos p-2.5 rounded-xl border border-pos/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                      <Icons.IconZap size={16} />
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-pos/10 text-pos border border-pos/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconZap size={18} />
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-text leading-tight">New High-Fit Match Alerts (≥70%)</div>
-                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-pos bg-pos/10 border border-pos/20 px-2 py-0.5 rounded-md mt-1">
-                        Instant Scraper Trigger
+                      <div className="font-bold text-sm text-text leading-tight">New High-Fit Match Alerts</div>
+                      <span className="inline-block text-[9.5px] font-bold uppercase tracking-wider text-pos bg-pos/10 border border-pos/20 px-2 py-0.5 rounded-md mt-1">
+                        INSTANT ALERTS
                       </span>
                     </div>
                   </div>
                   <div 
-                    className="settings-premium-toggle shrink-0 mt-1" 
+                    className="settings-premium-toggle shrink-0 mt-0.5" 
                     role="switch" 
                     aria-checked={!!notifications.new_high_match_alerts}
                   />
                 </div>
-                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
-                  Receive an instant email notification whenever our scraper discovers a newly posted internship matching your profile skills and preferred roles with a fit score of 70% or higher.
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5 font-medium">
+                  Get alerts for internships matching ≥70%.
                 </p>
               </div>
 
-              {/* 3. Weekly Internship Summary */}
+              {/* 3. Weekly Match Summary */}
               <div 
                 onClick={() => handleNotificationChange('weekly_summary')}
-                className={`group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
+                className={`group flex flex-col justify-between p-5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent-2/40 hover:shadow-[0_0_25px_rgba(139,92,246,0.08)] hover:bg-white/4 space-y-3.5 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-accent-2/10 text-accent-2 p-2.5 rounded-xl border border-accent-2/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                      <Icons.IconFileText size={16} />
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-accent-2/10 text-accent-2 border border-accent-2/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconFileText size={18} />
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-text leading-tight">Weekly Match Summary Digest</div>
-                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-accent-2 bg-accent-2/10 border border-accent-2/20 px-2 py-0.5 rounded-md mt-1">
-                        Mondays @ 8:00 AM MYT
+                      <div className="font-bold text-sm text-text leading-tight">Weekly Match Summary</div>
+                      <span className="inline-block text-[9.5px] font-bold uppercase tracking-wider text-accent-2 bg-accent-2/10 border border-accent-2/20 px-2 py-0.5 rounded-md mt-1">
+                        MONDAYS • 8:00 AM MYT
                       </span>
                     </div>
                   </div>
                   <div 
-                    className="settings-premium-toggle shrink-0 mt-1" 
+                    className="settings-premium-toggle shrink-0 mt-0.5" 
                     role="switch" 
                     aria-checked={!!notifications.weekly_summary}
                   />
                 </div>
-                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
-                  Receive a consolidated weekly email digest every Monday morning summarizing all new vacancies discovered, total matched roles, and your top 5 recommended internship placements.
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5 font-medium">
+                  Get a weekly digest of your top internship matches.
                 </p>
               </div>
 
-              {/* 4. Weekly Skills Recommendations */}
+              {/* 4. Weekly Skills Guidance */}
               <div 
                 onClick={() => handleNotificationChange('weekly_skills_recommendations')}
-                className={`group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
+                className={`group flex flex-col justify-between p-5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-warn/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.08)] hover:bg-white/4 space-y-3.5 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-warn/10 text-warn p-2.5 rounded-xl border border-warn/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                      <Icons.IconSparkle size={16} />
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-warn/10 text-warn border border-warn/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconSparkle size={18} />
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-text leading-tight">Weekly Missing Skills Guidance</div>
-                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-warn bg-warn/10 border border-warn/20 px-2 py-0.5 rounded-md mt-1">
-                        Mondays @ 8:00 AM MYT
+                      <div className="font-bold text-sm text-text leading-tight">Weekly Skills Guidance</div>
+                      <span className="inline-block text-[9.5px] font-bold uppercase tracking-wider text-warn bg-warn/10 border border-warn/20 px-2 py-0.5 rounded-md mt-1">
+                        MONDAYS • 8:00 AM MYT
                       </span>
                     </div>
                   </div>
                   <div 
-                    className="settings-premium-toggle shrink-0 mt-1" 
+                    className="settings-premium-toggle shrink-0 mt-0.5" 
                     role="switch" 
                     aria-checked={!!notifications.weekly_skills_recommendations}
                   />
                 </div>
-                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
-                  Receive a weekly personalized career guidance report analyzing active vacancies in your domain to highlight the top 5 missing skills that will unlock the most new internship opportunities.
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5 font-medium">
+                  Get your top missing skills and learning recommendations.
                 </p>
               </div>
             </div>
