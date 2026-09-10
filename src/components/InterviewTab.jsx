@@ -779,280 +779,504 @@ const InterviewTab = ({ user, onNavigate }) => {
 
         {/* VIEW 2: SETUP CONFIGURATION */}
         {view === 'setup' && (
-          <motion.div key="setup" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="card p-8 max-w-xl mx-auto space-y-6">
-            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', fontWeight: 700 }} className="mb-4">Configure Interview Session</h3>
-            
-            {/* 1. Job Role Selection */}
-            <div className="space-y-2 relative">
-              <label className="input-label">Practice Position Context</label>
-              <div className="relative">
-                {/* Trigger Button */}
-                <div 
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full flex items-center justify-between cursor-pointer transition-all hover:border-[var(--accent)]"
-                  style={{
-                    padding: '12px 14px',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '10px',
-                    color: 'var(--text)',
-                  }}
-                >
-                  <span className="truncate text-sm">
-                    {selectedJobId 
-                      ? (() => {
-                          const job = recommendedJobs.find(j => j.id === selectedJobId);
-                          return job ? `${job.title} at ${job.company_name}` : "General Internship Role (Mixed Topics)";
-                        })()
-                      : "General Internship Role (Mixed Topics)"
-                    }
-                  </span>
-                  <svg 
-                    width="12" 
-                    height="12" 
-                    viewBox="0 0 12 12" 
-                    fill="none" 
-                    style={{ 
-                      transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
-                      transition: 'transform 0.2s ease',
-                      stroke: 'var(--text-mute)',
-                      strokeWidth: 2
-                    }}
-                  >
-                    <path d="M2 4L6 8L10 4" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+          <motion.div 
+            key="setup" 
+            initial={{ opacity: 0, y: 15 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -15 }} 
+            className="max-w-[1440px] mx-auto w-full space-y-8 px-2 sm:px-4 py-4"
+          >
+            {/* 1. TOP HEADER */}
+            <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-[0_0_25px_rgba(79,124,255,0.4)] border border-white/20">
+                  <Icons.IconMic size={22} />
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight font-space-grotesk flex items-center gap-2">
+                    AI Interview Prep
+                  </h2>
+                  <p className="text-xs sm:text-sm text-text-mute mt-0.5 font-medium">
+                    Practice realistic internship interview simulations powered by Gemini.
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setView('dashboard')} 
+                className="flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-xs font-semibold text-white/90 transition-all duration-200 shadow-md backdrop-blur-md cursor-pointer"
+              >
+                <Icons.IconArrowLeft size={14} /> Back to Dashboard
+              </button>
+            </div>
+
+            {/* 2. MAIN CONTENT — TWO COLUMN LAYOUT */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+              
+              {/* LEFT COLUMN: MAIN CONFIGURATION CARD (~70% width) */}
+              <div className="lg:col-span-8 bg-[#091026] border border-white/10 rounded-3xl p-6 sm:p-8 md:p-9 shadow-[0_10px_40px_rgba(0,0,0,0.5)] space-y-8 relative overflow-hidden">
+                
+                {/* Card Top Header */}
+                <div className="flex items-center gap-4 pb-6 border-b border-white/5">
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 shadow-inner">
+                    <Icons.IconSliders size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-white font-space-grotesk tracking-tight">
+                      Configure Your Interview
+                    </h3>
+                    <p className="text-xs sm:text-sm text-text-mute mt-0.5 font-medium">
+                      Set up your practice session with your preferred settings.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Dropdown Options Popup */}
-                {isDropdownOpen && (
-                  <>
-                    {/* Invisible overlay to close on click outside */}
-                    <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                    
-                    <div 
-                      className="absolute left-0 right-0 mt-2 z-20 rounded-xl border p-3 space-y-3 shadow-2xl backdrop-blur-md"
-                      style={{
-                        background: 'rgba(23, 27, 38, 0.98)',
-                        borderColor: 'var(--border)',
-                        maxHeight: '320px',
-                        display: 'flex',
-                        flexDirection: 'column'
-                      }}
-                    >
-                      {/* Search Input Box */}
-                      <div className="relative">
-                        <input 
-                          type="text"
-                          placeholder="Type to search positions..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          onClick={(e) => e.stopPropagation()} // Prevent closing dropdown when clicking input
-                          style={{
-                            width: '100%',
-                            padding: '10px 14px',
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: '1px solid var(--border)',
-                            borderRadius: '8px',
-                            color: 'var(--text)',
-                            fontSize: '13px',
-                            outline: 'none'
-                          }}
-                          className="hover:border-[var(--accent)] focus:border-[var(--accent)] transition-all"
-                        />
-                      </div>
+                {/* FORM LAYOUT: 2-COLUMN GRID ON DESKTOP */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  
+                  {/* Row 1, Col 1: 1. Select Job Role / Context */}
+                  <div className="space-y-2.5 relative">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
+                      <Icons.IconBriefcase size={14} className="text-indigo-400" />
+                      1. Select Job Role / Context
+                    </label>
 
-                      {/* Scrollable list */}
+                    <div className="relative">
+                      {/* Trigger Button */}
                       <div 
-                        className="overflow-y-auto space-y-1 flex-1 pr-1 custom-scrollbar"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="w-full flex items-center justify-between cursor-pointer transition-all duration-200 hover:border-indigo-500/50 focus:border-indigo-500 shadow-inner"
                         style={{
-                          maxHeight: '220px'
+                          padding: '14px 16px',
+                          background: '#04091A',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '14px',
+                          color: '#FFFFFF',
                         }}
                       >
-                        <div 
-                          onClick={() => {
-                            setSelectedJobId("");
-                            setSearchTerm("");
-                            setIsDropdownOpen(false);
-                          }}
-                          className="p-2.5 rounded-lg text-xs cursor-pointer transition-all hover:bg-[rgba(255,255,255,0.05)]"
-                          style={{
-                            backgroundColor: !selectedJobId ? 'var(--accent-soft)' : 'transparent',
-                            color: !selectedJobId ? 'var(--accent)' : 'var(--text-mute)',
-                            fontWeight: !selectedJobId ? '600' : 'normal'
+                        <div className="flex items-center gap-2.5 truncate pr-2">
+                          <span className="text-indigo-400 text-xs font-bold shrink-0">✨</span>
+                          <span className="truncate text-xs sm:text-sm font-medium">
+                            {selectedJobId 
+                              ? (() => {
+                                  const job = recommendedJobs.find(j => j.id === selectedJobId);
+                                  return job ? `${job.title} at ${job.company_name}` : "General Internship Role (Mixed Topics)";
+                                })()
+                              : (customRole && customRole !== 'general' ? customRole : "General Internship Role (Mixed Topics)")
+                            }
+                          </span>
+                        </div>
+                        <svg 
+                          width="14" 
+                          height="14" 
+                          viewBox="0 0 12 12" 
+                          fill="none" 
+                          style={{ 
+                            transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
+                            transition: 'transform 0.2s ease',
+                            stroke: '#94A3B8',
+                            strokeWidth: 2
                           }}
                         >
-                          General Internship Role (Mixed Topics)
-                        </div>
+                          <path d="M2 4L6 8L10 4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
 
-                        {recommendedJobs
-                          .filter(job => {
-                            if (!searchTerm) return true;
-                            const term = searchTerm.toLowerCase();
-                            return (
-                              job.title.toLowerCase().includes(term) || 
-                              (job.company_name || '').toLowerCase().includes(term)
-                            );
-                          })
-                          .map(job => {
-                            const isSelected = selectedJobId === job.id;
-                            return (
+                      {/* Dropdown Options Popup */}
+                      {isDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setIsDropdownOpen(false)} />
+                          
+                          <div 
+                            className="absolute left-0 right-0 mt-2 z-30 rounded-2xl border border-indigo-500/30 p-3 space-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl"
+                            style={{
+                              background: '#0B132E',
+                              maxHeight: '340px',
+                              display: 'flex',
+                              flexDirection: 'column'
+                            }}
+                          >
+                            <div className="relative">
+                              <input 
+                                type="text"
+                                placeholder="Type to search roles or positions..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  width: '100%',
+                                  padding: '10px 14px',
+                                  background: 'rgba(255, 255, 255, 0.05)',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                  borderRadius: '10px',
+                                  color: '#FFFFFF',
+                                  fontSize: '13px',
+                                  outline: 'none'
+                                }}
+                                className="hover:border-indigo-500/50 focus:border-indigo-500 transition-all"
+                              />
+                            </div>
+
+                            <div className="overflow-y-auto space-y-1 flex-1 pr-1 custom-scrollbar" style={{ maxHeight: '240px' }}>
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2.5 pt-1 pb-0.5">
+                                Default Roles
+                              </div>
                               <div 
-                                key={job.id}
                                 onClick={() => {
-                                  setSelectedJobId(job.id);
+                                  setSelectedJobId("");
+                                  setCustomRole("general");
                                   setSearchTerm("");
                                   setIsDropdownOpen(false);
                                 }}
-                                className="p-2.5 rounded-lg text-xs cursor-pointer transition-all hover:bg-[rgba(255,255,255,0.05)]"
-                                style={{
-                                  backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
-                                  color: isSelected ? 'var(--accent)' : 'var(--text)',
-                                  fontWeight: isSelected ? '600' : 'normal',
-                                  border: isSelected ? '1px solid var(--accent-soft)' : '1px solid transparent'
-                                }}
+                                className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${!selectedJobId && customRole === 'general' ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-slate-300 hover:bg-white/5'}`}
                               >
-                                <div className="font-semibold text-xs text-[var(--text)]">{job.title}</div>
-                                <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-mute)' }}>{job.company_name}</div>
+                                General Internship Role (Mixed Topics)
                               </div>
-                            );
-                          })
-                        }
-                        
-                        {recommendedJobs.filter(job => {
-                          if (!searchTerm) return true;
-                          const term = searchTerm.toLowerCase();
-                          return (
-                            job.title.toLowerCase().includes(term) || 
-                            (job.company_name || '').toLowerCase().includes(term)
-                          );
-                        }).length === 0 && (
-                          <div className="text-center text-xs text-text-mute py-6">
-                            No positions found matching "{searchTerm}"
+                              {['Software Developer', 'Data Analyst', 'UI/UX Designer', 'Cybersecurity Analyst'].map(role => (
+                                <div 
+                                  key={role}
+                                  onClick={() => {
+                                    setSelectedJobId("");
+                                    setCustomRole(role);
+                                    setSearchTerm("");
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${!selectedJobId && customRole === role ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-slate-300 hover:bg-white/5'}`}
+                                >
+                                  {role}
+                                </div>
+                              ))}
+
+                              {recommendedJobs.length > 0 && (
+                                <>
+                                  <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2.5 pt-3 pb-0.5 border-t border-white/5">
+                                    Matched Scraped Positions
+                                  </div>
+                                  {recommendedJobs
+                                    .filter(job => {
+                                      if (!searchTerm) return true;
+                                      const term = searchTerm.toLowerCase();
+                                      return (
+                                        job.title.toLowerCase().includes(term) || 
+                                        (job.company_name || '').toLowerCase().includes(term)
+                                      );
+                                    })
+                                    .map(job => {
+                                      const isSelected = selectedJobId === job.id;
+                                      return (
+                                        <div 
+                                          key={job.id}
+                                          onClick={() => {
+                                            setSelectedJobId(job.id);
+                                            setSearchTerm("");
+                                            setIsDropdownOpen(false);
+                                          }}
+                                          className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-slate-200 hover:bg-white/5'}`}
+                                        >
+                                          <div className="font-semibold text-xs text-white">{job.title}</div>
+                                          <div className="text-[10px] text-text-mute mt-0.5">{job.company_name}</div>
+                                        </div>
+                                      );
+                                    })
+                                  }
+                                </>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        </>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-text-mute leading-normal pl-0.5">
+                      Choose a specific industry role to focus the technical and behavioral questions.
+                    </p>
+                  </div>
+
+                  {/* Row 1, Col 2: 2. Select Focus Area */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
+                      <Icons.IconFileText size={14} className="text-indigo-400" />
+                      2. Select Focus Area
+                    </label>
+
+                    <div className="relative">
+                      <select 
+                        value={interviewType} 
+                        onChange={(e) => setInterviewType(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '14px 16px',
+                          background: '#04091A',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '14px',
+                          color: '#FFFFFF',
+                          appearance: 'none',
+                          fontSize: '14px',
+                          fontWeight: 500
+                        }}
+                        className="cursor-pointer hover:border-indigo-500/50 focus:border-indigo-500 transition-all outline-none"
+                      >
+                        <option value="mixed">Mixed Topics</option>
+                        <option value="technical">Technical Focus</option>
+                        <option value="behavioral">Behavioral Focus</option>
+                        <option value="hr">HR & Communication Focus</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M2 4L6 8L10 4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
-              <p className="text-[11px] text-text-dim">Select any scraped internship position to focus the interview simulation on that specific job description.</p>
-            </div>
+                    <p className="text-[11px] text-text-mute leading-normal pl-0.5">
+                      Cover a mix of technical, behavioral and communication skills.
+                    </p>
+                  </div>
 
-            {/* 1b. Custom target role context selection */}
-            {!selectedJobId && (
-              <div className="space-y-2">
-                <label className="input-label">Practice Role Context</label>
-                <div className="input-wrap">
-                  <select 
-                    value={customRole} 
-                    onChange={(e) => setCustomRole(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      background: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '10px',
-                      color: 'var(--text)',
-                      appearance: 'auto'
-                    }}
-                  >
-                    <option value="general">General Practice (Mixed Topics)</option>
-                    <option value="Software Developer">Software Developer</option>
-                    <option value="Data Analyst">Data Analyst</option>
-                    <option value="UI/UX Designer">UI/UX Designer</option>
-                    <option value="Cybersecurity">Cybersecurity Analyst</option>
-                  </select>
+                  {/* Row 2, Col 1: 3. Number of Questions */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
+                      <Icons.IconHelpCircle size={14} className="text-indigo-400" />
+                      3. Number of Questions
+                    </label>
+
+                    <div className="relative">
+                      <select 
+                        value={numQuestions} 
+                        onChange={(e) => setNumQuestions(Number(e.target.value))}
+                        style={{
+                          width: '100%',
+                          padding: '14px 16px',
+                          background: '#04091A',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '14px',
+                          color: '#FFFFFF',
+                          appearance: 'none',
+                          fontSize: '14px',
+                          fontWeight: 500
+                        }}
+                        className="cursor-pointer hover:border-indigo-500/50 focus:border-indigo-500 transition-all outline-none"
+                      >
+                        <option value={3}>3 Questions (Quick Practice)</option>
+                        <option value={5}>5 Questions (Standard)</option>
+                        <option value={10}>10 Questions (Thorough Simulation)</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M2 4L6 8L10 4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-text-mute leading-normal pl-0.5">
+                      Short and focused session to build your confidence.
+                    </p>
+                  </div>
+
+                  {/* Row 2, Col 2: 4. Difficulty Level */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
+                      <Icons.IconBarChart size={14} className="text-indigo-400" />
+                      4. Difficulty Level
+                    </label>
+
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {[
+                        { id: 'beginner', label: 'Beginner' },
+                        { id: 'intermediate', label: 'Intermediate' },
+                        { id: 'advanced', label: 'Advanced' }
+                      ].map(item => {
+                        const isSelected = difficulty === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setDifficulty(item.id)}
+                            className={`py-3.5 px-3 rounded-2xl text-xs font-semibold transition-all duration-200 flex items-center justify-center select-none cursor-pointer ${
+                              isSelected
+                                ? 'bg-gradient-to-r from-blue-600/30 to-indigo-600/30 text-white border-2 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.35)]'
+                                : 'bg-[#04091A] border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-text-mute leading-normal pl-0.5">
+                      Adjust the difficulty based on your current level.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] text-text-dim">Choose a specific industry role to focus the technical and behavioral questions.</p>
-              </div>
-            )}
 
-            {/* 1c. Configurable number of questions */}
-            <div className="space-y-2">
-              <label className="input-label">Number of Questions</label>
-              <div className="input-wrap">
-                <select 
-                  value={numQuestions} 
-                  onChange={(e) => setNumQuestions(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '10px',
-                    color: 'var(--text)',
-                    appearance: 'auto'
-                  }}
-                >
-                  <option value={3}>3 Questions (Quick Practice)</option>
-                  <option value={5}>5 Questions (Standard)</option>
-                  <option value={10}>10 Questions (Thorough Simulation)</option>
-                </select>
-              </div>
-            </div>
+                {/* 3. INFORMATION / AI POWERED SECTION */}
+                <div className="bg-gradient-to-r from-[#0C163B] via-[#0E1A47] to-[#12183B] border border-indigo-500/30 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative overflow-hidden">
+                  <div className="flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-[0_0_18px_rgba(99,102,241,0.4)] mt-0.5">
+                      <Icons.IconSparkle size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base text-white font-space-grotesk">
+                        What happens next?
+                      </h4>
+                      <p className="text-xs text-slate-300/80 leading-relaxed max-w-xl mt-1">
+                        Your session will use Gemini to generate dynamic questions and OpenAI to evaluate your performance with detailed feedback and skill gap analysis.
+                      </p>
+                    </div>
+                  </div>
 
-            {/* 2. Interview Type */}
-            <div className="space-y-2">
-              <label className="input-label">Focus Area</label>
-              <div className="grid grid-cols-2 gap-3">
-                {['mixed', 'technical', 'behavioral', 'hr'].map(t => (
+                  <span className="px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold tracking-wide flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    <Icons.IconZap size={12} className="text-indigo-400" /> AI Powered
+                  </span>
+                </div>
+
+                {/* 4. ACTION AREA */}
+                <div className="flex items-center justify-between pt-6 border-t border-white/10 flex-wrap gap-4">
                   <button 
-                    key={t}
-                    type="button"
-                    onClick={() => setInterviewType(t)}
-                    className="p-3 rounded-lg text-xs font-semibold capitalize border transition-all"
-                    style={{
-                      borderColor: interviewType === t ? 'var(--accent)' : 'var(--border)',
-                      backgroundColor: interviewType === t ? 'var(--accent-soft)' : 'var(--surface)',
-                      color: interviewType === t ? 'var(--text)' : 'var(--text-mute)',
-                      boxShadow: interviewType === t ? '0 0 12px rgba(79, 124, 255, 0.25)' : 'none'
-                    }}
+                    type="button" 
+                    onClick={() => setView('dashboard')} 
+                    className="px-6 py-3 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-semibold transition-all duration-200 cursor-pointer"
                   >
-                    {t === 'mixed' ? 'Mixed Topics' : `${t} focus`}
+                    Cancel
                   </button>
-                ))}
-              </div>
-            </div>
 
-            {/* 3. Difficulty */}
-            <div className="space-y-2">
-              <label className="input-label">Difficulty Level</label>
-              <div className="grid grid-cols-3 gap-3">
-                {['beginner', 'intermediate', 'advanced'].map(d => (
                   <button 
-                    key={d}
-                    type="button"
-                    onClick={() => setDifficulty(d)}
-                    className="p-3 rounded-lg text-xs font-semibold capitalize border transition-all"
-                    style={{
-                      borderColor: difficulty === d ? 'var(--accent)' : 'var(--border)',
-                      backgroundColor: difficulty === d ? 'var(--accent-soft)' : 'var(--surface)',
-                      color: difficulty === d ? 'var(--text)' : 'var(--text-mute)',
-                      boxShadow: difficulty === d ? '0 0 12px rgba(79, 124, 255, 0.25)' : 'none'
-                    }}
+                    type="button" 
+                    onClick={handleStartInterview} 
+                    disabled={loading}
+                    className="px-8 py-3.5 rounded-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-bold text-sm sm:text-base flex items-center gap-2.5 shadow-[0_0_30px_rgba(79,124,255,0.4)] hover:shadow-[0_0_40px_rgba(79,124,255,0.6)] transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    {d}
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Initializing...
+                      </>
+                    ) : (
+                      <>
+                        <Icons.IconPlay size={16} fill="currentColor" /> Start Practice
+                      </>
+                    )}
                   </button>
-                ))}
+                </div>
               </div>
-            </div>
 
-            <div className="pt-4 flex justify-between items-center">
-              <button 
-                type="button" 
-                onClick={() => setView('dashboard')} 
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                onClick={handleStartInterview} 
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? 'Initializing...' : 'Launch Simulation'} <Icons.IconArrowRight size={14} />
-              </button>
+              {/* RIGHT COLUMN — SESSION SUMMARY (~30% width) */}
+              <div className="lg:col-span-4 bg-[#091026] border border-white/10 rounded-3xl p-6 flex flex-col justify-between space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+                
+                <div className="space-y-6">
+                  {/* Top Graphic */}
+                  <div className="bg-gradient-to-b from-[#0F1B47]/90 to-[#0A1230] border border-indigo-500/30 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center relative overflow-hidden text-center min-h-[190px] shadow-inner group">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.25)_0%,transparent_70%)]" />
+                    
+                    {/* Floating soundwave / chat elements matching graphic in reference image */}
+                    <div className="absolute top-4 right-4 bg-indigo-500/20 border border-indigo-400/30 rounded-lg p-2 text-indigo-300 shadow-md animate-pulse">
+                      <Icons.IconMessageSquare size={16} />
+                    </div>
+                    <div className="absolute bottom-4 left-4 bg-blue-500/20 border border-blue-400/30 rounded-lg p-2 text-blue-300 shadow-md">
+                      <Icons.IconSliders size={16} />
+                    </div>
+
+                    {/* Central Orb */}
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 p-0.5 shadow-[0_0_35px_rgba(99,102,241,0.6)] relative z-10 group-hover:scale-105 transition-transform duration-300">
+                      <div className="w-full h-full rounded-full bg-[#080E26] flex items-center justify-center text-white border border-white/20">
+                        <Icons.IconMic size={32} className="text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Header Title */}
+                  <h4 className="font-bold text-base text-white flex items-center gap-2.5 font-space-grotesk pt-1">
+                    <Icons.IconList size={18} className="text-indigo-400" />
+                    Your Session Summary
+                  </h4>
+
+                  {/* Summary Rows */}
+                  <div className="space-y-4">
+                    {/* Row 1: Role */}
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-9 h-9 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                          <Icons.IconBriefcase size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-indigo-200">Role / Context</div>
+                          <div className="text-xs text-slate-300 truncate mt-0.5 font-medium">
+                            {selectedJobId 
+                              ? (() => {
+                                  const job = recommendedJobs.find(j => j.id === selectedJobId);
+                                  return job ? `${job.title} (${job.company_name})` : "General Internship Role";
+                                })()
+                              : (customRole && customRole !== 'general' ? customRole : "General Internship Role (Mixed Topics)")
+                            }
+                          </div>
+                        </div>
+                      </div>
+                      <Icons.IconChevronRight size={16} className="text-slate-500 shrink-0" />
+                    </div>
+
+                    {/* Row 2: Focus Area */}
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-9 h-9 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
+                          <Icons.IconTarget size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-purple-200">Focus Area</div>
+                          <div className="text-xs text-slate-300 truncate mt-0.5 capitalize font-medium">
+                            {interviewType === 'mixed' ? 'Mixed Topics' : `${interviewType} Focus`}
+                          </div>
+                        </div>
+                      </div>
+                      <Icons.IconChevronRight size={16} className="text-slate-500 shrink-0" />
+                    </div>
+
+                    {/* Row 3: Questions */}
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-9 h-9 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0">
+                          <Icons.IconMessageSquare size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-blue-200">Questions</div>
+                          <div className="text-xs text-slate-300 truncate mt-0.5 font-medium">
+                            {numQuestions} Questions
+                          </div>
+                        </div>
+                      </div>
+                      <Icons.IconChevronRight size={16} className="text-slate-500 shrink-0" />
+                    </div>
+
+                    {/* Row 4: Difficulty */}
+                    <div className="flex items-center justify-between pb-1">
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                          <Icons.IconBarChart size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-emerald-200">Difficulty</div>
+                          <div className="text-xs text-slate-300 truncate mt-0.5 capitalize font-medium">
+                            {difficulty}
+                          </div>
+                        </div>
+                      </div>
+                      <Icons.IconChevronRight size={16} className="text-slate-500 shrink-0" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Pro Tip Card */}
+                <div className="bg-gradient-to-r from-indigo-950/60 to-blue-950/60 border border-indigo-500/25 rounded-2xl p-4 flex items-start gap-3.5 shadow-md">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <Icons.IconLightbulb size={16} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-indigo-200 uppercase tracking-wider">
+                      Pro tip
+                    </div>
+                    <p className="text-xs text-slate-300/80 leading-relaxed mt-1">
+                      Choose a role that matches your target internship for more relevant questions!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </motion.div>
         )}
