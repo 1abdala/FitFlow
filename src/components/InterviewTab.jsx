@@ -789,7 +789,7 @@ const InterviewTab = ({ user, onNavigate }) => {
             {/* 1. TOP HEADER */}
             <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-white/5">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-[0_0_25px_rgba(79,124,255,0.4)] border border-white/20">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 text-white flex items-center justify-center shrink-0 shadow-[0_0_25px_rgba(37,99,235,0.45)] border border-white/20">
                   <Icons.IconMic size={22} />
                 </div>
                 <div>
@@ -818,7 +818,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                 
                 {/* Card Top Header */}
                 <div className="flex items-center gap-4 pb-6 border-b border-white/5">
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-inner">
                     <Icons.IconSliders size={20} />
                   </div>
                   <div>
@@ -837,7 +837,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                   {/* Row 1, Col 1: 1. Select Job Role / Context */}
                   <div className="space-y-2.5 relative">
                     <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
-                      <Icons.IconBriefcase size={14} className="text-indigo-400" />
+                      <Icons.IconBriefcase size={14} className="text-blue-400" />
                       1. Select Job Role / Context
                     </label>
 
@@ -845,7 +845,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                       {/* Trigger Button */}
                       <div 
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="w-full flex items-center justify-between cursor-pointer transition-all duration-200 hover:border-indigo-500/50 focus:border-indigo-500 shadow-inner"
+                        className="w-full flex items-center justify-between cursor-pointer transition-all duration-200 hover:border-blue-500/50 focus:border-blue-500 shadow-inner"
                         style={{
                           padding: '14px 16px',
                           background: '#04091A',
@@ -855,7 +855,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                         }}
                       >
                         <div className="flex items-center gap-2.5 truncate pr-2">
-                          <span className="text-indigo-400 text-xs font-bold shrink-0">✨</span>
+                          <span className="text-blue-400 text-xs font-bold shrink-0">✨</span>
                           <span className="truncate text-xs sm:text-sm font-medium">
                             {selectedJobId 
                               ? (() => {
@@ -888,9 +888,9 @@ const InterviewTab = ({ user, onNavigate }) => {
                           <div className="fixed inset-0 z-20" onClick={() => setIsDropdownOpen(false)} />
                           
                           <div 
-                            className="absolute left-0 right-0 mt-2 z-30 rounded-2xl border border-indigo-500/30 p-3 space-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl"
+                            className="absolute left-0 right-0 mt-2 z-30 rounded-2xl border border-blue-500/30 p-3 space-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl"
                             style={{
-                              background: '#0B132E',
+                              background: '#07122A',
                               maxHeight: '340px',
                               display: 'flex',
                               flexDirection: 'column'
@@ -913,12 +913,12 @@ const InterviewTab = ({ user, onNavigate }) => {
                                   fontSize: '13px',
                                   outline: 'none'
                                 }}
-                                className="hover:border-indigo-500/50 focus:border-indigo-500 transition-all"
+                                className="hover:border-blue-500/50 focus:border-blue-500 transition-all"
                               />
                             </div>
 
                             <div className="overflow-y-auto space-y-1 flex-1 pr-1 custom-scrollbar" style={{ maxHeight: '240px' }}>
-                              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2.5 pt-1 pb-0.5">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400 px-2.5 pt-1 pb-0.5">
                                 Default Roles
                               </div>
                               <div 
@@ -928,7 +928,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                                   setSearchTerm("");
                                   setIsDropdownOpen(false);
                                 }}
-                                className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${!selectedJobId && customRole === 'general' ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-slate-300 hover:bg-white/5'}`}
+                                className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${!selectedJobId && customRole === 'general' ? 'bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30' : 'text-slate-300 hover:bg-white/5'}`}
                               >
                                 General Internship Role (Mixed Topics)
                               </div>
@@ -941,7 +941,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                                     setSearchTerm("");
                                     setIsDropdownOpen(false);
                                   }}
-                                  className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${!selectedJobId && customRole === role ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-slate-300 hover:bg-white/5'}`}
+                                  className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${!selectedJobId && customRole === role ? 'bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30' : 'text-slate-300 hover:bg-white/5'}`}
                                 >
                                   {role}
                                 </div>
@@ -949,7 +949,7 @@ const InterviewTab = ({ user, onNavigate }) => {
 
                               {recommendedJobs.length > 0 && (
                                 <>
-                                  <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2.5 pt-3 pb-0.5 border-t border-white/5">
+                                  <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400 px-2.5 pt-3 pb-0.5 border-t border-white/5">
                                     Matched Scraped Positions
                                   </div>
                                   {recommendedJobs
@@ -971,7 +971,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                                             setSearchTerm("");
                                             setIsDropdownOpen(false);
                                           }}
-                                          className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' : 'text-slate-200 hover:bg-white/5'}`}
+                                          className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected ? 'bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30' : 'text-slate-200 hover:bg-white/5'}`}
                                         >
                                           <div className="font-semibold text-xs text-white">{job.title}</div>
                                           <div className="text-[10px] text-text-mute mt-0.5">{job.company_name}</div>
@@ -994,7 +994,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                   {/* Row 1, Col 2: 2. Select Focus Area */}
                   <div className="space-y-2.5">
                     <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
-                      <Icons.IconFileText size={14} className="text-indigo-400" />
+                      <Icons.IconFileText size={14} className="text-blue-400" />
                       2. Select Focus Area
                     </label>
 
@@ -1013,7 +1013,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                           fontSize: '14px',
                           fontWeight: 500
                         }}
-                        className="cursor-pointer hover:border-indigo-500/50 focus:border-indigo-500 transition-all outline-none"
+                        className="cursor-pointer hover:border-blue-500/50 focus:border-blue-500 transition-all outline-none"
                       >
                         <option value="mixed">Mixed Topics</option>
                         <option value="technical">Technical Focus</option>
@@ -1034,7 +1034,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                   {/* Row 2, Col 1: 3. Number of Questions */}
                   <div className="space-y-2.5">
                     <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
-                      <Icons.IconHelpCircle size={14} className="text-indigo-400" />
+                      <Icons.IconHelpCircle size={14} className="text-blue-400" />
                       3. Number of Questions
                     </label>
 
@@ -1053,7 +1053,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                           fontSize: '14px',
                           fontWeight: 500
                         }}
-                        className="cursor-pointer hover:border-indigo-500/50 focus:border-indigo-500 transition-all outline-none"
+                        className="cursor-pointer hover:border-blue-500/50 focus:border-blue-500 transition-all outline-none"
                       >
                         <option value={3}>3 Questions (Quick Practice)</option>
                         <option value={5}>5 Questions (Standard)</option>
@@ -1073,7 +1073,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                   {/* Row 2, Col 2: 4. Difficulty Level */}
                   <div className="space-y-2.5">
                     <label className="text-xs font-bold text-slate-200 flex items-center gap-2 tracking-wide uppercase">
-                      <Icons.IconBarChart size={14} className="text-indigo-400" />
+                      <Icons.IconBarChart size={14} className="text-blue-400" />
                       4. Difficulty Level
                     </label>
 
@@ -1091,7 +1091,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                             onClick={() => setDifficulty(item.id)}
                             className={`py-3.5 px-3 rounded-2xl text-xs font-semibold transition-all duration-200 flex items-center justify-center select-none cursor-pointer ${
                               isSelected
-                                ? 'bg-gradient-to-r from-blue-600/30 to-indigo-600/30 text-white border-2 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.35)]'
+                                ? 'bg-gradient-to-r from-blue-600/35 to-cyan-600/35 text-white border-2 border-blue-400 shadow-[0_0_22px_rgba(59,130,246,0.45)]'
                                 : 'bg-[#04091A] border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
                             }`}
                           >
@@ -1107,9 +1107,9 @@ const InterviewTab = ({ user, onNavigate }) => {
                 </div>
 
                 {/* 3. INFORMATION / AI POWERED SECTION */}
-                <div className="bg-gradient-to-r from-[#0C163B] via-[#0E1A47] to-[#12183B] border border-indigo-500/30 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative overflow-hidden">
+                <div className="bg-gradient-to-r from-[#081736] via-[#0B214D] to-[#0A1B3D] border border-blue-500/30 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative overflow-hidden">
                   <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-[0_0_18px_rgba(99,102,241,0.4)] mt-0.5">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 text-white flex items-center justify-center shrink-0 shadow-[0_0_18px_rgba(37,99,235,0.45)] mt-0.5">
                       <Icons.IconSparkle size={20} />
                     </div>
                     <div>
@@ -1122,8 +1122,8 @@ const InterviewTab = ({ user, onNavigate }) => {
                     </div>
                   </div>
 
-                  <span className="px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold tracking-wide flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                    <Icons.IconZap size={12} className="text-indigo-400" /> AI Powered
+                  <span className="px-3.5 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold tracking-wide flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    <Icons.IconZap size={12} className="text-blue-400" /> AI Powered
                   </span>
                 </div>
 
@@ -1141,7 +1141,7 @@ const InterviewTab = ({ user, onNavigate }) => {
                     type="button" 
                     onClick={handleStartInterview} 
                     disabled={loading}
-                    className="px-8 py-3.5 rounded-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-bold text-sm sm:text-base flex items-center gap-2.5 shadow-[0_0_30px_rgba(79,124,255,0.4)] hover:shadow-[0_0_40px_rgba(79,124,255,0.6)] transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                    className="px-8 py-3.5 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-sm sm:text-base flex items-center gap-2.5 shadow-[0_0_30px_rgba(37,99,235,0.45)] hover:shadow-[0_0_40px_rgba(37,99,235,0.65)] transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {loading ? (
                       <>
@@ -1162,28 +1162,28 @@ const InterviewTab = ({ user, onNavigate }) => {
                 
                 <div className="space-y-6">
                   {/* Top Graphic */}
-                  <div className="bg-gradient-to-b from-[#0F1B47]/90 to-[#0A1230] border border-indigo-500/30 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center relative overflow-hidden text-center min-h-[190px] shadow-inner group">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.25)_0%,transparent_70%)]" />
+                  <div className="bg-gradient-to-b from-[#0B1E40]/90 to-[#07132B] border border-blue-500/30 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center relative overflow-hidden text-center min-h-[190px] shadow-inner group">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.25)_0%,transparent_70%)]" />
                     
                     {/* Floating soundwave / chat elements matching graphic in reference image */}
-                    <div className="absolute top-4 right-4 bg-indigo-500/20 border border-indigo-400/30 rounded-lg p-2 text-indigo-300 shadow-md animate-pulse">
+                    <div className="absolute top-4 right-4 bg-blue-500/20 border border-blue-400/30 rounded-lg p-2 text-blue-300 shadow-md animate-pulse">
                       <Icons.IconMessageSquare size={16} />
                     </div>
-                    <div className="absolute bottom-4 left-4 bg-blue-500/20 border border-blue-400/30 rounded-lg p-2 text-blue-300 shadow-md">
+                    <div className="absolute bottom-4 left-4 bg-cyan-500/20 border border-cyan-400/30 rounded-lg p-2 text-cyan-300 shadow-md">
                       <Icons.IconSliders size={16} />
                     </div>
 
                     {/* Central Orb */}
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 p-0.5 shadow-[0_0_35px_rgba(99,102,241,0.6)] relative z-10 group-hover:scale-105 transition-transform duration-300">
-                      <div className="w-full h-full rounded-full bg-[#080E26] flex items-center justify-center text-white border border-white/20">
-                        <Icons.IconMic size={32} className="text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 p-0.5 shadow-[0_0_35px_rgba(37,99,235,0.6)] relative z-10 group-hover:scale-105 transition-transform duration-300">
+                      <div className="w-full h-full rounded-full bg-[#07132B] flex items-center justify-center text-white border border-white/20">
+                        <Icons.IconMic size={32} className="text-blue-300 drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                       </div>
                     </div>
                   </div>
 
                   {/* Header Title */}
                   <h4 className="font-bold text-base text-white flex items-center gap-2.5 font-space-grotesk pt-1">
-                    <Icons.IconList size={18} className="text-indigo-400" />
+                    <Icons.IconList size={18} className="text-blue-400" />
                     Your Session Summary
                   </h4>
 
@@ -1192,11 +1192,11 @@ const InterviewTab = ({ user, onNavigate }) => {
                     {/* Row 1: Role */}
                     <div className="flex items-center justify-between pb-3 border-b border-white/5">
                       <div className="flex items-center gap-3 min-w-0 pr-2">
-                        <div className="w-9 h-9 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0">
                           <Icons.IconBriefcase size={16} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-semibold text-indigo-200">Role / Context</div>
+                          <div className="text-xs font-semibold text-blue-200">Role / Context</div>
                           <div className="text-xs text-slate-300 truncate mt-0.5 font-medium">
                             {selectedJobId 
                               ? (() => {
@@ -1214,11 +1214,11 @@ const InterviewTab = ({ user, onNavigate }) => {
                     {/* Row 2: Focus Area */}
                     <div className="flex items-center justify-between pb-3 border-b border-white/5">
                       <div className="flex items-center gap-3 min-w-0 pr-2">
-                        <div className="w-9 h-9 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 flex items-center justify-center shrink-0">
                           <Icons.IconTarget size={16} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-semibold text-purple-200">Focus Area</div>
+                          <div className="text-xs font-semibold text-cyan-200">Focus Area</div>
                           <div className="text-xs text-slate-300 truncate mt-0.5 capitalize font-medium">
                             {interviewType === 'mixed' ? 'Mixed Topics' : `${interviewType} Focus`}
                           </div>
@@ -1262,12 +1262,12 @@ const InterviewTab = ({ user, onNavigate }) => {
                 </div>
 
                 {/* Bottom Pro Tip Card */}
-                <div className="bg-gradient-to-r from-indigo-950/60 to-blue-950/60 border border-indigo-500/25 rounded-2xl p-4 flex items-start gap-3.5 shadow-md">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="bg-gradient-to-r from-blue-950/60 to-slate-900/60 border border-blue-500/25 rounded-2xl p-4 flex items-start gap-3.5 shadow-md">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5">
                     <Icons.IconLightbulb size={16} />
                   </div>
                   <div>
-                    <div className="font-bold text-xs text-indigo-200 uppercase tracking-wider">
+                    <div className="font-bold text-xs text-blue-200 uppercase tracking-wider">
                       Pro tip
                     </div>
                     <p className="text-xs text-slate-300/80 leading-relaxed mt-1">
