@@ -380,7 +380,17 @@ const InternshipDetailsModal = ({ job, user, onClose }) => {
             </div>
 
             <div className="idm-apply">
-              <div className="idm-apply-pre">You're in the top <b>{Math.max(5, 100 - score + 8)}%</b> of applicants by skill match.</div>
+              <div className="idm-apply-pre">
+                {score >= 85 ? (
+                  <>High priority recommendation — <b>Top-tier fit match</b> for your profile.</>
+                ) : score >= 70 ? (
+                  <>Recommended vacancy — <b>Strong fit match</b> for your profile.</>
+                ) : score >= 50 ? (
+                  <>Compatible vacancy — <b>Moderate fit match</b> for your profile.</>
+                ) : (
+                  <>Evaluated based on employer requirements & profile criteria.</>
+                )}
+              </div>
               <button
                 onClick={handleApply}
                 className="btn btn-primary btn-lg idm-apply-btn"
@@ -405,28 +415,49 @@ const InternshipDetailsModal = ({ job, user, onClose }) => {
           {/* Skill matrix */}
           <section className="idm-section">
             <div className="idm-section-head"><Icons.IconTarget size={14} /> Skill Matrix</div>
-            <div className="idm-skills-grid">
-              <div className="idm-skill-card idm-skill-pos">
-                <div className="idm-skill-head">
-                  <span className="idm-skill-icon"><Icons.IconCheck size={13} /></span>
-                  <span>Verified skills</span>
-                  <span className="idm-skill-count">{verified.length}</span>
+            {allSkills.length > 0 ? (
+              <div className="idm-skills-grid">
+                <div className="idm-skill-card idm-skill-pos">
+                  <div className="idm-skill-head">
+                    <span className="idm-skill-icon"><Icons.IconCheck size={13} /></span>
+                    <span>Verified skills</span>
+                    <span className="idm-skill-count">{verified.length}</span>
+                  </div>
+                  <div className="idm-chip-row">
+                    {verified.map((s, i) => <span key={i} className="skill-chip skill-pos">{s}</span>)}
+                  </div>
                 </div>
-                <div className="idm-chip-row">
-                  {verified.map((s, i) => <span key={i} className="skill-chip skill-pos">{s}</span>)}
+                <div className="idm-skill-card idm-skill-gap">
+                  <div className="idm-skill-head">
+                    <span className="idm-skill-icon idm-skill-icon-warn"><Icons.IconBolt size={13} /></span>
+                    <span>Skill gaps</span>
+                    <span className="idm-skill-count">{missingSkills.length}</span>
+                  </div>
+                  <div className="idm-chip-row">
+                    {missingSkills.map((s, i) => <span key={i} className="skill-chip skill-miss">{s}</span>)}
+                  </div>
                 </div>
               </div>
-              <div className="idm-skill-card idm-skill-gap">
-                <div className="idm-skill-head">
-                  <span className="idm-skill-icon idm-skill-icon-warn"><Icons.IconBolt size={13} /></span>
-                  <span>Skill gaps</span>
-                  <span className="idm-skill-count">{missingSkills.length}</span>
-                </div>
-                <div className="idm-chip-row">
-                  {missingSkills.map((s, i) => <span key={i} className="skill-chip skill-miss">{s}</span>)}
-                </div>
+            ) : (
+              <div style={{
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-mute)',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <Icons.IconAlertCircle size={16} style={{ flexShrink: 0, color: 'var(--accent)' }} />
+                <span>
+                  {internships?.description && internships.description.length >= 80
+                    ? "Skill extraction requires review — description available but no dictionary skills matched."
+                    : "No employer requirements specified in source posting."}
+                </span>
               </div>
-            </div>
+            )}
           </section>
 
           {/* Description */}

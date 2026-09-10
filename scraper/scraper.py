@@ -160,14 +160,35 @@ SKILL_KEYWORDS = {
     "Power BI": ["power bi", "powerbi", "tableau"],
     "Computer Vision": ["computer vision"],
     "NLP": ["nlp", "natural language processing"],
-    "Networking": ["networking", "network management", "tcp/ip", "lan/wan", "network+", "tcp ip"],
+
+    # Cybersecurity & Networking Domain
+    "Cybersecurity": ["cybersecurity", "cyber security", "information security", "infosec", "comptia", "it security"],
+    "Network Security": ["network security", "network defence", "network defense"],
+    "SIEM": ["siem", "siem tools", "siem platforms", "security information and event management"],
+    "Splunk": ["splunk"],
+    "Vulnerability Assessment": ["vulnerability assessment", "vulnerability scan", "vulnerability scanning", "vulnerability management", "vapt"],
+    "Penetration Testing": ["penetration testing", "pen testing", "pentest", "ethical hacking"],
+    "Incident Response": ["incident response", "incident reporting", "threat detection", "incident management", "incident investigation"],
+    "Firewall": ["firewall", "firewalls", "ips", "ids", "fortinet", "palo alto"],
+    "Active Directory": ["active directory", "ad", "identity management", "iam"],
+    "Networking": ["networking", "network management", "lan/wan", "network+"],
+    "Network Protocols": ["network protocols", "tcp/ip", "tcp ip", "routing and switching"],
+    "OSI Model": ["osi model", "osi"],
+    "Patch Management": ["patch management", "configuration management", "patch deployment"],
+
+    # Health, Safety, Security & Environment (HSSE) Domain
+    "Occupational Safety & Health": ["occupational safety", "occupational safety & health", "occupational safety and health", "osh", "hse", "hsse", "ehs"],
+    "Health & Safety": ["health and safety", "health & safety", "workplace safety", "safety management"],
+    "Safety Compliance": ["safety compliance", "compliance initiatives", "regulatory compliance", "safety regulations"],
+    "Environmental Management": ["environmental management", "environmental safety", "iso 14001", "iso 45001"],
+    "Risk Assessment": ["risk assessment", "risk mitigation", "risk management", "hazard identification"],
+    "Auditing": ["auditing", "safety audit", "internal audit", "iso audit"],
+
+    # Business, Office & General Skills
     "Troubleshooting": ["troubleshooting", "hardware troubleshooting", "software troubleshooting", "technical support", "it support"],
     "System Administration": ["system administration", "sysadmin", "system admin"],
-    "Active Directory": ["active directory", "ad"],
     "VMware": ["vmware", "virtualization", "hyper-v"],
-    "Cybersecurity": ["cybersecurity", "cyber security", "information security", "infosec", "comptia", "network security", "it security", "firewall", "ips", "soc", "penetration testing"],
-    "OSI Model": ["osi model", "osi"],
-    "Microsoft Office": ["microsoft office", "ms office", "office 365", "microsoft office suite", "excel", "powerpoint", "word"],
+    "Microsoft Office": ["microsoft office", "ms office", "office 365", "microsoft office suite", "excel", "powerpoint", "word", "ms excel", "ms word"],
     "Project Management": ["project management", "agile", "scrum", "kanban", "jira", "azure devops"],
     "Git": ["git", "version control", "github", "gitlab"],
     "UI/UX Design": ["ui/ux", "ui ux", "ux design", "user experience", "user interface", "figma", "adobe xd", "photoshop"],
@@ -175,9 +196,9 @@ SKILL_KEYWORDS = {
     "Problem Solving": ["problem solving", "problem-solving", "analytical skills"],
     "ITIL": ["itil", "it infrastructure library"],
     "CRM": ["crm"],
-    "Software Testing": ["software testing", "quality assurance", "qa", "software qa", "testing", "manual testing", "automated testing", "test automation", "test execution"],
+    "Software Testing": ["software testing", "quality assurance", "qa testing", "software qa", "manual testing", "automated testing", "test automation", "test execution", "unit testing", "integration testing"],
     "Debugging": ["debugging", "debug", "bug reporting", "error logging"],
-    "Software Engineering": ["software engineering", "software development", "software dev", "computer science", "coding"],
+    "Software Engineering": ["software engineering", "software development", "software developer", "computer science degree"],
     "API": ["api", "apis", "backend services", "web services"],
     "SDLC": ["sdlc", "software development lifecycle", "software development life cycle"],
     "Data Structures & Algorithms": ["data structures", "algorithms", "data structures and algorithms"],
@@ -193,10 +214,12 @@ def normalize_text(text):
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
-def extract_skills(text):
+def extract_skills(text, title=""):
     if not text:
         return []
-    normalized = normalize_text(text)
+    
+    full_text = f"{title}\n{text}"
+    normalized = normalize_text(full_text)
     extracted = set()
 
     for canonical_skill, synonyms in SKILL_KEYWORDS.items():

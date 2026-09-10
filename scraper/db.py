@@ -3,6 +3,7 @@ import requests
 import re
 from supabase import create_client, Client
 from datetime import datetime, timedelta, timezone
+from email_service import send_high_match_alert_email, HIGH_MATCH_THRESHOLD
 
 def get_supabase_client() -> Client:
     url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
@@ -19,7 +20,7 @@ def get_supabase_client() -> Client:
     
     # If using JWT anon key, authenticate session with coordinator role to satisfy RLS write permissions
     if "eyJ" in key:
-        auth_email = os.environ.get("SCRAPER_AUTH_EMAIL", "testaudit@fitflow.edu.my")
+        auth_email = os.environ.get("SCRAPER_AUTH_EMAIL", "testaudit@fitflow.app")
         auth_pass = os.environ.get("SCRAPER_AUTH_PASS", "TestPassword123!")
         try:
             auth_res = client.auth.sign_in_with_password({"email": auth_email, "password": auth_pass})
@@ -228,9 +229,9 @@ def regenerate_all_matches() -> int:
                 title = internship.get("title", "Internship")
                 company = internship.get("company_name", "Company")
 
-                # Scenario A: Newly Scraped Match (High Score) -> type: 'internship'
+                # Scenario A: Newly Scraped Match (High Score >= HIGH_MATCH_THRESHOLD) -> type: 'internship'
                 is_new = internship_id not in old_matches
-                if is_new and new_score >= 80 and internship_id not in notified_new_internships and new_internships_enabled:
+                if is_new and new_score >= HIGH_MATCH_THRESHOLD and internship_id not in notified_new_internships and new_internships_enabled:
                     # Check if it's a High-Match Opportunity based on preferred roles
                     is_pref_high_match = False
                     matched_pref_role = None
@@ -266,6 +267,24 @@ def regenerate_all_matches() -> int:
                             "internship_id": internship_id
                         }).execute()
                     notified_new_internships.add(internship_id)
+
+                    # Trigger Resend Case 1 High Match Email Alert
+                    try:
+                        skills_res = supabase.table("internship_skills").select("skills(name)").eq("internship_id", internship_id).execute()
+                        req_skills = [s.get("skills", {}).get("name") for s in (skills_res.data or []) if s.get("skills")]
+                        gaps_res = supabase.table("skill_gaps").select("skills(name)").eq("internship_id", internship_id).eq("student_id", student_id).execute()
+                        gap_skills = [g.get("skills", {}).get("name") for g in (gaps_res.data or []) if g.get("skills")]
+                        verified_skills = [s for s in req_skills if s not in gap_skills]
+
+                        send_high_match_alert_email(
+                            student_id=student_id,
+                            internship=internship,
+                            match_score=new_score,
+                            verified_skills=verified_skills,
+                            skill_gaps=gap_skills
+                        )
+                    except Exception as ex:
+                        print(f"[HIGH MATCH EMAIL DISPATCH ERROR] {ex}")
 
                 # Scenario B: Match Score Improved -> type: 'match'
                 prev_notified = notified_scores.get(internship_id)

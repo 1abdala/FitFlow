@@ -209,7 +209,7 @@ async def get_summary(request: Request, internship_id: str):
 
     # Enforce valid authentication token
     auth_header = request.headers.get("Authorization")
-    get_user_id_from_token(auth_header, supabase)
+    user_id = get_user_id_from_token(auth_header, supabase)
     
     # Apply the auth token to database client for RLS context
     if auth_header:
@@ -226,9 +226,27 @@ async def get_summary(request: Request, internship_id: str):
         company = job.get('company_name', job.get('company', 'Unknown Company'))
         desc = job.get('description', '')
 
-        print(f"DEBUG: Found job: {title}. Sending to Gemini...")
+        # Fetch relational skills & candidate match breakdown
+        skills_res = supabase.table("internship_skills").select("skills(name)").eq("internship_id", internship_id).execute()
+        req_skills = [s.get("skills", {}).get("name") for s in (skills_res.data or []) if s.get("skills")]
 
-        prompt = f"Title: {title}\nCompany: {company}\nDescription: {desc}"
+        match_res = supabase.table("matching_results").select("match_score, skill_gaps(skills(name))").eq("internship_id", internship_id).eq("student_id", user_id).execute()
+        match_info = match_res.data[0] if match_res.data else {}
+        gaps = [g.get("skills", {}).get("name") for g in match_info.get("skill_gaps", []) if g.get("skills")]
+        score = round(float(match_info.get("match_score", 0)))
+        verified = [s for s in req_skills if s not in gaps]
+
+        print(f"DEBUG: Found job: {title}. Verified: {verified}, Gaps: {gaps}. Sending to Gemini...")
+
+        prompt = (
+            f"Target Internship Role: {title}\n"
+            f"Company: {company}\n"
+            f"Candidate Match Score: {score}%\n"
+            f"Required Role Skills: {', '.join(req_skills) if req_skills else 'No explicit skills extracted'}\n"
+            f"Candidate Verified Skills: {', '.join(verified) if verified else 'None'}\n"
+            f"Candidate Skill Gaps to Address: {', '.join(gaps) if gaps else 'None'}\n"
+            f"Job Description: {desc[:2000]}\n"
+        )
 
         try:
             response = generate_content_unified(

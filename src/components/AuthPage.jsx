@@ -84,6 +84,18 @@ const AuthPage = () => {
   };
 
   useEffect(() => {
+    // 1. Read email search param from notification email links for instant account pre-fill
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get('email');
+      if (emailParam) {
+        setEmail(emailParam);
+        setIsLogin(true);
+      }
+    } catch (e) {
+      console.warn("Could not parse email search param:", e);
+    }
+
     const handleOAuthSession = async (session) => {
       try {
         setLoading(true);

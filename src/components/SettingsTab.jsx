@@ -205,12 +205,15 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
   // Notification states
   const [notifications, setNotifications] = useState(() => {
     const defaultPrefs = {
+      email_notifications: true,
+      new_high_match_alerts: true,
+      weekly_summary: true,
+      weekly_skills_recommendations: true,
       match_updates: true,
       new_internships: true,
-      application_status: true,
-      weekly_summary: false
+      application_status: true
     };
-    return user?.notification_preferences || defaultPrefs;
+    return { ...defaultPrefs, ...(user?.notification_preferences || {}) };
   });
 
   const [savingProfile, setSavingProfile] = useState(false);
@@ -573,30 +576,45 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
     }
   };
 
-  // Compute hasChanges dynamically
-  const hasChanges = user && (
-    fullName !== (user.full_name || user.name || '') ||
-    phone !== (user.phone || '') ||
-    dob !== (user.dob || '') ||
-    gender !== (user.gender || '') ||
-    nationality !== (user.nationality || 'Malaysian') ||
-    matric !== (user.matric || '') ||
-    faculty !== (user.faculty || '') ||
-    programme !== (user.programme || '') ||
-    String(yearOfStudy) !== String(user.year_of_study || '') ||
-    String(semester) !== String(user.semester || '') ||
-    preferredLocation !== (user.preferred_location || '') ||
-    linkedinUrl !== (user.linkedin_url || '') ||
-    githubUrl !== (user.github_url || '') ||
-    portfolioUrl !== (user.portfolio_url || '') ||
-    JSON.stringify(preferredRoles) !== JSON.stringify(user.preferred_roles || []) ||
-    JSON.stringify(notifications) !== JSON.stringify(user.notification_preferences || {
-      match_updates: true,
-      new_internships: true,
-      application_status: true,
-      weekly_summary: false
-    })
-  );
+  // Compute hasChanges dynamically with accurate field normalization
+  const hasChanges = useMemo(() => {
+    if (!user) return false;
+    
+    const normalizeP = (p) => (p || '').replace(/^\+?60/, '').replace(/^0+/, '').trim();
+    const userPhoneNorm = normalizeP(user.phone);
+    const currentPhoneNorm = normalizeP(phone);
+
+    const defaultNotifs = {
+      email_notifications: true,
+      new_high_match_alerts: true,
+      weekly_summary: true,
+      weekly_skills_recommendations: true
+    };
+    const savedNotifs = user.notification_preferences || defaultNotifs;
+
+    return (
+      fullName.trim() !== (user.full_name || user.name || '').trim() ||
+      currentPhoneNorm !== userPhoneNorm ||
+      dob !== (user.dob || '') ||
+      gender !== (user.gender || '') ||
+      nationality !== (user.nationality || 'Malaysian') ||
+      matric.trim() !== (user.matric || '').trim() ||
+      faculty !== (user.faculty || '') ||
+      programme !== (user.programme || '') ||
+      String(yearOfStudy || '') !== String(user.year_of_study || '') ||
+      String(semester || '') !== String(user.semester || '') ||
+      preferredLocation !== (user.preferred_location || '') ||
+      linkedinUrl.trim() !== (user.linkedin_url || '').trim() ||
+      githubUrl.trim() !== (user.github_url || '').trim() ||
+      portfolioUrl.trim() !== (user.portfolio_url || '').trim() ||
+      JSON.stringify([...preferredRoles].sort()) !== JSON.stringify([...(user.preferred_roles || [])].sort()) ||
+      JSON.stringify(notifications) !== JSON.stringify(savedNotifs)
+    );
+  }, [
+    user, fullName, phone, dob, gender, nationality, matric, faculty, programme, 
+    yearOfStudy, semester, preferredLocation, linkedinUrl, githubUrl, portfolioUrl, 
+    preferredRoles, notifications
+  ]);
 
   const totalRequired = profileStatus?.totalFields || 14;
   const completedCount = profileStatus?.completedFields || 0;
@@ -1011,93 +1029,121 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
           <div className="p-5 md:p-6 space-y-6 settings-premium-card">
             <CardHeader 
               icon={Icons.IconBell} 
-              title="Notification Settings" 
-              subtitle="Configure how you receive system updates and alerts" 
+              title="Email Notification Settings" 
+              subtitle="Control automated transactional emails, daily match alerts, and weekly career digests" 
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Option 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Master Email Notifications */}
               <div 
-                onClick={() => handleNotificationChange('match_updates')}
-                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+                onClick={() => handleNotificationChange('email_notifications')}
+                className="group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3"
               >
-                <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <Icons.IconSparkle size={14} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-accent/10 text-accent p-2.5 rounded-xl border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconMail size={16} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-text leading-tight">Master Email Notifications</div>
+                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md mt-1">
+                        Global Switch
+                      </span>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-text truncate">Match Updates</div>
-                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Score change alerts</div>
-                  </div>
+                  <div 
+                    className="settings-premium-toggle shrink-0 mt-1" 
+                    role="switch" 
+                    aria-checked={!!notifications.email_notifications}
+                  />
                 </div>
-                <div 
-                  className="settings-premium-toggle shrink-0" 
-                  role="switch" 
-                  aria-checked={!!notifications.match_updates}
-                />
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
+                  Master toggle to enable or disable all email communications from FitFlow. When turned off, no automated alerts or digests will be delivered to your inbox.
+                </p>
               </div>
 
-              {/* Option 2 */}
+              {/* 2. New ≥70% Internship Alerts */}
               <div 
-                onClick={() => handleNotificationChange('new_internships')}
-                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+                onClick={() => handleNotificationChange('new_high_match_alerts')}
+                className={`group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
               >
-                <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <Icons.IconSearch size={14} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-pos/10 text-pos p-2.5 rounded-xl border border-pos/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconZap size={16} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-text leading-tight">New High-Fit Match Alerts (≥70%)</div>
+                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-pos bg-pos/10 border border-pos/20 px-2 py-0.5 rounded-md mt-1">
+                        Instant Scraper Trigger
+                      </span>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-text truncate">New Positions</div>
-                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Scraped matches alerts</div>
-                  </div>
+                  <div 
+                    className="settings-premium-toggle shrink-0 mt-1" 
+                    role="switch" 
+                    aria-checked={!!notifications.new_high_match_alerts}
+                  />
                 </div>
-                <div 
-                  className="settings-premium-toggle shrink-0" 
-                  role="switch" 
-                  aria-checked={!!notifications.new_internships}
-                />
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
+                  Receive an instant email notification whenever our scraper discovers a newly posted internship matching your profile skills and preferred roles with a fit score of 70% or higher.
+                </p>
               </div>
 
-              {/* Option 3 */}
-              <div 
-                onClick={() => handleNotificationChange('application_status')}
-                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
-              >
-                <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <Icons.IconCheckCircle size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-text truncate">Tracker Updates</div>
-                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Status movement alerts</div>
-                  </div>
-                </div>
-                <div 
-                  className="settings-premium-toggle shrink-0" 
-                  role="switch" 
-                  aria-checked={!!notifications.application_status}
-                />
-              </div>
-
-              {/* Option 4 */}
+              {/* 3. Weekly Internship Summary */}
               <div 
                 onClick={() => handleNotificationChange('weekly_summary')}
-                className="group flex items-center justify-between p-4 rounded-xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/30 hover:shadow-[0_0_20px_rgba(79,124,255,0.06)] hover:bg-white/4"
+                className={`group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
               >
-                <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <div className="bg-accent/10 text-accent p-2 rounded-lg border border-accent/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <Icons.IconFileText size={14} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-accent-2/10 text-accent-2 p-2.5 rounded-xl border border-accent-2/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconFileText size={16} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-text leading-tight">Weekly Match Summary Digest</div>
+                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-accent-2 bg-accent-2/10 border border-accent-2/20 px-2 py-0.5 rounded-md mt-1">
+                        Mondays @ 8:00 AM MYT
+                      </span>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-text truncate">Weekly Digest</div>
-                    <div className="text-[10px] text-text-mute mt-0.5 leading-normal truncate">Weekend summary report</div>
-                  </div>
+                  <div 
+                    className="settings-premium-toggle shrink-0 mt-1" 
+                    role="switch" 
+                    aria-checked={!!notifications.weekly_summary}
+                  />
                 </div>
-                <div 
-                  className="settings-premium-toggle shrink-0" 
-                  role="switch" 
-                  aria-checked={!!notifications.weekly_summary}
-                />
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
+                  Receive a consolidated weekly email digest every Monday morning summarizing all new vacancies discovered, total matched roles, and your top 5 recommended internship placements.
+                </p>
+              </div>
+
+              {/* 4. Weekly Skills Recommendations */}
+              <div 
+                onClick={() => handleNotificationChange('weekly_skills_recommendations')}
+                className={`group flex flex-col justify-between p-4.5 rounded-2xl cursor-pointer select-none transition-all duration-300 bg-white/2 border border-white/5 hover:border-accent/40 hover:shadow-[0_0_25px_rgba(79,124,255,0.08)] hover:bg-white/4 space-y-3 ${!notifications.email_notifications ? 'opacity-40 pointer-events-none' : ''}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-warn/10 text-warn p-2.5 rounded-xl border border-warn/20 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      <Icons.IconSparkle size={16} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-text leading-tight">Weekly Missing Skills Guidance</div>
+                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-warn bg-warn/10 border border-warn/20 px-2 py-0.5 rounded-md mt-1">
+                        Mondays @ 8:00 AM MYT
+                      </span>
+                    </div>
+                  </div>
+                  <div 
+                    className="settings-premium-toggle shrink-0 mt-1" 
+                    role="switch" 
+                    aria-checked={!!notifications.weekly_skills_recommendations}
+                  />
+                </div>
+                <p className="text-xs text-text-mute leading-relaxed pl-0.5">
+                  Receive a weekly personalized career guidance report analyzing active vacancies in your domain to highlight the top 5 missing skills that will unlock the most new internship opportunities.
+                </p>
               </div>
             </div>
           </div>
