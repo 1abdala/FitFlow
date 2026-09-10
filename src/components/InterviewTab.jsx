@@ -4,6 +4,7 @@ import * as Icons from './Icons';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import InternshipDetailsModal from './InternshipDetailsModal';
+import { CompanyLogo } from './CompanyLogo';
 
 const CATEGORY_KEYWORDS = {
   Frontend: ['react', 'vue', 'angular', 'svelte', 'html', 'css', 'javascript', 'typescript', 'next', 'nuxt', 'tailwind', 'redux', 'sass', 'vite', 'webpack', 'frontend', 'ui', 'ux'],
@@ -196,14 +197,23 @@ const InterviewTab = ({ user, onNavigate }) => {
 
       rec.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
-        if (event.error === 'no-speech') {
-          return; // Ignore silence timeout
-        }
-        if (event.error === 'aborted') {
-          return; // Ignore aborts
-        }
-        toast.error(`Speech error: ${event.error}`);
         setIsRecording(false);
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+          return; // Ignore silence timeout or intentional stop
+        }
+        if (event.error === 'network') {
+          toast.error("Speech recognition connection error. Ensure your connection and microphone access are enabled, or type your response!");
+          return;
+        }
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          toast.error("Microphone access denied. Please allow microphone permissions in your browser.");
+          return;
+        }
+        if (event.error === 'audio-capture') {
+          toast.error("No microphone detected. Please connect a microphone or type your response.");
+          return;
+        }
+        toast.error(`Speech recognition notice: ${event.error}`);
       };
 
       rec.onend = () => {
@@ -1713,21 +1723,10 @@ const InterviewTab = ({ user, onNavigate }) => {
                         overflow: 'hidden'
                       }}
                     >
-                      {selectedResult.internship.company_logo_url ? (
-                        <img 
-                          src={selectedResult.internship.company_logo_url} 
-                          alt={selectedResult.internship.company_name} 
-                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'block';
-                          }}
-                        />
-                      ) : null}
-                      <Icons.IconBriefcase 
-                        size={18} 
-                        style={{ display: selectedResult.internship.company_logo_url ? 'none' : 'block', color: 'var(--text-mute)' }} 
+                      <CompanyLogo 
+                        src={selectedResult.internship.company_logo_url} 
+                        alt={selectedResult.internship.company_name} 
+                        size={18}
                       />
                     </div>
                     

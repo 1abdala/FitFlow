@@ -13,6 +13,7 @@ import ApplicationsTab from './ApplicationsTab';
 import InterviewTab from './InterviewTab';
 import { Toaster, toast } from 'react-hot-toast';
 import { useApplications } from '../hooks/useApplications';
+import { CompanyLogo } from './CompanyLogo';
 import { useUpdateApplication } from '../hooks/useUpdateApplication';
 import { fetchFullProfile } from '../lib/profileHelpers';
 import { getRelativeTimeString } from '../lib/dateUtils';
@@ -468,19 +469,11 @@ const MatchRow = ({ job, onSelect, animDelay = 0 }) => {
       onClick={() => onSelect(job)}
     >
       <div className="match-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {job.internships?.company_logo_url ? (
-          <img 
-            src={job.internships.company_logo_url} 
-            alt={job.internships.company_name} 
-            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
-            }}
-          />
-        ) : null}
-        <Icons.IconBriefcase size={16} style={{ display: job.internships?.company_logo_url ? 'none' : 'block' }} />
+        <CompanyLogo 
+          src={job.internships?.company_logo_url} 
+          alt={job.internships?.company_name} 
+          size={16}
+        />
       </div>
       <div className="match-meta">
         <div className="match-role">{job.internships?.title}</div>
@@ -601,21 +594,12 @@ const MatchCard = ({ job, onSelect, onToggleSave, animDelay = 0, trackerStatus }
 
       <div className="m-card-stripe" />
       <div className="m-card-logo" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {job.internships?.company_logo_url ? (
-          <img 
-            src={job.internships.company_logo_url} 
-            alt={co} 
-            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
-          />
-        ) : null}
-        <span style={{ display: job.internships?.company_logo_url ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-          {(co || "Co").split(" ").slice(0, 2).map(w => w ? w[0] : "").join("")}
-        </span>
+        <CompanyLogo 
+          src={job.internships?.company_logo_url} 
+          alt={co} 
+          fallbackText={(co || "Co").split(" ").slice(0, 2).map(w => w ? w[0] : "").join("")}
+          size={16}
+        />
       </div>
       <div className="m-card-body">
         <div className="m-card-row1">
