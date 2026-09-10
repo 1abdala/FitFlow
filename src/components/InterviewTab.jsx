@@ -1283,168 +1283,288 @@ const InterviewTab = ({ user, onNavigate }) => {
 
         {/* VIEW 3: LIVE INTERVIEW ROOM */}
         {view === 'room' && (
-          <motion.div key="room" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-2xl mx-auto space-y-6">
-            
+          <motion.div 
+            key="room" 
+            initial={{ opacity: 0, y: 15 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: -15 }} 
+            className="max-w-[1440px] mx-auto w-full space-y-6 px-2 sm:px-4 py-2"
+          >
             {isEvaluating ? (
-              <div className="card p-12 text-center space-y-6">
-                <div style={{
-                  width: 48,
-                  height: 48,
-                  border: '3px solid var(--accent-soft)',
-                  borderTopColor: 'var(--accent)',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} className="mx-auto" />
+              /* AI EVALUATION OVERLAY */
+              <div className="bg-[#091026] border border-blue-500/30 rounded-3xl p-8 sm:p-12 md:p-16 text-center space-y-8 max-w-2xl mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15)_0%,transparent_70%)]" />
                 
-                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', fontWeight: 700 }}>AI is evaluating your interview...</h3>
-                <p style={{ color: 'var(--text-mute)', fontSize: '14px', maxWidth: '400px', lineHeight: 1.5 }} className="mx-auto">
-                  Gemini is analyzing your responses for technical knowledge, structure, communication tone, and confidence. Please wait.
-                </p>
+                <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 border-t-blue-400 animate-spin" />
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-[0_0_30px_rgba(59,130,246,0.6)]">
+                    <Icons.IconSparkle size={32} className="animate-pulse" />
+                  </div>
+                </div>
+
+                <div className="space-y-3 relative z-10">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white font-space-grotesk tracking-tight">
+                    Evaluating Your Interview Performance...
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                    Gemini AI is analyzing your answers for technical depth, structural clarity, tone, and confidence.
+                  </p>
+                </div>
+
+                <div className="bg-[#04091A] border border-white/10 rounded-2xl p-4 max-w-md mx-auto text-left space-y-2.5 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+                    <Icons.IconCheckCircle size={14} /> Analyzing response accuracy & relevancy
+                  </div>
+                  <div className="flex items-center gap-2 text-blue-400 font-semibold">
+                    <Icons.IconCheckCircle size={14} /> Evaluating communication structure (STAR method)
+                  </div>
+                  <div className="flex items-center gap-2 text-indigo-400 font-semibold">
+                    <Icons.IconCheckCircle size={14} /> Generating readiness fit score & career feedback
+                  </div>
+                </div>
               </div>
             ) : (
+              /* LIVE INTERVIEW CHAMBER */
               <div className="space-y-6">
                 
-                {/* Visual Interactivity Pulse */}
-                <div className="card p-6 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="relative w-20 h-20 flex items-center justify-center">
-                    <motion.div
-                      animate={{ 
-                        scale: (isTTSPlaying || isRecording) ? [1, 1.25, 1] : [1, 1.05, 1], 
-                        opacity: (isTTSPlaying || isRecording) ? [0.15, 0.4, 0.15] : [0.1, 0.2, 0.1] 
-                      }}
-                      transition={{ duration: isRecording ? 1 : 2, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute inset-0 rounded-full"
-                      style={{ 
-                        background: isRecording ? 'var(--danger)' : isTTSPlaying ? 'var(--accent)' : 'var(--pos)' 
-                      }}
-                    />
-                    <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center relative z-10" 
-                      style={{ 
-                        background: isRecording ? 'var(--danger)' : isTTSPlaying ? 'var(--accent)' : 'var(--pos)' 
-                      }}
-                    >
-                      {isRecording ? (
-                        <Icons.IconMic size={20} className="text-white" />
-                      ) : isTTSPlaying ? (
-                        <Icons.IconVolume2 size={20} className="text-white" />
-                      ) : (
-                        <Icons.IconTarget size={20} className="text-white" />
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-text-mute tracking-wider uppercase">
-                      {isRecording 
-                        ? 'Recording your answer...' 
-                        : isTTSPlaying 
-                          ? 'AI Interviewer is speaking...' 
-                          : 'Interviewer is listening (Click "Speak Answer")'}
-                    </div>
-                    <div className="text-[10px] text-text-dim">
-                      Question {questionCount} of {maxQuestions}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Interviewer Dialog Bubble */}
-                <div className="card p-6" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-strong)' }}>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                      <Icons.IconUser size={14} className="text-accent" />
-                    </div>
-                    <div className="space-y-3 flex-1">
-                      <div className="text-[10px] font-bold text-accent uppercase tracking-wider">Interviewer</div>
-                      <p className="text-base font-medium leading-relaxed">{currentQuestion}</p>
-                      
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => speakText(currentQuestion)} 
-                          className="btn btn-ghost btn-sm text-xs py-1 px-3"
-                          style={{ height: 'auto' }}
-                        >
-                          <Icons.IconBriefcase size={12} /> Listen Again
-                        </button>
-                        {isTTSPlaying && (
-                          <button 
-                            onClick={stopTTS} 
-                            className="btn btn-ghost btn-sm text-xs py-1 px-3"
-                            style={{ height: 'auto', color: 'var(--danger)' }}
-                          >
-                            <Icons.IconX size={12} /> Stop Audio
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Candidate Answer Box */}
-                <div className="card p-6 space-y-4">
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                      <Icons.IconCap size={14} className="text-pos" />
-                    </div>
-                    <div className="space-y-1 flex-1">
-                      <div className="text-[10px] font-bold text-pos uppercase tracking-wider">Candidate (You)</div>
-                      <textarea
-                        value={candidateAnswer}
-                        onChange={(e) => setCandidateAnswer(e.target.value)}
-                        placeholder="Type your professional response here... (Try to use the STAR method: Situation, Task, Action, Result)"
-                        rows={5}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          background: 'var(--surface)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '8px',
-                          color: 'var(--text)',
-                          fontSize: '14px',
-                          lineHeight: 1.5,
-                          resize: 'none',
-                          marginTop: '6px'
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2">
-                    <button 
+                {/* TOP PROGRESS & CONTEXT BAR */}
+                <div className="bg-[#091026] border border-white/10 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4 flex-wrap shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
                       onClick={() => {
-                        if (window.confirm("Are you sure you want to exit? You will lose this session's progress.")) {
+                        if (window.confirm("Are you sure you want to exit? Your progress in this active session will be lost.")) {
                           stopTTS();
                           if (recognition && isRecording) recognition.stop();
                           setView('dashboard');
                         }
                       }}
-                      className="btn btn-ghost btn-sm"
+                      className="px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-red-500/20 hover:border-red-500/30 text-slate-300 hover:text-red-400 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
                     >
-                      Exit Session
+                      <Icons.IconX size={13} /> Exit Session
                     </button>
                     
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={toggleRecording}
-                        className={`btn ${isRecording ? 'btn-danger' : 'btn-ghost'} btn-sm flex items-center gap-2`}
-                        style={isRecording ? { backgroundColor: 'var(--danger)', color: 'white', borderColor: 'var(--danger)' } : {}}
-                      >
-                        <Icons.IconMic size={14} className={isRecording ? 'animate-pulse' : ''} />
-                        {isRecording ? 'Listening...' : 'Speak Answer'}
-                      </button>
-
-                      <button 
-                        onClick={handleSubmitAnswer}
-                        disabled={loading || !candidateAnswer.trim()}
-                        className="btn btn-primary"
-                      >
-                        {loading ? 'Submitting...' : 'Submit Answer'} <Icons.IconArrowRight size={14} />
-                      </button>
+                    <span className="hidden sm:inline-block text-slate-600">|</span>
+                    
+                    <div className="text-xs font-semibold text-slate-200 flex items-center gap-2 truncate max-w-xs sm:max-w-md">
+                      <Icons.IconBriefcase size={14} className="text-blue-400 shrink-0" />
+                      <span className="truncate">
+                        {selectedJobId 
+                          ? (() => {
+                              const job = recommendedJobs.find(j => j.id === selectedJobId);
+                              return job ? `${job.title} (${job.company_name})` : "General Internship Role";
+                            })()
+                          : (customRole && customRole !== 'general' ? customRole : "General Internship Practice")
+                        }
+                      </span>
                     </div>
+                  </div>
+
+                  {/* Question Count Progress */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs font-bold text-white">
+                        Question <span className="text-cyan-400">{questionCount}</span> of {maxQuestions}
+                      </span>
+                      <div className="w-24 sm:w-32 h-2 rounded-full bg-[#04091A] border border-white/10 overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-300 rounded-full"
+                          style={{ width: `${(questionCount / maxQuestions) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <span className="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[10px] font-bold uppercase tracking-wider hidden sm:inline-block">
+                      {difficulty}
+                    </span>
                   </div>
                 </div>
 
+                {/* TWO-COLUMN LIVE INTERVIEW THEATER */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* LEFT STAGE: AI INTERVIEWER PERSONA & QUESTION (~55% width) */}
+                  <div className="lg:col-span-7 bg-[#091026] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                    
+                    {/* Interactive Stage & Audio Ring */}
+                    <div className="bg-gradient-to-b from-[#0B1E40]/90 to-[#07132B] border border-blue-500/30 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 relative min-h-[220px] shadow-inner group">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.2)_0%,transparent_70%)]" />
+
+                      {/* Animated Audio Glow Ring */}
+                      <div className="relative w-24 h-24 flex items-center justify-center">
+                        <motion.div
+                          animate={{ 
+                            scale: (isTTSPlaying || isRecording) ? [1, 1.3, 1] : [1, 1.05, 1], 
+                            opacity: (isTTSPlaying || isRecording) ? [0.2, 0.5, 0.2] : [0.1, 0.25, 0.1] 
+                          }}
+                          transition={{ duration: isRecording ? 0.8 : 2, repeat: Infinity, ease: "easeInOut" }}
+                          className="absolute inset-0 rounded-full"
+                          style={{ 
+                            background: isRecording ? '#EF4444' : isTTSPlaying ? '#3B82F6' : '#10B981' 
+                          }}
+                        />
+                        <div 
+                          className="w-16 h-16 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-white/20 transition-all duration-300"
+                          style={{ 
+                            background: isRecording 
+                              ? 'linear-gradient(135deg, #EF4444, #DC2626)' 
+                              : isTTSPlaying 
+                                ? 'linear-gradient(135deg, #2563EB, #06B6D4)' 
+                                : 'linear-gradient(135deg, #10B981, #059669)' 
+                          }}
+                        >
+                          {isRecording ? (
+                            <Icons.IconMic size={26} className="text-white animate-pulse" />
+                          ) : isTTSPlaying ? (
+                            <Icons.IconVolume2 size={26} className="text-white animate-pulse" />
+                          ) : (
+                            <Icons.IconTarget size={26} className="text-white" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Live State Badge */}
+                      <div className="space-y-1 relative z-10">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                          isRecording 
+                            ? 'bg-red-500/20 border-red-500/40 text-red-300 animate-pulse' 
+                            : isTTSPlaying 
+                              ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' 
+                              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                        }`}>
+                          {isRecording 
+                            ? '🎙️ Recording your answer...' 
+                            : isTTSPlaying 
+                              ? '🔊 AI Interviewer is speaking...' 
+                              : '🎧 AI Listening — Ready for response'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Question Dialog Card */}
+                    <div className="bg-[#04091A] border border-blue-500/20 rounded-2xl p-5 sm:p-6 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0">
+                            <Icons.IconUser size={15} />
+                          </div>
+                          <span className="text-xs font-bold text-blue-300 uppercase tracking-wider">
+                            AI Senior Interviewer
+                          </span>
+                        </div>
+
+                        {/* Speech Action Buttons */}
+                        <div className="flex items-center gap-2">
+                          <button 
+                            type="button"
+                            onClick={() => speakText(currentQuestion)} 
+                            className="px-3 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Icons.IconVolume2 size={12} className="text-blue-400" /> Listen Again
+                          </button>
+                          {isTTSPlaying && (
+                            <button 
+                              type="button"
+                              onClick={stopTTS} 
+                              className="px-3 py-1 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Icons.IconX size={12} /> Stop Audio
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-base sm:text-lg font-medium text-white leading-relaxed font-space-grotesk">
+                        "{currentQuestion}"
+                      </p>
+                    </div>
+
+                  </div>
+
+                  {/* RIGHT PORTAL: CANDIDATE RESPONSE (~45% width) */}
+                  <div className="lg:col-span-5 bg-[#091026] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+                    
+                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                          <Icons.IconCap size={15} />
+                        </div>
+                        <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                          Candidate Response (You)
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] font-semibold text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+                        {candidateAnswer.trim() ? `${candidateAnswer.trim().split(/\s+/).length} words` : '0 words'}
+                      </span>
+                    </div>
+
+                    {/* Textarea Input */}
+                    <div className="relative">
+                      <textarea
+                        value={candidateAnswer}
+                        onChange={(e) => setCandidateAnswer(e.target.value)}
+                        placeholder="Type or speak your professional answer here... (Tip: Structure your response with Situation, Task, Action, Result)"
+                        rows={7}
+                        style={{
+                          width: '100%',
+                          padding: '14px',
+                          background: '#04091A',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '16px',
+                          color: '#FFFFFF',
+                          fontSize: '14px',
+                          lineHeight: '1.6',
+                          resize: 'none',
+                          outline: 'none'
+                        }}
+                        className="hover:border-blue-500/50 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+
+                    {/* Pro Tip Box inside response card */}
+                    <div className="bg-blue-950/40 border border-blue-500/20 rounded-xl p-3 flex items-center gap-2.5 text-xs text-blue-200">
+                      <Icons.IconSparkle size={14} className="text-blue-400 shrink-0" />
+                      <span><strong>STAR Tip:</strong> State your Action clearly and end with concrete Results.</span>
+                    </div>
+
+                    {/* Response Controls */}
+                    <div className="space-y-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={toggleRecording}
+                        className={`w-full py-3 px-4 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+                          isRecording 
+                            ? 'bg-red-600 hover:bg-red-500 text-white border border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse' 
+                            : 'bg-white/5 hover:bg-white/10 border border-white/15 text-white'
+                        }`}
+                      >
+                        <Icons.IconMic size={15} className={isRecording ? 'animate-pulse' : 'text-blue-400'} />
+                        {isRecording ? 'Listening... Click to Stop' : '🎤 Speak Answer (Speech-to-Text)'}
+                      </button>
+
+                      <button 
+                        type="button"
+                        onClick={handleSubmitAnswer}
+                        disabled={loading || !candidateAnswer.trim()}
+                        className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(37,99,235,0.45)] hover:shadow-[0_0_35px_rgba(37,99,235,0.65)] transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Submitting...
+                          </>
+                        ) : (
+                          <>
+                            Submit Answer <Icons.IconArrowRight size={15} />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
               </div>
             )}
           </motion.div>
