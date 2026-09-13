@@ -160,22 +160,34 @@ const AuthPage = () => {
     setError(null);
     try {
       if (isLogin) {
+        if (!email.trim() || !password) {
+          throw new Error('Please enter your email and password.');
+        }
         const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
         if (authErr) throw authErr;
         // Navigation and profile checks are handled by onAuthStateChange
       } else {
+        if (!name.trim()) {
+          throw new Error('Please enter your full name.');
+        }
+        if (!email.trim()) {
+          throw new Error('Please enter a valid email address.');
+        }
+        if (!password) {
+          throw new Error('Please enter a password.');
+        }
+        if (!confirmPassword) {
+          throw new Error('Please confirm your password.');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match.');
+        }
         const rules = getPasswordRulesStatus(password);
         const isPasswordValid = rules.minLength && rules.hasUppercase && rules.hasLowercase && rules.hasNumber && rules.hasSpecial;
         const score = getPasswordScore(rules);
         
-        if (score <= 2) {
-          throw new Error('Password strength is Weak. Please select a stronger password.');
-        }
-        if (!isPasswordValid) {
-          throw new Error('Please satisfy all password rules.');
-        }
-        if (password !== confirmPassword) {
-          throw new Error('Passwords do not match.');
+        if (score <= 2 || !isPasswordValid) {
+          throw new Error('Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character.');
         }
 
         const { data: signUpData, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: role } } });
@@ -203,13 +215,7 @@ const AuthPage = () => {
     { key: 'hasSpecial', text: 'Contains a special character', satisfied: rulesStatus.hasSpecial }
   ];
 
-  const isSubmitDisabled = loading || (!isLogin && (
-    score <= 2 ||
-    password !== confirmPassword ||
-    !isPasswordValid ||
-    !password ||
-    !confirmPassword
-  ));
+  const isSubmitDisabled = loading;
 
   return (
     <div className="auth-page">
