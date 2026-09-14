@@ -107,7 +107,16 @@ const AuthPage = () => {
           existingUser = {
             id: session.user.id,
             role: 'student',
-            full_name: userName
+            full_name: userName,
+            notification_preferences: {
+              email_notifications: true,
+              new_high_match_alerts: true,
+              weekly_summary: true,
+              weekly_skills_recommendations: true,
+              match_updates: true,
+              new_internships: true,
+              application_status: true
+            }
           };
           await supabase.from('profiles').insert([existingUser]);
         }

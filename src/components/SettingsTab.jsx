@@ -590,7 +590,7 @@ export const SettingsTab = ({ user, onUserUpdate }) => {
       weekly_summary: true,
       weekly_skills_recommendations: true
     };
-    const savedNotifs = user.notification_preferences || defaultNotifs;
+    const savedNotifs = { ...defaultNotifs, ...(user.notification_preferences || {}) };
 
     return (
       fullName.trim() !== (user.full_name || user.name || '').trim() ||
