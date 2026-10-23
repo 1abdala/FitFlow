@@ -216,21 +216,30 @@ pip install fastapi uvicorn supabase google-genai PyPDF2 slowapi python-dotenv p
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the root directory:
+Copy `.env.example` to `.env` and fill in your real values:
+```bash
+cp .env.example .env
+```
+
+Then set your environment variables:
 ```env
-# Supabase Configuration
-VITE_SUPABASE_URL=https://<YOUR_SUPABASE_PROJECT_ID>.supabase.co
-VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
-SUPABASE_URL=https://<YOUR_SUPABASE_PROJECT_ID>.supabase.co
-SUPABASE_SERVICE_KEY=<YOUR_SUPABASE_SERVICE_ROLE_KEY>
-
-# AI Engine Keys
-OPENAI_API_KEY=sk-proj-...
-GEMINI_API_KEY=AIzaSy...
-
-# API Routing
+# Browser-safe values
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 VITE_API_BASE_URL=http://localhost:8000
+
+# Server-only values
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
+SUPABASE_SERVICE_KEY=your_supabase_service_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+RESEND_API_KEY=your_resend_api_key_here
+RESEND_FROM_EMAIL=alerts@example.com
+
+# Runtime config
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+HIGH_MATCH_THRESHOLD=70
 ```
 
 ### 3. Start Local Servers

@@ -3,7 +3,7 @@ import requests
 import json
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='c:/Users/bodyg/OneDrive/Pictures/sem5/fyp-project/fitflow(1)/.env')
+load_dotenv()
 url = os.environ.get("SUPABASE_URL")
 service_key = os.environ.get("SUPABASE_SERVICE_KEY")
 headers = {"apikey": service_key, "Authorization": f"Bearer {service_key}"}

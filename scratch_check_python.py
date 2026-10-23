@@ -1,10 +1,10 @@
 import os
 from supabase import create_client, Client
 
-url = "https://frsxpsgshyksykouzbfh.supabase.co"
+url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
 key = os.environ.get("SUPABASE_SERVICE_KEY")
-if not key:
-    raise RuntimeError("Missing SUPABASE_SERVICE_KEY environment variable.")
+if not url or not key:
+    raise RuntimeError("Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_SERVICE_KEY environment variable.")
 supabase: Client = create_client(url, key)
 
 def check_db():
@@ -16,7 +16,7 @@ def check_db():
             print(s)
             
         # Check student mapping
-        print("\n--- User mapping for abullahageep@gmail.com ---")
+        print("\n--- User mapping for configured test user ---")
         # His user ID is 414be029-3fed-4811-bfc0-ff099313c2ca
         res2 = supabase.table("user_skills").select("skill_id, skills(name)").eq("user_id", "414be029-3fed-4811-bfc0-ff099313c2ca").execute()
         for s in res2.data:
