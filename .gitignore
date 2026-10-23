@@ -12,11 +12,23 @@ dist
 dist-ssr
 *.local
 
-# Environment variables — never commit secrets
+# Environment variables and local secrets — never commit these
 .env
+.env.local
 .env.*
 !.env.example
+
+# API/local backend env files
+api/.env
+api/.env.local
+api/.env.*
+!api/.env.example
+
+# Scraper env files
 scraper/.env
+scraper/.env.local
+scraper/.env.*
+!scraper/.env.example
 
 # Claude Code local config
 .claude/

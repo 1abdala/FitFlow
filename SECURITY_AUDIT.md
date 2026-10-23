@@ -279,15 +279,15 @@ Note: Supabase can enforce minimum length server-side in Auth settings — this 
 **Issue:** The initial commit included a `.env` file with real credentials:
 
 ```
-VITE_SUPABASE_URL=https://frsxpsgshyksykouzbfh.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_URL=<REDACTED>
+VITE_SUPABASE_ANON_KEY=<REDACTED>
 ```
 
 The second commit (`1d42187`) removed the file and updated `.gitignore`, but **the credentials are permanently in the git object store**. Anyone who clones this repo can recover them with `git show 7285fb3:.env`.
 
 Additionally, the current working `.env` on disk (not committed but present) contains:
-- `SUPABASE_SERVICE_KEY=sb_secret_QioAJdvG_D3ejbfMosI-kg_mZNslB-Y` — **service role key bypasses ALL RLS policies**
-- `GEMINI_API_KEY=AIzaSyDMTFB3nL1SQ8uF-XTTBVDgED3vqQ1sP10`
+- `SUPABASE_SERVICE_KEY=<REDACTED>` — **service role key bypasses ALL RLS policies**
+- `GEMINI_API_KEY=<REDACTED>`
 
 **Impact:**
 - The anon key exposed in history is lower risk (it's public by design and RLS restricts it), but it still confirms the project URL.
@@ -310,7 +310,7 @@ Additionally, the current working `.env` on disk (not committed but present) con
 **Severity: HIGH**  
 **Location:** `scraper/.env:2`
 
-`SUPABASE_SERVICE_KEY=sb_secret_QioAJdvG_D3ejbfMosI-kg_mZNslB-Y`
+`SUPABASE_SERVICE_KEY=<REDACTED>`
 
 The scraper correctly reads from environment (`os.environ.get("SUPABASE_SERVICE_KEY")`), but the file itself — if accidentally committed or shared — exposes the highest-privilege Supabase credential.
 
@@ -842,6 +842,71 @@ The combination of plaintext passwords stored in the database, credentials in gi
 3. Use Railway/Vercel log drains to a centralized logging service (e.g. Logtail, Better Stack).
 4. Add uptime monitoring (e.g. UptimeRobot) on the FastAPI backend health endpoint.
 5. Schedule monthly `npm audit` and Python dependency audits.
+
+---
+
+## GIT HISTORY REWRITE PLAYBOOK (MAINTAINER ACTION REQUIRED)
+
+Do **not** run this inside CI automation. Coordinate with all contributors first.
+
+### 1) Backup and coordinate
+
+```bash
+# In a separate folder, create a safety mirror backup
+git clone --mirror git@github.com:1abdala/FitFlow.git FitFlow-backup.git
+```
+
+Notify collaborators to stop pushing until cleanup is complete.
+
+### 2) Preferred method: git-filter-repo
+
+```bash
+# Install once (examples)
+python -m pip install git-filter-repo
+# or: brew install git-filter-repo
+
+# Work in a fresh clone
+git clone git@github.com:1abdala/FitFlow.git FitFlow-cleanup
+cd FitFlow-cleanup
+
+# Remove env files from all history refs/tags
+git filter-repo --path .env --path scraper/.env --invert-paths --force
+
+# Force-push rewritten history and tags (destructive)
+git push origin --force --all
+git push origin --force --tags
+```
+
+### 3) Alternative method: BFG Repo-Cleaner
+
+```bash
+git clone --mirror git@github.com:1abdala/FitFlow.git FitFlow-cleanup.git
+cd FitFlow-cleanup.git
+
+# Remove sensitive env files from history
+bfg --delete-files .env --delete-files scraper/.env
+
+# Finalize cleanup
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+
+# Force-push all refs/tags
+git push --force --all
+git push --force --tags
+```
+
+### 4) Post-rewrite verification
+
+```bash
+# Verify no historical env file content remains
+git log --all -- .env scraper/.env
+git rev-list --objects --all | grep -E '(^|/)(\\.env|scraper/\\.env)$' || true
+```
+
+### 5) Mandatory follow-up
+
+- Rotate/revoke all previously exposed credentials (Google/Gemini, Supabase service-role and anon, OpenAI, Resend, Telegram, and any secrets that were ever stored in historical `.env` files).
+- Update secrets in all deployment targets (GitHub Actions, Vercel/Render/Supabase, local developer machines).
 
 ---
 
