@@ -123,8 +123,8 @@ const Landing = ({ onEnterDashboard }) => (
             .
           </h1>
           <p className="hero-sub">
-            Stop scrolling fragmented job boards. <b>FitFlow</b> reads your CV, scores every opening
-            against your real skills, and tells you exactly what to learn next.
+            Stop scrolling fragmented job boards. <b>FitFlow</b> maps your skill profile, scores every opening
+            against real requirements, and tells you exactly what to learn next.
           </p>
 
           <div className="hero-cta">
@@ -138,8 +138,8 @@ const Landing = ({ onEnterDashboard }) => (
 
           <div className="hero-meta">
             <div className="hm-item">
-              <div className="hm-num">{"< 10s"}</div>
-              <div className="hm-label">AI CV Skill Extraction</div>
+              <div className="hm-num">Real-Time</div>
+              <div className="hm-label">Skill Match Engine</div>
             </div>
             <div className="hm-divider" />
             <div className="hm-item">
@@ -183,13 +183,13 @@ const Landing = ({ onEnterDashboard }) => (
           kicker="01 — Match"
           icon={<IconTarget size={22} />}
           title="Skill-graph matching"
-          body="Every role is embedded in the same skill space as your CV, so a 92% match means 92% of the requirements are already in your pocket."
+          body="Every role is evaluated against your technical skill profile, so a 92% match means 92% of the requirements are already in your pocket."
         />
         <FeatureCard
-          kicker="02 — Read"
+          kicker="02 — Profile"
           icon={<IconChip size={22} />}
-          title="CV analyzer"
-          body="Drop your PDF. Get a parsed, taggable skill profile in seconds."
+          title="Skill profiler"
+          body="Tag your technical stack, frameworks, and tools. Your matches update dynamically as you learn."
         />
         <FeatureCard
           kicker="03 — Apply"
@@ -216,11 +216,11 @@ const Landing = ({ onEnterDashboard }) => (
     <section className="how" id="how">
       <div className="section-head">
         <Pill>How it works</Pill>
-        <h2 className="section-title">From PDF to first interview <span className="muted">in three moves.</span></h2>
+        <h2 className="section-title">From profile setup to first interview <span className="muted">in three moves.</span></h2>
       </div>
       <div className="steps">
         {[
-          { n: "01", t: "Drop your CV", d: "We parse skills, projects, coursework, and turn them into a vector you control.", icon: <IconSparkle size={18} /> },
+          { n: "01", t: "Build your skill profile", d: "Tag your programming languages, frameworks, and tools in a structured profile you control.", icon: <IconSparkle size={18} /> },
           { n: "02", t: "Browse ranked matches", d: "Every internship gets a real percentage match — and the missing skills are right there.", icon: <IconTarget size={18} /> },
           { n: "03", t: "Close the gap, apply", d: "Curated micro-courses for the missing skills. Apply in one tap when you're ready.", icon: <IconBolt size={18} /> },
         ].map((s) => (

@@ -173,8 +173,8 @@ const LandingPage = () => {
               .
             </h1>
             <p className="hero-sub lp-rise lp-d3">
-              Stop scrolling fragmented job boards. <b>FitFlow</b> reads your CV, scores every opening
-              against your real skills, and tells you exactly what to learn next.
+              Stop scrolling fragmented job boards. <b>FitFlow</b> maps your skill profile, scores every opening
+              against real requirements, and tells you exactly what to learn next.
             </p>
 
             <div className="hero-cta lp-rise lp-d4">
@@ -188,8 +188,8 @@ const LandingPage = () => {
 
             <div className="hero-meta lp-rise lp-d5">
               <div className="hm-item">
-                <div className="hm-num">{"< 10s"}</div>
-                <div className="hm-label">AI CV Skill Extraction</div>
+                <div className="hm-num">Real-Time</div>
+                <div className="hm-label">Skill Match Engine</div>
               </div>
               <div className="hm-divider" />
               <div className="hm-item">
@@ -229,8 +229,8 @@ const LandingPage = () => {
         </div>
 
         <div className="bento">
-          <FeatureCard delay={0}   big kicker="01 — Match"  icon={<Icons.IconTarget size={22} />}   title="Skill-graph matching"  body="Every role is embedded in the same skill space as your CV, so a 92% match means 92% of the requirements are already in your pocket." />
-          <FeatureCard delay={80}      kicker="02 — Read"   icon={<Icons.IconChip size={22} />}     title="CV analyzer"           body="Drop your PDF. Get a parsed, taggable skill profile in seconds." />
+          <FeatureCard delay={0}   big kicker="01 — Match"  icon={<Icons.IconTarget size={22} />}   title="Skill-graph matching"  body="Every role is evaluated against your technical skill profile, so a 92% match means 92% of the requirements are already in your pocket." />
+          <FeatureCard delay={80}      kicker="02 — Profile" icon={<Icons.IconChip size={22} />}     title="Skill profiler"        body="Tag your technical stack, frameworks, and tools. Your matches update dynamically as you learn." />
           <FeatureCard delay={160}     kicker="03 — Apply"  icon={<Icons.IconBriefcase size={22} />} title="One-tap apply"         body="Tracks status, replies, and follow-ups in a single timeline." />
           <FeatureCard delay={80}      kicker="04 — Grow"   icon={<Icons.IconBolt size={22} />}     title="Gap to next match"     body="See exactly which 2-3 skills would unlock 5 more matches this week." />
           <FeatureCard delay={160}     kicker="05 — Trust"  icon={<Icons.IconShield size={22} />}   title="Curated for UTeM"      body="Curated for computing and engineering disciplines with transparent requirements. No scams, no ghost roles." />
@@ -241,10 +241,10 @@ const LandingPage = () => {
       <section className="how" id="how">
         <div ref={howHeadRef} className="section-head text-center sm:text-left reveal">
           <Pill>How it works</Pill>
-          <h2 className="section-title">From PDF to first interview <span className="muted">in three moves.</span></h2>
+          <h2 className="section-title">From profile setup to first interview <span className="muted">in three moves.</span></h2>
         </div>
         <div className="steps grid grid-cols-1 md:grid-cols-3">
-          <StepCard delay={0}   n="01" t="Drop your CV"           d="We parse skills, projects, coursework, and turn them into a vector you control."             icon={<Icons.IconSparkle size={18} />} />
+          <StepCard delay={0}   n="01" t="Build your skill profile" d="Tag your programming languages, frameworks, and tools in a structured profile you control." icon={<Icons.IconSparkle size={18} />} />
           <StepCard delay={100} n="02" t="Browse ranked matches"  d="Every internship gets a real percentage match — and the missing skills are right there."     icon={<Icons.IconTarget size={18} />} />
           <StepCard delay={200} n="03" t="Close the gap, apply"   d="Curated micro-courses for the missing skills. Apply in one tap when you're ready."           icon={<Icons.IconBolt size={18} />} />
         </div>
