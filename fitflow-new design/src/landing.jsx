@@ -138,18 +138,18 @@ const Landing = ({ onEnterDashboard }) => (
 
           <div className="hero-meta">
             <div className="hm-item">
-              <div className="hm-num">2,840</div>
-              <div className="hm-label">Open roles indexed</div>
+              <div className="hm-num">{"< 10s"}</div>
+              <div className="hm-label">AI CV Skill Extraction</div>
             </div>
             <div className="hm-divider" />
             <div className="hm-item">
-              <div className="hm-num">96%</div>
-              <div className="hm-label">CV parse accuracy</div>
+              <div className="hm-num">1:1</div>
+              <div className="hm-label">Skill Gap Breakdown</div>
             </div>
             <div className="hm-divider" />
             <div className="hm-item">
-              <div className="hm-num">4.8<span className="hm-star"><IconStar size={12} fill="currentColor" stroke="none" /></span></div>
-              <div className="hm-label">Student rating</div>
+              <div className="hm-num">100%</div>
+              <div className="hm-label">Free for Students</div>
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ const Landing = ({ onEnterDashboard }) => (
           kicker="02 — Read"
           icon={<IconChip size={22} />}
           title="CV analyzer"
-          body="Drop your PDF. Get a parsed, taggable skill profile in 8 seconds."
+          body="Drop your PDF. Get a parsed, taggable skill profile in seconds."
         />
         <FeatureCard
           kicker="03 — Apply"
@@ -206,8 +206,8 @@ const Landing = ({ onEnterDashboard }) => (
         <FeatureCard
           kicker="05 — Trust"
           icon={<IconShield size={22} />}
-          title="UTeM-verified"
-          body="Listings vetted with the FTMK industrial training office. No scams, no ghost roles."
+          title="Curated for UTeM"
+          body="Curated for computing and engineering disciplines with transparent requirements. No scams, no ghost roles."
         />
       </div>
     </section>

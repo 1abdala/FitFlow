@@ -188,18 +188,18 @@ const LandingPage = () => {
 
             <div className="hero-meta lp-rise lp-d5">
               <div className="hm-item">
-                <div className="hm-num">2,840</div>
-                <div className="hm-label">Open roles indexed</div>
+                <div className="hm-num">{"< 10s"}</div>
+                <div className="hm-label">AI CV Skill Extraction</div>
               </div>
               <div className="hm-divider" />
               <div className="hm-item">
-                <div className="hm-num">96%</div>
-                <div className="hm-label">CV parse accuracy</div>
+                <div className="hm-num">1:1</div>
+                <div className="hm-label">Skill Gap Breakdown</div>
               </div>
               <div className="hm-divider" />
               <div className="hm-item">
-                <div className="hm-num">4.8<span className="hm-star"><Icons.IconStar size={12} fill="currentColor" stroke="none" /></span></div>
-                <div className="hm-label">Student rating</div>
+                <div className="hm-num">100%</div>
+                <div className="hm-label">Free for Students</div>
               </div>
             </div>
           </div>
@@ -230,10 +230,10 @@ const LandingPage = () => {
 
         <div className="bento">
           <FeatureCard delay={0}   big kicker="01 — Match"  icon={<Icons.IconTarget size={22} />}   title="Skill-graph matching"  body="Every role is embedded in the same skill space as your CV, so a 92% match means 92% of the requirements are already in your pocket." />
-          <FeatureCard delay={80}      kicker="02 — Read"   icon={<Icons.IconChip size={22} />}     title="CV analyzer"           body="Drop your PDF. Get a parsed, taggable skill profile in 8 seconds." />
+          <FeatureCard delay={80}      kicker="02 — Read"   icon={<Icons.IconChip size={22} />}     title="CV analyzer"           body="Drop your PDF. Get a parsed, taggable skill profile in seconds." />
           <FeatureCard delay={160}     kicker="03 — Apply"  icon={<Icons.IconBriefcase size={22} />} title="One-tap apply"         body="Tracks status, replies, and follow-ups in a single timeline." />
           <FeatureCard delay={80}      kicker="04 — Grow"   icon={<Icons.IconBolt size={22} />}     title="Gap to next match"     body="See exactly which 2-3 skills would unlock 5 more matches this week." />
-          <FeatureCard delay={160}     kicker="05 — Trust"  icon={<Icons.IconShield size={22} />}   title="UTeM-verified"         body="Listings vetted with the FTMK industrial training office. No scams, no ghost roles." />
+          <FeatureCard delay={160}     kicker="05 — Trust"  icon={<Icons.IconShield size={22} />}   title="Curated for UTeM"      body="Curated for computing and engineering disciplines with transparent requirements. No scams, no ghost roles." />
         </div>
       </section>
 
