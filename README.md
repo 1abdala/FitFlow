@@ -13,10 +13,9 @@
 **FitFlow** is an end-to-end, intelligent web platform designed to streamline and elevate the internship placement experience for computer science and engineering students (developed for **Universiti Teknikal Malaysia Melaka - UTeM** Final Year Project). 
 
 FitFlow solves the common disconnect between student skill sets and industry demands by offering:
-1. **Algorithmic Skill Matching:** A weighted Jaccard & domain-matching algorithm comparing student skills against real-time scraped internship offerings.
+1. **Algorithmic Skill Matching:** A weighted Jaccard & domain-matching algorithm comparing student skills against real-time internship offerings.
 2. **Interactive Voice & Text AI Interview Prep:** A multi-turn AI interviewer powered by OpenAI (`gpt-4o-mini`) and Google Gemini (`gemini-2.0-flash`) with dynamic follow-ups, browser speech recognition, text-to-speech (TTS), and 4-axis performance radar diagnostics.
-3. **Automated Resume & CV Skill Extractor *(Team Feature)*:** PDF parsing and keyword mapping to assist student profile creation (contributed by project teammate).
-4. **Company & Salary Analytics:** Real-time regional internship distribution, skill gap recommendations, and salary insights.
+3. **Company & Market Analytics:** Regional internship distribution, skill gap recommendations, and stipend insights.
 
 ---
 
@@ -56,7 +55,6 @@ FitFlow solves the common disconnect between student skill sets and industry dem
 * **Backend API (Python FastAPI):**
   * **Framework:** FastAPI, Uvicorn ASGI Server
   * **Security & Rate Limiting:** `slowapi` (IP-based token bucket rate limiting), CORS Regex matching
-  * **PDF Parsing:** `PyPDF2` for resume text extraction *(Team module)*
   * **Data Validation:** `Pydantic` models with strict constraints
 
 * **Database & Authentication:**
@@ -124,12 +122,7 @@ $$\text{Match Score} = w_1 \cdot \text{Skill Overlap Ratio} + w_2 \cdot \text{Ro
 * **Voice Speech Recognition & TTS:** Candidates can speak their answers directly via microphone (`SpeechRecognition`) and listen to interviewer responses via Text-to-Speech (`speechSynthesis`).
 * **4-Axis Evaluation Diagnostics:** Generates overall scores, breakdown scores (Technical, Problem Solving, Communication, Role Fit), summary feedback, strengths, and targeted improvement actions.
 
-### 3. 📄 Automated Resume / CV Skill Extractor *(Team Feature — Contributed by Teammate)*
-* Built by project teammate to assist student onboarding.
-* Parses uploaded PDF resumes (`PyPDF2`).
-* Maps raw text against skill keywords to assist profile setup.
-
-### 4. 📊 Location & Market Analytics
+### 3. 📊 Location & Market Analytics
 * Interactive location filtering with real-time internship counts per region (e.g. *Kuala Lumpur (42)*, *Penang (18)*, *Remote (15)*).
 * Stipend range filters and category filters (Frontend, Backend, Database, DevOps, AI/ML).
 
@@ -213,7 +206,7 @@ cd FitFlow
 npm install
 
 # Install Backend Python Dependencies
-pip install fastapi uvicorn supabase google-genai PyPDF2 slowapi python-dotenv pydantic
+pip install fastapi uvicorn supabase openai google-genai slowapi python-dotenv pydantic
 ```
 
 ### 2. Configure Environment Variables
@@ -265,5 +258,5 @@ Open `http://localhost:5173` in your browser.
 
 ## 📄 License & Attribution
 
-Developed for **Universiti Teknikal Malaysia Melaka (UTeM)** Final Year Project (FYP).
+Developed by **Abdalla Hashim** as a solo Final Year Project (FYP) for **Universiti Teknikal Malaysia Melaka (UTeM)**, including full-stack architecture, PostgreSQL database design and integration, matching algorithms, and AI integration.
 Released under the **MIT License**.
