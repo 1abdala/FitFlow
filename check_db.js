@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
+import process from 'node:process';
 
 // Extract env vars
 const envFile = fs.readFileSync(path.join(process.cwd(), '.env'), 'utf8');
 const supabaseUrlMatch = envFile.match(/VITE_SUPABASE_URL=(.*)/);
 const supabaseKeyMatch = envFile.match(/VITE_SUPABASE_ANON_KEY=(.*)/);
-const serviceKeyMatch = envFile.match(/SUPABASE_SERVICE_ROLE_KEY=(.*)/);
+const serviceKeyMatch = envFile.match(/SUPABASE_SERVICE_KEY=(.*)/) || envFile.match(/SUPABASE_SERVICE_ROLE_KEY=(.*)/);
 
 const supabaseUrl = supabaseUrlMatch[1].trim();
 // Use service role if available to bypass RLS for debugging

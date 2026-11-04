@@ -8,20 +8,22 @@ from email_service import send_high_match_alert_email, HIGH_MATCH_THRESHOLD
 def get_supabase_client() -> Client:
     url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
     service_key = os.environ.get("SUPABASE_SERVICE_KEY")
-    anon_key = os.environ.get("VITE_SUPABASE_ANON_KEY")
+    anon_key = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY")
     
-    # Try service key first, fall back to anon key with authenticated coordinator session
-    key = service_key if (service_key and len(service_key) > 50 and "eyJ" in service_key) else anon_key
+    # Try service key first, then anon key
+    key = service_key or anon_key
     
     if not url or not key:
-        raise ValueError("Missing SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env file.")
+        raise ValueError("Missing SUPABASE_URL/VITE_SUPABASE_URL and SUPABASE_SERVICE_KEY/SUPABASE_ANON_KEY.")
         
     client = create_client(url, key)
     
     # If using JWT anon key, authenticate session with coordinator role to satisfy RLS write permissions
     if "eyJ" in key:
-        auth_email = os.environ.get("SCRAPER_AUTH_EMAIL", "testaudit@fitflow.app")
-        auth_pass = os.environ.get("SCRAPER_AUTH_PASS", "TestPassword123!")
+        auth_email = os.environ.get("SCRAPER_AUTH_EMAIL")
+        auth_pass = os.environ.get("SCRAPER_AUTH_PASS")
+        if not auth_email or not auth_pass:
+            raise ValueError("SCRAPER_AUTH_EMAIL and SCRAPER_AUTH_PASS are required when using anon Supabase key.")
         try:
             auth_res = client.auth.sign_in_with_password({"email": auth_email, "password": auth_pass})
             if auth_res and auth_res.session:

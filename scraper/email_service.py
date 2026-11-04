@@ -219,9 +219,9 @@ def _check_user_preference(student_id: str, pref_key: str) -> tuple[bool, str, s
             allow_sandbox_override = os.environ.get("FORCE_REAL_USER_EMAILS", "false").lower() != "true"
 
             if is_sandbox and allow_sandbox_override:
-                email = os.environ.get("RESEND_TEST_RECIPIENT", "abullahageep@gmail.com")
+                email = os.environ.get("RESEND_TEST_RECIPIENT", "test@example.com")
             elif not email:
-                email = os.environ.get("RESEND_TEST_RECIPIENT", "abullahageep@gmail.com")
+                email = os.environ.get("RESEND_TEST_RECIPIENT", "test@example.com")
 
             return True, email, student_name
         except Exception as e:
@@ -568,4 +568,3 @@ def send_weekly_skills_recommendation_email(
         print(f"[RESEND ERROR] Failed to send weekly skills recommendation: {err_msg}")
         _log_email_delivery(student_id, email_addr, "weekly_skills_recommendation", reporting_period=reporting_period, status="failed", error_message=err_msg)
         return False
-
